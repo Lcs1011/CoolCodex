@@ -7,6 +7,18 @@ use codex_utils_cli::SharedCliOptions;
 
 #[derive(Parser, Clone, Debug)]
 #[command(version)]
+#[derive(clap::ValueEnum, Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SafeModeCliArg {
+    On,
+    Off,
+}
+
+impl SafeModeCliArg {
+    pub fn is_on(self) -> bool {
+        matches!(self, SafeModeCliArg::On)
+    }
+}
+
 pub struct Cli {
     /// Optional user prompt to start the session.
     #[arg(value_name = "PROMPT", value_hint = clap::ValueHint::Other)]
@@ -65,9 +77,9 @@ pub struct Cli {
     #[arg(long = "search", default_value_t = false)]
     pub web_search: bool,
 
-    /// Start Codex in BaseMode: no tools, no file read/write, no search, no shell.
-    #[arg(long = "base-mode", default_value_t = false)]
-    pub base_mode: bool,
+    /// Start Codex in SafeMode: no tools, no file read/write, no search, no shell.
+    #[arg(long = "safe-mode", default_value_t = SafeModeCliArg::On)]
+    pub safe_mode: SafeModeCliArg,
 
     /// Disable alternate screen mode
     ///

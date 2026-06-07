@@ -683,7 +683,7 @@ fn format_exit_messages(exit_info: AppExitInfo, color_enabled: bool) -> Vec<Stri
 }
 
 /// Handle the app exit and print the results. Optionally run the update action.
-fn handle_app_exit(exit_info: AppExitInfo, base_mode: bool) -> anyhow::Result<()> {
+fn handle_app_exit(exit_info: AppExitInfo, safe_mode: bool) -> anyhow::Result<()> {
     match exit_info.exit_reason {
         ExitReason::Fatal(message) => {
             eprintln!("ERROR: {message}");
@@ -698,7 +698,7 @@ fn handle_app_exit(exit_info: AppExitInfo, base_mode: bool) -> anyhow::Result<()
         println!("{line}");
     }
 
-    if base_mode {
+    if safe_mode {
         return Ok(());
     }
 
@@ -919,10 +919,10 @@ async fn cli_main(arg0_paths: Arg0DispatchPaths) -> anyhow::Result<()> {
     let root_remote = remote.remote;
     let root_remote_auth_token_env = remote.remote_auth_token_env;
     let root_strict_config = interactive.strict_config;
-    let root_base_mode = interactive.base_mode;
+    let root_safe_mode = interactive.safe_mode;
 
-    reject_root_base_mode_usage(
-        root_base_mode,
+    reject_root_safe_mode_usage(
+        root_safe_mode,
         &interactive,
         &subcommand,
         root_remote.as_deref(),
@@ -936,7 +936,7 @@ async fn cli_main(arg0_paths: Arg0DispatchPaths) -> anyhow::Result<()> {
 
     match subcommand {
         None => {
-            let base_mode = interactive.base_mode;
+            let safe_mode = interactive.safe_mode;
             prepend_config_flags(
                 &mut interactive.config_overrides,
                 root_config_overrides.clone(),
@@ -948,7 +948,7 @@ async fn cli_main(arg0_paths: Arg0DispatchPaths) -> anyhow::Result<()> {
                 arg0_paths.clone(),
             )
             .await?;
-            handle_app_exit(exit_info, base_mode)?;
+            handle_app_exit(exit_info, safe_mode)?;
         }
         Some(Subcommand::Exec(mut exec_cli)) => {
             reject_remote_mode_for_subcommand(
@@ -1197,7 +1197,7 @@ async fn cli_main(arg0_paths: Arg0DispatchPaths) -> anyhow::Result<()> {
                 include_non_interactive,
                 config_overrides,
             );
-            let base_mode = interactive.base_mode;
+            let safe_mode = interactive.safe_mode;
             let exit_info = run_interactive_tui(
                 interactive,
                 remote.remote.or(root_remote.clone()),
@@ -1207,7 +1207,7 @@ async fn cli_main(arg0_paths: Arg0DispatchPaths) -> anyhow::Result<()> {
                 arg0_paths.clone(),
             )
             .await?;
-            handle_app_exit(exit_info, base_mode)?;
+            handle_app_exit(exit_info, safe_mode)?;
         }
         Some(Subcommand::Archive(cmd)) => {
             let output = run_session_archive_cli_command(
@@ -1250,7 +1250,7 @@ async fn cli_main(arg0_paths: Arg0DispatchPaths) -> anyhow::Result<()> {
                 all,
                 config_overrides,
             );
-            let base_mode = interactive.base_mode;
+            let safe_mode = interactive.safe_mode;
             let exit_info = run_interactive_tui(
                 interactive,
                 remote.remote.or(root_remote.clone()),
@@ -1260,7 +1260,7 @@ async fn cli_main(arg0_paths: Arg0DispatchPaths) -> anyhow::Result<()> {
                 arg0_paths.clone(),
             )
             .await?;
-            handle_app_exit(exit_info, base_mode)?;
+            handle_app_exit(exit_info, safe_mode)?;
         }
         Some(Subcommand::Login(mut login_cli)) => {
             reject_remote_mode_for_subcommand(
@@ -1958,95 +1958,95 @@ fn prepend_config_flags(
     subcommand_config_overrides.prepend_root_overrides(cli_config_overrides);
 }
 
-/// Reject `--base-mode` when used alongside `--remote` or `--remote-auth-token-env`
+/// Reject `--safe-mode` when used alongside `--remote` or `--remote-auth-token-env`
 /// or with unsupported subcommands.
-fn reject_root_base_mode_usage(
-    root_base_mode: bool,
+fn reject_root_safe_mode_usage(
+    root_safe_mode: bool,
     interactive: &TuiCli,
     subcommand: &Option<Subcommand>,
     root_remote: Option<&str>,
     root_remote_auth_token_env: Option<&str>,
 ) -> anyhow::Result<()> {
-    let requested_base_mode = root_base_mode || subcommand_requests_base_mode(subcommand);
+    let requested_safe_mode = root_safe_mode || subcommand_requests_safe_mode(subcommand);
 
-    if !requested_base_mode {
+    if !requested_safe_mode {
         return Ok(());
     }
 
     if root_remote.is_some() {
-        anyhow::bail!("`--remote` cannot be used with `--base-mode`");
+        anyhow::bail!("`--remote` cannot be used with `--safe-mode`");
     }
 
     if root_remote_auth_token_env.is_some() {
-        anyhow::bail!("`--remote-auth-token-env` cannot be used with `--base-mode`");
+        anyhow::bail!("`--remote-auth-token-env` cannot be used with `--safe-mode`");
     }
 
     if interactive.web_search {
-        anyhow::bail!("`--search` cannot be used with `--base-mode`");
+        anyhow::bail!("`--search` cannot be used with `--safe-mode`");
     }
 
     if !interactive.images.is_empty() {
-        anyhow::bail!("`--image` cannot be used with `--base-mode`");
+        anyhow::bail!("`--image` cannot be used with `--safe-mode`");
     }
 
     if !interactive.add_dir.is_empty() {
-        anyhow::bail!("`--add-dir` cannot be used with `--base-mode`");
+        anyhow::bail!("`--add-dir` cannot be used with `--safe-mode`");
     }
 
     if interactive.dangerously_bypass_approvals_and_sandbox {
         anyhow::bail!(
-            "`--dangerously-bypass-approvals-and-sandbox` cannot be used with `--base-mode`"
+            "`--dangerously-bypass-approvals-and-sandbox` cannot be used with `--safe-mode`"
         );
     }
 
     if interactive.bypass_hook_trust {
-        anyhow::bail!("`--dangerously-bypass-hook-trust` cannot be used with `--base-mode`");
+        anyhow::bail!("`--dangerously-bypass-hook-trust` cannot be used with `--safe-mode`");
     }
 
     if interactive.oss {
-        anyhow::bail!("`--oss` cannot be used with `--base-mode`");
+        anyhow::bail!("`--oss` cannot be used with `--safe-mode`");
     }
 
     if interactive.oss_provider.is_some() {
-        anyhow::bail!("`--local-provider` cannot be used with `--base-mode`");
+        anyhow::bail!("`--local-provider` cannot be used with `--safe-mode`");
     }
 
-    reject_base_mode_for_subcommand(requested_base_mode, subcommand)
+    reject_safe_mode_for_subcommand(requested_safe_mode, subcommand)
 }
 
-/// Returns true if the subcommand explicitly requests `--base-mode`.
-fn subcommand_requests_base_mode(subcommand: &Option<Subcommand>) -> bool {
+/// Returns true if the subcommand explicitly requests `--safe-mode`.
+fn subcommand_requests_safe_mode(subcommand: &Option<Subcommand>) -> bool {
     match subcommand {
         Some(Subcommand::Resume(ResumeCommand {
             config_overrides, ..
-        })) => config_overrides.base_mode,
+        })) => config_overrides.safe_mode,
         Some(Subcommand::Fork(ForkCommand {
             config_overrides, ..
-        })) => config_overrides.base_mode,
+        })) => config_overrides.safe_mode,
         _ => false,
     }
 }
 
-fn reject_base_mode_for_subcommand(
-    base_mode: bool,
+fn reject_safe_mode_for_subcommand(
+    safe_mode: bool,
     subcommand: &Option<Subcommand>,
 ) -> anyhow::Result<()> {
-    if !base_mode {
+    if !safe_mode {
         return Ok(());
     }
 
     match subcommand {
         None | Some(Subcommand::Login(_)) | Some(Subcommand::Logout(_)) => Ok(()),
         Some(subcommand) => {
-            let name = subcommand_name_for_base_mode_rejection(subcommand);
+            let name = subcommand_name_for_safe_mode_rejection(subcommand);
             anyhow::bail!(
-                "`--base-mode` only supports the interactive TUI and account commands; it cannot be used with `codex {name}`"
+                "`--safe-mode` only supports the interactive TUI and account commands; it cannot be used with `codex {name}`"
             );
         }
     }
 }
 
-fn subcommand_name_for_base_mode_rejection(subcommand: &Subcommand) -> &'static str {
+fn subcommand_name_for_safe_mode_rejection(subcommand: &Subcommand) -> &'static str {
     match subcommand {
         Subcommand::Exec(_) => "exec",
         Subcommand::Review(_) => "review",
@@ -2068,7 +2068,7 @@ fn subcommand_name_for_base_mode_rejection(subcommand: &Subcommand) -> &'static 
         Subcommand::Doctor(_) => "doctor",
         Subcommand::Cloud(_) => "cloud",
         Subcommand::Sandbox(_) => "sandbox",
-        Subcommand::Debug(debug) => debug_subcommand_name_for_base_mode_rejection(debug),
+        Subcommand::Debug(debug) => debug_subcommand_name_for_safe_mode_rejection(debug),
         Subcommand::Execpolicy(_) => "execpolicy",
         Subcommand::Apply(_) => "apply",
         Subcommand::ResponsesApiProxy(_) => "responses-api-proxy",
@@ -2078,7 +2078,7 @@ fn subcommand_name_for_base_mode_rejection(subcommand: &Subcommand) -> &'static 
     }
 }
 
-fn debug_subcommand_name_for_base_mode_rejection(debug: &DebugCommand) -> &'static str {
+fn debug_subcommand_name_for_safe_mode_rejection(debug: &DebugCommand) -> &'static str {
     match &debug.subcommand {
         DebugSubcommand::Models(_) => "debug models",
         DebugSubcommand::AppServer(_) => "debug app-server",

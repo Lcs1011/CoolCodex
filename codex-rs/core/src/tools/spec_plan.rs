@@ -160,7 +160,7 @@ fn build_tool_specs_and_registry(
     turn_context: &TurnContext,
     params: ToolRouterParams<'_>,
 ) -> (Vec<ToolSpec>, ToolRegistry) {
-    if turn_context.config.base_mode {
+    if turn_context.config.safe_mode {
         let _ = params;
         return (
             Vec::new(),
