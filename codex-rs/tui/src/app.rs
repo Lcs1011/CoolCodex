@@ -161,6 +161,8 @@ use codex_protocol::permissions::FileSystemSandboxKind;
 use codex_rollout::StateDbHandle;
 use codex_terminal_detection::user_agent;
 use codex_utils_absolute_path::AbsolutePathBuf;
+use codex_utils_safety::cool_scope;
+use codex_utils_safety::CoolScope;
 use codex_utils_approval_presets::builtin_permission_profile_for_active_permission_profile;
 use color_eyre::eyre::Result;
 use color_eyre::eyre::WrapErr;
@@ -739,6 +741,8 @@ impl App {
         let (app_event_tx, mut app_event_rx) = unbounded_channel();
         let app_event_tx = AppEventSender::new(app_event_tx);
         emit_safe_mode_status(&app_event_tx, &config);
+        emit_cool_scope_status(&app_event_tx);
+        emit_permission_profile_status(&app_event_tx, &config);
         emit_project_config_warnings(&app_event_tx, &config);
         emit_system_bwrap_warning(&app_event_tx, &config);
         tui.set_notification_settings(
