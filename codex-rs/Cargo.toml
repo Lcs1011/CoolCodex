@@ -96,6 +96,7 @@ members = [
     "utils/cli",
     "utils/elapsed",
     "utils/sandbox-summary",
+    "utils/safety",
     "utils/sleep-inhibitor",
     "utils/approval-presets",
     "utils/oss",
@@ -237,6 +238,7 @@ codex-utils-plugins = { path = "utils/plugins" }
 codex-utils-pty = { path = "utils/pty" }
 codex-utils-rustls-provider = { path = "utils/rustls-provider" }
 codex-utils-sandbox-summary = { path = "utils/sandbox-summary" }
+codex-utils-safety = { path = "utils/safety" }
 codex-utils-sleep-inhibitor = { path = "utils/sleep-inhibitor" }
 codex-utils-stream-parser = { path = "utils/stream-parser" }
 codex-utils-string = { path = "utils/string" }

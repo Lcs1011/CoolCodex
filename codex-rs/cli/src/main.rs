@@ -72,7 +72,7 @@ use codex_core::config::ConfigOverrides;
 use codex_core::config::edit::ConfigEditsBuilder;
 use codex_core::config::find_codex_home;
 use codex_core::config::resolve_profile_v2_config_path;
-use codex_core::safe_mode;
+use codex_utils_safety::safe_mode;
 use codex_features::FEATURES;
 use codex_features::Stage;
 use codex_features::is_known_feature_key;
