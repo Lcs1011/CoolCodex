@@ -629,6 +629,7 @@ impl PluginRequestProcessor {
         if include_vertical && !config.features.enabled(Feature::RemotePlugin) {
             let remote_plugin_service_config = RemotePluginServiceConfig {
                 chatgpt_base_url: config.chatgpt_base_url.clone(),
+                safe_mode: config.safe_mode,
             };
             match codex_core_plugins::remote::fetch_openai_curated_remote_collection_marketplace(
                 &remote_plugin_service_config,
@@ -668,6 +669,7 @@ impl PluginRequestProcessor {
         if !remote_sources.is_empty() {
             let remote_plugin_service_config = RemotePluginServiceConfig {
                 chatgpt_base_url: config.chatgpt_base_url.clone(),
+                safe_mode: config.safe_mode,
             };
             match codex_core_plugins::remote::fetch_remote_marketplaces(
                 &remote_plugin_service_config,
@@ -983,6 +985,7 @@ impl PluginRequestProcessor {
                         let auth = self.auth_manager.auth().await;
                         let remote_plugin_service_config = RemotePluginServiceConfig {
                             chatgpt_base_url: config.chatgpt_base_url.clone(),
+                            safe_mode: config.safe_mode,
                         };
                         match codex_core_plugins::remote::fetch_remote_plugin_share_context(
                             &remote_plugin_service_config,
@@ -1090,6 +1093,7 @@ impl PluginRequestProcessor {
                 let auth = self.auth_manager.auth().await;
                 let remote_plugin_service_config = RemotePluginServiceConfig {
                     chatgpt_base_url: config.chatgpt_base_url.clone(),
+                    safe_mode: config.safe_mode,
                 };
                 validate_remote_plugin_id(&plugin_name)?;
                 let remote_detail = codex_core_plugins::remote::fetch_remote_plugin_detail(

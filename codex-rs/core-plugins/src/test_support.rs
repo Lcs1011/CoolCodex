@@ -114,7 +114,8 @@ pub(crate) async fn load_plugins_config(codex_home: &Path, cwd: &Path) -> Plugin
             "remote_plugin",
             /*default_enabled*/ false,
         ),
-        "https://chatgpt.com/backend-api/".to_string(),
+        "http://localhost:9876/backend-api/".to_string(),
+        false,
     )
 }
 
