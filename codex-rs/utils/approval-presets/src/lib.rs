@@ -1,4 +1,5 @@
 use codex_protocol::models::ActivePermissionProfile;
+use codex_protocol::models::BUILT_IN_PERMISSION_PROFILE_COOL_READ_WRITE;
 use codex_protocol::models::BUILT_IN_PERMISSION_PROFILE_DANGER_FULL_ACCESS;
 use codex_protocol::models::BUILT_IN_PERMISSION_PROFILE_READ_ONLY;
 use codex_protocol::models::BUILT_IN_PERMISSION_PROFILE_WORKSPACE;
@@ -48,6 +49,16 @@ pub fn builtin_approval_presets() -> Vec<ApprovalPreset> {
             permission_profile: PermissionProfile::workspace_write(),
         },
         ApprovalPreset {
+            id: "cool-read-write",
+            label: "Cool Read Write",
+            description: "Codex can read and write files within the workspace and execute commands, but will never read or write files outside the workspace. No internet access. (Designed for safety)",
+            approval: AskForApproval::OnRequest,
+            active_permission_profile: ActivePermissionProfile::new(
+                BUILT_IN_PERMISSION_PROFILE_COOL_READ_WRITE,
+            ),
+            permission_profile: PermissionProfile::cool_read_write(),
+        },
+        ApprovalPreset {
             id: "full-access",
             label: "Full Access",
             description: "Codex can edit files outside this workspace and access the internet without asking for approval. Exercise caution when using.",
@@ -71,6 +82,7 @@ pub fn builtin_permission_profile_for_active_permission_profile(
     match active_permission_profile.id.as_str() {
         BUILT_IN_PERMISSION_PROFILE_READ_ONLY => Some(PermissionProfile::read_only()),
         BUILT_IN_PERMISSION_PROFILE_WORKSPACE => Some(PermissionProfile::workspace_write()),
+        BUILT_IN_PERMISSION_PROFILE_COOL_READ_WRITE => Some(PermissionProfile::cool_read_write()),
         BUILT_IN_PERMISSION_PROFILE_DANGER_FULL_ACCESS => Some(PermissionProfile::Disabled),
         _ => None,
     }

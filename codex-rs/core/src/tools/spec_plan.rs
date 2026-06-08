@@ -58,6 +58,7 @@ use codex_login::AuthManager;
 use codex_mcp::ToolInfo;
 use codex_protocol::config_types::WebSearchMode;
 use codex_protocol::dynamic_tools::DynamicToolSpec;
+use codex_protocol::models::BUILT_IN_PERMISSION_PROFILE_COOL_READ_WRITE;
 use codex_protocol::openai_models::ConfigShellToolType;
 use codex_protocol::openai_models::InputModality;
 use codex_protocol::openai_models::ToolMode;
@@ -160,7 +161,7 @@ fn build_tool_specs_and_registry(
     turn_context: &TurnContext,
     params: ToolRouterParams<'_>,
 ) -> (Vec<ToolSpec>, ToolRegistry) {
-    if turn_context.config.safe_mode {
+    if turn_context.config.safe_mode || cool_read_write_profile_enabled(turn_context) {
         let _ = params;
         return (
             Vec::new(),
@@ -191,6 +192,14 @@ fn build_tool_specs_and_registry(
     append_tool_search_executor(&context, &mut planned_tools);
     prepend_code_mode_executors(&context, &mut planned_tools);
     build_model_visible_specs_and_registry(turn_context, planned_tools)
+}
+
+fn cool_read_write_profile_enabled(turn_context: &TurnContext) -> bool {
+    turn_context
+        .config
+        .permissions
+        .active_permission_profile()
+        .is_some_and(|profile| profile.id == BUILT_IN_PERMISSION_PROFILE_COOL_READ_WRITE)
 }
 
 fn build_model_visible_specs_and_registry(

@@ -303,6 +303,9 @@ pub const BUILT_IN_PERMISSION_PROFILE_READ_ONLY: &str = ":read-only";
 /// Reserved identifier for the built-in workspace-write permission profile.
 pub const BUILT_IN_PERMISSION_PROFILE_WORKSPACE: &str = ":workspace";
 
+/// Reserved identifier for the built-in Cool read-write permission profile.
+pub const BUILT_IN_PERMISSION_PROFILE_COOL_READ_WRITE: &str = ":cool-read-write";
+
 /// Reserved identifier for the built-in full-access permission profile.
 pub const BUILT_IN_PERMISSION_PROFILE_DANGER_FULL_ACCESS: &str = ":danger-full-access";
 
@@ -372,6 +375,20 @@ impl Default for PermissionProfile {
 }
 
 impl PermissionProfile {
+    /// Managed empty filesystem access with restricted network access.
+    ///
+    /// CoolReadWrite does not grant Codex native tools any direct capability.
+    /// CTool access is granted separately by the CTool adapter and CToolScope.
+    pub fn cool_read_write() -> Self {
+        Self::Managed {
+            file_system: ManagedFileSystemPermissions::Restricted {
+                entries: Vec::new(),
+                glob_scan_max_depth: None,
+            },
+            network: NetworkSandboxPolicy::Restricted,
+        }
+    }
+
     /// Managed read-only filesystem access with restricted network access.
     pub fn read_only() -> Self {
         let file_system = FileSystemSandboxPolicy::read_only();

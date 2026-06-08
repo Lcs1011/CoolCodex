@@ -3941,6 +3941,7 @@ dependencies = [
  "core_test_support",
  "cpal",
  "crossterm",
+ "ctool",
  "derive_more 2.1.1",
  "diffy",
  "dirs",
