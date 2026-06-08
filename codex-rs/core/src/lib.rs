@@ -77,6 +77,7 @@ pub(crate) mod mentions {
     pub(crate) use crate::plugins::collect_tool_mentions_from_messages;
 }
 pub mod safe_mode;
+pub mod safe_network;
 mod sandbox_tags;
 pub mod sandboxing;
 mod session_prefix;
