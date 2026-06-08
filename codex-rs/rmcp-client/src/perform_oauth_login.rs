@@ -19,6 +19,9 @@ use sha2::Digest;
 use sha2::Sha256;
 use tiny_http::Response;
 use tiny_http::Server;
+
+use codex_utils_safety::safe_network;
+use codex_utils_safety::safe_network::NetworkPurpose;
 use tokio::sync::oneshot;
 use tokio::time::timeout;
 use urlencoding::decode;
@@ -463,6 +466,7 @@ impl OauthLoginFlow {
             None => format!("{bind_host}:0"),
         };
 
+        safe_network::ensure_allowed(NetworkPurpose::Other)?;
         let server = Arc::new(Server::http(&bind_addr).map_err(|err| anyhow!(err))?);
         let guard = CallbackServerGuard {
             server: Arc::clone(&server),

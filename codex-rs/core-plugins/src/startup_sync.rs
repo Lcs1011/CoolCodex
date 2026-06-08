@@ -15,6 +15,8 @@ use tracing::warn;
 use zip::ZipArchive;
 
 use codex_login::default_client::build_reqwest_client;
+use codex_utils_safety::safe_network;
+use codex_utils_safety::safe_network::NetworkPurpose;
 
 const GITHUB_API_BASE_URL: &str = "https://api.github.com";
 const GITHUB_API_ACCEPT_HEADER: &str = "application/vnd.github+json";
@@ -862,8 +864,7 @@ fn read_git_ref_sha(git_dir: &Path, reference: &str) -> Result<String, String> {
 }
 
 async fn fetch_github_text(client: &Client, url: &str, context: &str) -> Result<String, String> {
-    let response = github_request(client, url)
-        .send()
+    let response = safe_network::send(NetworkPurpose::Other, github_request(client, url))
         .await
         .map_err(|err| format!("failed to {context} from {url}: {err}"))?;
     let status = response.status();
@@ -877,8 +878,7 @@ async fn fetch_github_text(client: &Client, url: &str, context: &str) -> Result<
 }
 
 async fn fetch_github_bytes(client: &Client, url: &str, context: &str) -> Result<Vec<u8>, String> {
-    let response = github_request(client, url)
-        .send()
+    let response = safe_network::send(NetworkPurpose::Other, github_request(client, url))
         .await
         .map_err(|err| format!("failed to {context} from {url}: {err}"))?;
     let status = response.status();
@@ -896,12 +896,14 @@ async fn fetch_github_bytes(client: &Client, url: &str, context: &str) -> Result
 }
 
 async fn fetch_public_text(client: &Client, url: &str, context: &str) -> Result<String, String> {
-    let response = client
-        .get(url)
-        .timeout(CURATED_PLUGINS_BACKUP_ARCHIVE_TIMEOUT)
-        .send()
-        .await
-        .map_err(|err| format!("failed to {context} from {url}: {err}"))?;
+    let response = safe_network::send(
+        NetworkPurpose::Other,
+        client
+            .get(url)
+            .timeout(CURATED_PLUGINS_BACKUP_ARCHIVE_TIMEOUT),
+    )
+    .await
+    .map_err(|err| format!("failed to {context} from {url}: {err}"))?;
     let status = response.status();
     let body = response.text().await.unwrap_or_default();
     if !status.is_success() {
@@ -913,12 +915,14 @@ async fn fetch_public_text(client: &Client, url: &str, context: &str) -> Result<
 }
 
 async fn fetch_public_bytes(client: &Client, url: &str, context: &str) -> Result<Vec<u8>, String> {
-    let response = client
-        .get(url)
-        .timeout(CURATED_PLUGINS_BACKUP_ARCHIVE_TIMEOUT)
-        .send()
-        .await
-        .map_err(|err| format!("failed to {context} from {url}: {err}"))?;
+    let response = safe_network::send(
+        NetworkPurpose::Other,
+        client
+            .get(url)
+            .timeout(CURATED_PLUGINS_BACKUP_ARCHIVE_TIMEOUT),
+    )
+    .await
+    .map_err(|err| format!("failed to {context} from {url}: {err}"))?;
     let status = response.status();
     let body = response
         .bytes()

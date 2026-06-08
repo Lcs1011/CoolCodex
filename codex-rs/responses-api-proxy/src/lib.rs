@@ -73,6 +73,8 @@ struct ForwardConfig {
 
 /// Entry point for the library main, for parity with other crates.
 pub fn run_main(args: Args) -> Result<()> {
+    safe_network::ensure_allowed(NetworkPurpose::Other)?;
+
     let auth_header = read_auth_header_from_stdin()?;
 
     let upstream_url = Url::parse(&args.upstream_url).context("parsing --upstream-url")?;
@@ -222,12 +224,12 @@ fn forward_request(
 
     headers.insert(HOST, config.host_header.clone());
 
-    safe_network::ensure_allowed(NetworkPurpose::Other)?;
-    let upstream_resp = client
+    let request = client
         .post(config.upstream_url.clone())
         .headers(headers)
-        .body(body)
-        .send()
+        .body(body);
+
+    let upstream_resp = safe_network::blocking_send(NetworkPurpose::Other, request)
         .context("forwarding request to upstream")?;
 
     // We have to create an adapter between a `reqwest::blocking::Response`

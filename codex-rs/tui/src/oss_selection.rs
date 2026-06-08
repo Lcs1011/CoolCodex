@@ -1,6 +1,9 @@
 use std::io;
 use std::sync::LazyLock;
 
+use codex_utils_safety::safe_network;
+use codex_utils_safety::safe_network::NetworkPurpose;
+
 use crate::key_hint;
 use crate::key_hint::KeyBinding;
 use crate::key_hint::KeyBindingListExt;
@@ -393,7 +396,7 @@ async fn check_port_status(port: u16) -> io::Result<bool> {
 
     let url = format!("http://localhost:{port}");
 
-    match client.get(&url).send().await {
+    match safe_network::send(NetworkPurpose::Other, client.get(&url)).await {
         Ok(response) => Ok(response.status().is_success()),
         Err(_) => Ok(false), // Connection failed = not running
     }

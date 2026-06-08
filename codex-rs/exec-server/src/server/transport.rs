@@ -123,7 +123,7 @@ async fn run_websocket_listener(
     bind_address: SocketAddr,
     runtime_paths: ExecServerRuntimePaths,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    safe_network::ensure_allowed(NetworkPurpose::Other);
+    safe_network::ensure_allowed(NetworkPurpose::Other)?;
     let listener = TcpListener::bind(bind_address).await?;
     let local_addr = listener.local_addr()?;
     let processor = ConnectionProcessor::new(runtime_paths);

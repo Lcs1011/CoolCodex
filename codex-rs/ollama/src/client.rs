@@ -86,7 +86,7 @@ impl OllamaClient {
         } else {
             format!("{}/api/tags", self.host_root.trim_end_matches('/'))
         };
-        let resp = safe_network::send(NetworkPurpose::ModelApi, self.client.get(url))
+        let resp = safe_network::send(NetworkPurpose::Other, self.client.get(url))
             .await
             .map_err(|err| {
                 tracing::warn!("Failed to connect to Ollama server: {err:?}");
@@ -107,7 +107,7 @@ impl OllamaClient {
     /// Return the list of model names known to the local Ollama instance.
     pub async fn fetch_models(&self) -> io::Result<Vec<String>> {
         let tags_url = format!("{}/api/tags", self.host_root.trim_end_matches('/'));
-        let resp = safe_network::send(NetworkPurpose::ModelApi, self.client.get(tags_url))
+        let resp = safe_network::send(NetworkPurpose::Other, self.client.get(tags_url))
             .await
             .map_err(io::Error::other)?;
         if !resp.status().is_success() {
@@ -130,7 +130,7 @@ impl OllamaClient {
     /// Query the server for its version string, returning `None` when unavailable.
     pub async fn fetch_version(&self) -> io::Result<Option<Version>> {
         let version_url = format!("{}/api/version", self.host_root.trim_end_matches('/'));
-        let resp = safe_network::send(NetworkPurpose::ModelApi, self.client.get(version_url))
+        let resp = safe_network::send(NetworkPurpose::Other, self.client.get(version_url))
             .await
             .map_err(io::Error::other)?;
         if !resp.status().is_success() {
@@ -162,7 +162,7 @@ impl OllamaClient {
             .post(url)
             .json(&serde_json::json!({"model": model, "stream": true}))
             .header("Content-Type", "application/json");
-        let resp = safe_network::send(NetworkPurpose::ModelApi, builder)
+        let resp = safe_network::send(NetworkPurpose::Other, builder)
             .await
             .map_err(io::Error::other)?;
         if !resp.status().is_success() {

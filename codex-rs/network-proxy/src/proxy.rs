@@ -166,6 +166,8 @@ impl NetworkProxyBuilder {
     }
 
     pub async fn build(self) -> Result<NetworkProxy> {
+        safe_network::ensure_allowed(safe_network::NetworkPurpose::Other)?;
+
         let state = self.state.ok_or_else(|| {
             anyhow::anyhow!(
                 "NetworkProxyBuilder requires a state; supply one via builder.state(...)"

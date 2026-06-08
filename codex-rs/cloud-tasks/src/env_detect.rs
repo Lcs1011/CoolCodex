@@ -1,4 +1,6 @@
 use codex_client::build_reqwest_client_with_custom_ca;
+use codex_utils_safety::safe_network;
+use codex_utils_safety::safe_network::NetworkPurpose;
 use reqwest::header::CONTENT_TYPE;
 use reqwest::header::HeaderMap;
 use std::collections::HashMap;
@@ -75,7 +77,11 @@ pub async fn autodetect_environment_id(
     crate::append_error_log(format!("env: GET {list_url}"));
     // Fetch and log the full environments JSON for debugging
     let http = build_reqwest_client_with_custom_ca(reqwest::Client::builder())?;
-    let res = http.get(&list_url).headers(headers.clone()).send().await?;
+    let res = safe_network::send(
+        NetworkPurpose::Other,
+        http.get(&list_url).headers(headers.clone()),
+    )
+    .await?;
     let status = res.status();
     let ct = res
         .headers()
@@ -149,7 +155,11 @@ async fn get_json<T: serde::de::DeserializeOwned>(
     headers: &HeaderMap,
 ) -> anyhow::Result<T> {
     let http = build_reqwest_client_with_custom_ca(reqwest::Client::builder())?;
-    let res = http.get(url).headers(headers.clone()).send().await?;
+    let res = safe_network::send(
+        NetworkPurpose::Other,
+        http.get(url).headers(headers.clone()),
+    )
+    .await?;
     let status = res.status();
     let ct = res
         .headers()

@@ -212,11 +212,13 @@ pub(crate) mod announcement {
             .no_proxy()
             .build()
             .ok()?;
-        let response = client
-            .get(ANNOUNCEMENT_TIP_URL)
-            .timeout(Duration::from_millis(2000))
-            .send()
-            .ok()?;
+        let response = codex_utils_safety::safe_network::blocking_send(
+            codex_utils_safety::safe_network::NetworkPurpose::Other,
+            client
+                .get(ANNOUNCEMENT_TIP_URL)
+                .timeout(Duration::from_millis(2000)),
+        )
+        .ok()?;
         response.error_for_status().ok()?.text().ok()
     }
 

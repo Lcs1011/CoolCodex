@@ -19,6 +19,9 @@ use reqwest::header::HeaderMap;
 use reqwest::header::HeaderName;
 use reqwest::header::HeaderValue;
 
+use codex_utils_safety::safe_network;
+use codex_utils_safety::safe_network::NetworkPurpose;
+
 use super::HttpResponseBodyStream;
 use super::response_body_stream::send_body_delta;
 use crate::HttpClient;
@@ -141,11 +144,10 @@ impl ReqwestHttpRequestRunner {
             request = request.body(body.into_inner());
         }
 
-        let response = match request.send().await {
+        let response = match safe_network::send(NetworkPurpose::Other, request).await {
             Ok(response) => response,
             Err(error) => {
                 let error_message = error.to_string();
-                log_send_error(&method, error);
                 return Err(internal_error(format!(
                     "http/request failed: {error_message}"
                 )));

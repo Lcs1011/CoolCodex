@@ -12,6 +12,8 @@ use chrono::DateTime;
 use chrono::Duration;
 use chrono::Utc;
 use codex_login::default_client::create_client;
+use codex_utils_safety::safe_network;
+use codex_utils_safety::safe_network::NetworkPurpose;
 use serde::Deserialize;
 use serde::Serialize;
 use std::path::Path;
@@ -87,24 +89,26 @@ fn read_version_info(version_file: &Path) -> anyhow::Result<VersionInfo> {
 async fn check_for_update(version_file: &Path, action: Option<UpdateAction>) -> anyhow::Result<()> {
     let latest_version = match action {
         Some(UpdateAction::BrewUpgrade) => {
-            let HomebrewCaskInfo { version } = create_client()
-                .get(HOMEBREW_CASK_API_URL)
-                .send()
-                .await?
-                .error_for_status()?
-                .json::<HomebrewCaskInfo>()
-                .await?;
+            let HomebrewCaskInfo { version } = safe_network::send(
+                NetworkPurpose::Other,
+                create_client().get(HOMEBREW_CASK_API_URL),
+            )
+            .await?
+            .error_for_status()?
+            .json::<HomebrewCaskInfo>()
+            .await?;
             version
         }
         Some(UpdateAction::NpmGlobalLatest) | Some(UpdateAction::BunGlobalLatest) => {
             let latest_version = fetch_latest_github_release_version().await?;
-            let package_info = create_client()
-                .get(npm_registry::PACKAGE_URL)
-                .send()
-                .await?
-                .error_for_status()?
-                .json::<NpmPackageInfo>()
-                .await?;
+            let package_info = safe_network::send(
+                NetworkPurpose::Other,
+                create_client().get(npm_registry::PACKAGE_URL),
+            )
+            .await?
+            .error_for_status()?
+            .json::<NpmPackageInfo>()
+            .await?;
             npm_registry::ensure_version_ready(&package_info, &latest_version)?;
             latest_version
         }
@@ -132,13 +136,14 @@ async fn check_for_update(version_file: &Path, action: Option<UpdateAction>) -> 
 async fn fetch_latest_github_release_version() -> anyhow::Result<String> {
     let ReleaseInfo {
         tag_name: latest_tag_name,
-    } = create_client()
-        .get(LATEST_RELEASE_URL)
-        .send()
-        .await?
-        .error_for_status()?
-        .json::<ReleaseInfo>()
-        .await?;
+    } = safe_network::send(
+        NetworkPurpose::Other,
+        create_client().get(LATEST_RELEASE_URL),
+    )
+    .await?
+    .error_for_status()?
+    .json::<ReleaseInfo>()
+    .await?;
     extract_version_from_latest_tag(&latest_tag_name)
 }
 

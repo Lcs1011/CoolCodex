@@ -12,6 +12,9 @@ use reqwest::header::HeaderMap;
 use serde::Deserialize;
 use tracing::debug;
 
+use codex_utils_safety::safe_network;
+use codex_utils_safety::safe_network::NetworkPurpose;
+
 use crate::oauth::has_oauth_tokens;
 use crate::utils::apply_default_headers;
 use crate::utils::build_default_headers;
@@ -82,6 +85,7 @@ async fn discover_streamable_http_oauth_with_headers(
     url: &str,
     default_headers: &HeaderMap,
 ) -> Result<Option<StreamableHttpOAuthDiscovery>> {
+    safe_network::ensure_allowed(NetworkPurpose::Other)?;
     let base_url = Url::parse(url)?;
 
     // Use no_proxy to avoid a bug in the system-configuration crate that

@@ -57,7 +57,8 @@ pub(crate) async fn chatgpt_get_request_with_timeout<T: DeserializeOwned>(
         request = request.timeout(timeout);
     }
 
-    let response = request.send_with_purpose(NetworkPurpose::ChatGPTAuth)
+    let response = request
+        .send_with_purpose(NetworkPurpose::ChatGPTAuth)
         .await
         .context("Failed to send request")?;
 

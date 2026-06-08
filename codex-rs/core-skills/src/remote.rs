@@ -8,6 +8,8 @@ use std::time::Duration;
 
 use codex_login::CodexAuth;
 use codex_login::default_client::build_reqwest_client;
+use codex_utils_safety::safe_network;
+use codex_utils_safety::safe_network::NetworkPurpose;
 
 const REMOTE_SKILLS_API_TIMEOUT: Duration = Duration::from_secs(30);
 
@@ -113,8 +115,7 @@ pub async fn list_remote_skills(
         .timeout(REMOTE_SKILLS_API_TIMEOUT)
         .query(&query_params)
         .headers(codex_model_provider::auth_provider_from_auth(auth).to_auth_headers());
-    let response = request
-        .send()
+    let response = safe_network::send(NetworkPurpose::Other, request)
         .await
         .with_context(|| format!("Failed to send request to {url}"))?;
 
@@ -154,8 +155,7 @@ pub async fn export_remote_skill(
         .timeout(REMOTE_SKILLS_API_TIMEOUT)
         .headers(codex_model_provider::auth_provider_from_auth(auth).to_auth_headers());
 
-    let response = request
-        .send()
+    let response = safe_network::send(NetworkPurpose::Other, request)
         .await
         .with_context(|| format!("Failed to send download request to {url}"))?;
 
