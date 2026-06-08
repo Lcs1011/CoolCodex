@@ -84,7 +84,6 @@ use codex_models_manager::manager::RefreshStrategy;
 use codex_protocol::protocol::AskForApproval;
 use codex_protocol::user_input::UserInput;
 use codex_terminal_detection::TerminalName;
-use codex_utils_safety::cool_scope;
 use codex_utils_safety::safe_mode;
 
 /// Codex CLI
@@ -924,9 +923,6 @@ async fn cli_main(arg0_paths: Arg0DispatchPaths) -> anyhow::Result<()> {
     let root_strict_config = interactive.strict_config;
     let root_safe_mode = interactive.safe_mode.is_on();
     safe_mode::init(root_safe_mode);
-
-    let root_cool_scope = cool_scope::CoolScope::Workspace;
-    cool_scope::init(root_cool_scope);
 
     reject_root_safe_mode_usage(
         root_safe_mode,
