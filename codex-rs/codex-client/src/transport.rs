@@ -6,6 +6,7 @@ use crate::request::RequestBody;
 use crate::request::Response;
 use async_trait::async_trait;
 use bytes::Bytes;
+use codex_utils_safety::safe_network::NetworkPurpose;
 use futures::StreamExt;
 use futures::stream::BoxStream;
 use http::HeaderMap;
@@ -100,7 +101,10 @@ impl HttpTransport for ReqwestTransport {
 
         let url = req.url.clone();
         let builder = self.build(req)?;
-        let resp = builder.send().await.map_err(Self::map_error)?;
+        let resp = builder
+            .send_with_purpose(NetworkPurpose::ModelApi)
+            .await
+            .map_err(|err| TransportError::Network(err.to_string()))?;
         let status = resp.status();
         let headers = resp.headers().clone();
         let bytes = resp.bytes().await.map_err(Self::map_error)?;
@@ -132,7 +136,10 @@ impl HttpTransport for ReqwestTransport {
 
         let url = req.url.clone();
         let builder = self.build(req)?;
-        let resp = builder.send().await.map_err(Self::map_error)?;
+        let resp = builder
+            .send_with_purpose(NetworkPurpose::ModelApi)
+            .await
+            .map_err(|err| TransportError::Network(err.to_string()))?;
         let status = resp.status();
         let headers = resp.headers().clone();
         if !status.is_success() {

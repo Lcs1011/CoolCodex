@@ -23,6 +23,7 @@ codex-client = { workspace = true }
 codex-login = { workspace = true }
 codex-model-provider = { workspace = true }
 codex-protocol = { workspace = true }
+codex-utils-safety = { workspace = true }
 
 [dev-dependencies]
 pretty_assertions = "1"

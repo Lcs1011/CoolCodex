@@ -4,6 +4,8 @@ use std::time::Duration;
 
 use crate::AuthProvider;
 use codex_client::build_reqwest_client_with_custom_ca;
+use codex_utils_safety::safe_network;
+use codex_utils_safety::safe_network::NetworkPurpose;
 use reqwest::StatusCode;
 use reqwest::header::CONTENT_LENGTH;
 use serde::Deserialize;
@@ -54,7 +56,7 @@ pub enum OpenAiFileError {
     Request {
         url: String,
         #[source]
-        source: reqwest::Error,
+        source: anyhow::Error,
     },
     #[error("OpenAI file request to {url} failed with status {status}: {body}")]
     UnexpectedStatus {
@@ -129,18 +131,19 @@ pub async fn upload_local_file(
         .unwrap_or("file")
         .to_string();
     let create_url = format!("{}/files", base_url.trim_end_matches('/'));
-    let create_response = authorized_request(auth, reqwest::Method::POST, &create_url)
-        .json(&serde_json::json!({
+    let create_response = safe_network::send(
+        NetworkPurpose::ModelApi,
+        authorized_request(auth, reqwest::Method::POST, &create_url).json(&serde_json::json!({
             "file_name": file_name,
             "file_size": metadata.len(),
             "use_case": OPENAI_FILE_USE_CASE,
-        }))
-        .send()
-        .await
-        .map_err(|source| OpenAiFileError::Request {
-            url: create_url.clone(),
-            source,
-        })?;
+        })),
+    )
+    .await
+    .map_err(|source| OpenAiFileError::Request {
+        url: create_url.clone(),
+        source,
+    })?;
     let create_status = create_response.status();
     let create_body = create_response.text().await.unwrap_or_default();
     if !create_status.is_success() {
@@ -162,18 +165,20 @@ pub async fn upload_local_file(
             path: path.to_path_buf(),
             source,
         })?;
-    let upload_response = build_reqwest_client()
-        .put(&create_payload.upload_url)
-        .timeout(OPENAI_FILE_REQUEST_TIMEOUT)
-        .header("x-ms-blob-type", "BlockBlob")
-        .header(CONTENT_LENGTH, metadata.len())
-        .body(reqwest::Body::wrap_stream(ReaderStream::new(upload_file)))
-        .send()
-        .await
-        .map_err(|source| OpenAiFileError::Request {
-            url: create_payload.upload_url.clone(),
-            source,
-        })?;
+    let upload_response = safe_network::send(
+        NetworkPurpose::ModelApi,
+        build_reqwest_client()
+            .put(&create_payload.upload_url)
+            .timeout(OPENAI_FILE_REQUEST_TIMEOUT)
+            .header("x-ms-blob-type", "BlockBlob")
+            .header(CONTENT_LENGTH, metadata.len())
+            .body(reqwest::Body::wrap_stream(ReaderStream::new(upload_file))),
+    )
+    .await
+    .map_err(|source| OpenAiFileError::Request {
+        url: create_payload.upload_url.clone(),
+        source,
+    })?;
     let upload_status = upload_response.status();
     let upload_body = upload_response.text().await.unwrap_or_default();
     if !upload_status.is_success() {
@@ -191,14 +196,16 @@ pub async fn upload_local_file(
     );
     let finalize_started_at = Instant::now();
     loop {
-        let finalize_response = authorized_request(auth, reqwest::Method::POST, &finalize_url)
-            .json(&serde_json::json!({}))
-            .send()
-            .await
-            .map_err(|source| OpenAiFileError::Request {
-                url: finalize_url.clone(),
-                source,
-            })?;
+        let finalize_response = safe_network::send(
+            NetworkPurpose::ModelApi,
+            authorized_request(auth, reqwest::Method::POST, &finalize_url)
+                .json(&serde_json::json!({})),
+        )
+        .await
+        .map_err(|source| OpenAiFileError::Request {
+            url: finalize_url.clone(),
+            source,
+        })?;
         let finalize_status = finalize_response.status();
         let finalize_body = finalize_response.text().await.unwrap_or_default();
         if !finalize_status.is_success() {

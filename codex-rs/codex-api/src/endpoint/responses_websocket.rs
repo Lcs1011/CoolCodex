@@ -11,6 +11,8 @@ use crate::telemetry::WebsocketTelemetry;
 use codex_client::TransportError;
 use codex_client::maybe_build_rustls_client_config_with_custom_ca;
 use codex_utils_rustls_provider::ensure_rustls_crypto_provider;
+use codex_utils_safety::safe_network;
+use codex_utils_safety::safe_network::NetworkPurpose;
 use futures::SinkExt;
 use futures::StreamExt;
 use http::HeaderMap;
@@ -453,6 +455,9 @@ async fn connect_websocket(
     let connector = maybe_build_rustls_client_config_with_custom_ca()
         .map_err(|err| ApiError::Stream(format!("failed to configure websocket TLS: {err}")))?
         .map(tokio_tungstenite::Connector::Rustls);
+
+    safe_network::ensure_allowed(NetworkPurpose::ModelApi)
+        .map_err(|err| ApiError::Stream(err.to_string()))?;
 
     let response = connect_async_tls_with_config(
         request,

@@ -6,6 +6,7 @@ use std::env;
 use std::fmt;
 
 use crate::default_client::create_client;
+use codex_utils_safety::safe_network::NetworkPurpose;
 
 const PROD_AUTHAPI_BASE_URL: &str = "https://auth.openai.com/api/accounts";
 const CODEX_AUTHAPI_BASE_URL_ENV_VAR: &str = "CODEX_AUTHAPI_BASE_URL";
@@ -79,7 +80,7 @@ async fn hydrate_personal_access_token(
     let response = client
         .get(&endpoint)
         .bearer_auth(access_token)
-        .send()
+        .send_with_purpose(NetworkPurpose::ChatGPTAuth)
         .await
         .map_err(|err| {
             std::io::Error::other(format!(

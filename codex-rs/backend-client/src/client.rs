@@ -18,6 +18,8 @@ use codex_protocol::protocol::RateLimitReachedType;
 use codex_protocol::protocol::RateLimitSnapshot;
 use codex_protocol::protocol::RateLimitWindow;
 use codex_protocol::protocol::SpendControlLimitSnapshot;
+use codex_utils_safety::safe_network;
+use codex_utils_safety::safe_network::NetworkPurpose;
 use reqwest::StatusCode;
 use reqwest::header::CONTENT_TYPE;
 use reqwest::header::HeaderMap;
@@ -233,7 +235,7 @@ impl Client {
         method: &str,
         url: &str,
     ) -> Result<(String, String)> {
-        let res = req.send().await?;
+        let res = safe_network::send(NetworkPurpose::Other, req).await?;
         let status = res.status();
         let ct = res
             .headers()
@@ -254,7 +256,9 @@ impl Client {
         method: &str,
         url: &str,
     ) -> std::result::Result<(String, String), RequestError> {
-        let res = req.send().await.map_err(anyhow::Error::from)?;
+        let res = safe_network::send(NetworkPurpose::Other, req)
+            .await
+            .map_err(anyhow::Error::from)?;
         let status = res.status();
         let content_type = res
             .headers()

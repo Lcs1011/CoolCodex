@@ -31,6 +31,7 @@ use sha2::Digest as _;
 use sha2::Sha512;
 
 use codex_utils_safety::safe_network;
+use codex_utils_safety::safe_network::NetworkPurpose;
 
 const AGENT_TASK_REGISTRATION_TIMEOUT: Duration = Duration::from_secs(30);
 const AGENT_IDENTITY_JWKS_TIMEOUT: Duration = Duration::from_secs(10);
@@ -131,14 +132,16 @@ pub async fn fetch_agent_identity_jwks(
     client: &reqwest::Client,
     chatgpt_base_url: &str,
 ) -> Result<JwkSet> {
-    let response = client
-        .get(agent_identity_jwks_url(chatgpt_base_url))
-        .timeout(AGENT_IDENTITY_JWKS_TIMEOUT)
-        .send()
-        .await
-        .context("failed to request agent identity JWKS")?
-        .error_for_status()
-        .context("agent identity JWKS endpoint returned an error")?;
+    let response = safe_network::send(
+        NetworkPurpose::ChatGPTAuth,
+        client
+            .get(agent_identity_jwks_url(chatgpt_base_url))
+            .timeout(AGENT_IDENTITY_JWKS_TIMEOUT),
+    )
+    .await
+    .context("failed to request agent identity JWKS")?
+    .error_for_status()
+    .context("agent identity JWKS endpoint returned an error")?;
 
     response
         .json()
@@ -207,13 +210,15 @@ pub async fn register_agent_task(
     };
     let url = agent_task_registration_url(chatgpt_base_url, key.agent_runtime_id);
 
-    let response = client
-        .post(url)
-        .timeout(AGENT_TASK_REGISTRATION_TIMEOUT)
-        .json(&request)
-        .send()
-        .await
-        .context("failed to register agent task")?;
+    let response = safe_network::send(
+        NetworkPurpose::ChatGPTAuth,
+        client
+            .post(url)
+            .timeout(AGENT_TASK_REGISTRATION_TIMEOUT)
+            .json(&request),
+    )
+    .await
+    .context("failed to register agent task")?;
     if !response.status().is_success() {
         let status = response.status();
         let body = response.text().await.unwrap_or_default();
