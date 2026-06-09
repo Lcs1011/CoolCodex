@@ -113,6 +113,31 @@ fn generic_object_schema() -> JsonSchema {
 
 fn ctool_description(name: &str, base_description: &str) -> String {
     let usage = match name {
+        "ctool_command_request" => {
+            r#"Input JSON:
+{
+  "commands": [
+    "cargo check -p ctool",
+    "cargo check -p codex-core"
+  ],
+  "ai_risk_upgrade": null,
+  "reason": "Need compile errors after code changes."
+}
+
+Use this only when normal CTool file tools cannot complete the task.
+
+This is a controlled command tool that previews commands before execution.
+It classifies every command as GREEN / YELLOW / RED, computes the highest batch risk,
+renders a very visible COMMAND REQUEST banner, and tells whether confirmation is required.
+
+Rules:
+- Prefer normal CTool read/edit/file tools.
+- List every command completely.
+- Unknown commands are RED.
+- Downloads and opening websites are RED.
+- AI may upgrade risk, but cannot downgrade risk.
+- This tool never automatically executes commands."#
+        }
         "ctool_list_directory" => {
             r#"Input JSON:
 {

@@ -5,6 +5,9 @@ use std::path::PathBuf;
 use serde::Deserialize;
 use serde::Serialize;
 
+use crate::command_request::CToolCommandConfig;
+use crate::command_request::default_command_config;
+use crate::command_request::merge_command_configs;
 use crate::error::CToolError;
 use crate::error::CToolResult;
 
@@ -28,6 +31,20 @@ pub struct CToolScopeConfig {
 struct CoolConfigToml {
     #[serde(default)]
     ctool_scope: CToolScopeConfig,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+struct CoolCommandConfigToml {
+    #[serde(default = "default_command_config")]
+    ctool_command: CToolCommandConfig,
+}
+
+impl Default for CoolCommandConfigToml {
+    fn default() -> Self {
+        Self {
+            ctool_command: default_command_config(),
+        }
+    }
 }
 
 pub fn empty_scope_config() -> CToolScopeConfig {
@@ -74,4 +91,50 @@ pub fn parse_cool_config_toml(text: &str) -> CToolResult<CToolScopeConfig> {
         .map_err(|error| CToolError::InvalidInput(format!("invalid Cool TOML config: {error}")))?;
 
     Ok(file.ctool_scope)
+}
+
+pub fn empty_command_config() -> CToolCommandConfig {
+    default_command_config()
+}
+
+pub fn load_optional_cool_command_config(path: &Path) -> CToolResult<CToolCommandConfig> {
+    if !path.exists() {
+        return Ok(empty_command_config());
+    }
+
+    let text = std::fs::read_to_string(path).map_err(|error| {
+        CToolError::InvalidInput(format!(
+            "failed to read Cool command config file: {} ({error})",
+            path.display()
+        ))
+    })?;
+
+    parse_cool_command_config_toml(&text).map_err(|error| {
+        CToolError::InvalidInput(format!(
+            "failed to parse Cool command config file: {} ({error})",
+            path.display()
+        ))
+    })
+}
+
+pub fn parse_cool_command_config_toml(text: &str) -> CToolResult<CToolCommandConfig> {
+    let file: CoolCommandConfigToml = toml::from_str(text).map_err(|error| {
+        CToolError::InvalidInput(format!("invalid Cool command TOML config: {error}"))
+    })?;
+
+    Ok(file.ctool_command)
+}
+
+pub fn load_merged_cool_command_config(
+    user_config_path: &Path,
+    system_config_path: Option<&Path>,
+) -> CToolResult<CToolCommandConfig> {
+    let user_config = load_optional_cool_command_config(user_config_path)?;
+
+    let system_config = match system_config_path {
+        Some(path) => load_optional_cool_command_config(path)?,
+        None => empty_command_config(),
+    };
+
+    Ok(merge_command_configs(user_config, system_config))
 }
