@@ -552,8 +552,8 @@ mod tests {
         .join("\n");
 
         insta::assert_snapshot!(rendered, @r"
-⚠ Skipped loading 1 skill(s) due to invalid SKILL.md files.
-⚠ /repo/.codex/skills/abc/SKILL.md: invalid description
+âš  Skipped loading 1 skill(s) due to invalid SKILL.md files.
+âš  /repo/.codex/skills/abc/SKILL.md: invalid description
 ");
     }
 }

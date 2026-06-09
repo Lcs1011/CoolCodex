@@ -33,7 +33,10 @@ impl fmt::Display for CToolError {
                 write!(f, "CTool {operation} denied by CToolBaseScope: {scope}")
             }
             CToolError::UnsupportedScope { scope, operation } => {
-                write!(f, "CTool {operation} does not support CToolBaseScope: {scope}")
+                write!(
+                    f,
+                    "CTool {operation} does not support CToolBaseScope: {scope}"
+                )
             }
             CToolError::OutOfScope { path, operation } => {
                 write!(

@@ -2601,6 +2601,7 @@ dependencies = [
  "codex-windows-sandbox",
  "core_test_support",
  "csv",
+ "ctool",
  "ctor 0.6.3",
  "dirs",
  "dunce",
