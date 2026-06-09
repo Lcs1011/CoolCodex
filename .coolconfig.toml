@@ -1,0 +1,79 @@
+[ctool_scope]
+visible_paths = []
+hide_paths = []
+protected_paths = []
+
+[ctool_command]
+enabled = true
+
+green_exact_commands = [
+  "git status",
+  "git diff"
+]
+
+green_prefixes = [
+  "git status"
+
+
+]
+
+yellow_prefixes = [
+  "cargo check",
+  "cargo build",
+  "cargo test",
+  "cargo fmt",
+  "git add",
+  "git commit",
+  "rg"
+]
+
+red_prefixes = [
+  "del",
+  "erase",
+  "rmdir",
+  "rd",
+  "Remove-Item",
+  "git reset --hard",
+  "git clean -fd",
+  "git clone",
+  "powershell",
+  "pwsh",
+  "cmd",
+  "python",
+  "node",
+  "curl",
+  "wget",
+  "Invoke-WebRequest",
+  "Invoke-RestMethod",
+  "shutdown",
+  "taskkill",
+  "reg",
+  "netsh",
+  "start",
+  "Start-Process",
+  "explorer"
+]
+
+red_contains = [
+  "http://",
+  "https://",
+  "ftp://",
+  "download",
+  ".exe",
+  ".msi",
+  ".dll",
+  ".bat",
+  ".cmd",
+  ".ps1",
+  ".sh",
+  ".zip",
+  ".rar",
+  ".7z",
+  ".tar",
+  ".gz",
+  "&&",
+  "||",
+  ">",
+  ">>",
+  "|"
+]
