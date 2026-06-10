@@ -1,4 +1,4 @@
-﻿#![cfg(not(debug_assertions))]
+#![cfg(not(debug_assertions))]
 
 use crate::legacy_core::config::Config;
 use crate::npm_registry;
@@ -11,9 +11,9 @@ use crate::update_versions::is_source_build_version;
 use chrono::DateTime;
 use chrono::Duration;
 use chrono::Utc;
-use reqwest::Client;
 use codex_utils_safety::safe_network;
 use codex_utils_safety::safe_network::NetworkPurpose;
+use reqwest::Client;
 use serde::Deserialize;
 use serde::Serialize;
 use std::path::Path;
@@ -185,5 +185,3 @@ pub async fn dismiss_version(config: &Config, version: &str) -> anyhow::Result<(
     tokio::fs::write(version_file, json_line).await?;
     Ok(())
 }
-
-

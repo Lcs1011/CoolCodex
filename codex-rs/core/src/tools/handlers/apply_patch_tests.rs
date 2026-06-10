@@ -8,6 +8,7 @@ use core_test_support::PathExt;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 use std::collections::HashMap;
+use std::path::Path;
 use std::path::PathBuf;
 use std::sync::Arc;
 use tempfile::TempDir;
@@ -158,6 +159,29 @@ fn diff_consumer_streams_apply_patch_changes_with_environment_header() {
             },
         )])
     );
+}
+
+#[test]
+fn native_executable_write_guard_matches_script_and_binary_extensions() {
+    for path in [
+        "setup.py",
+        "script.PS1",
+        "bin/tool.exe",
+        "lib/plugin.dll",
+        "asset.mjs",
+    ] {
+        assert!(
+            is_blocked_native_executable_write_path(Path::new(path)),
+            "expected {path} to be blocked"
+        );
+    }
+
+    for path in ["README.md", "config.yaml", "src/lib.rs", "script.py.txt"] {
+        assert!(
+            !is_blocked_native_executable_write_path(Path::new(path)),
+            "expected {path} to be allowed"
+        );
+    }
 }
 
 #[test]

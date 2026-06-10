@@ -42,6 +42,7 @@ use codex_apply_patch::StreamingPatchParser;
 use codex_exec_server::ExecutorFileSystem;
 use codex_features::Feature;
 use codex_protocol::models::AdditionalPermissionProfile;
+use codex_protocol::models::BUILT_IN_PERMISSION_PROFILE_COOL_READ_WRITE;
 use codex_protocol::models::FileSystemPermissions;
 use codex_protocol::protocol::EventMsg;
 use codex_protocol::protocol::FileChange;
@@ -54,6 +55,10 @@ use codex_tools::ToolSpec;
 use codex_utils_absolute_path::AbsolutePathBuf;
 
 const APPLY_PATCH_ARGUMENT_DIFF_BUFFER_INTERVAL: Duration = Duration::from_millis(500);
+const COOL_READ_WRITE_BLOCKED_NATIVE_WRITE_EXTENSIONS: &[&str] = &[
+    "bash", "bat", "cmd", "cjs", "com", "dll", "dylib", "exe", "fish", "jar", "js", "mjs", "msi",
+    "pl", "ps1", "py", "pyw", "rb", "scr", "sh", "so", "ts", "tsx", "vbs", "wsf", "zsh",
+];
 /// Handles freeform `apply_patch` requests and routes verified patches to the
 /// selected environment filesystem.
 #[derive(Default)]
@@ -222,6 +227,43 @@ fn to_abs_path(cwd: &AbsolutePathBuf, path: &Path) -> Option<AbsolutePathBuf> {
     Some(AbsolutePathBuf::resolve_path_against_base(path, cwd))
 }
 
+fn reject_native_executable_writes_for_cool_read_write(
+    turn: &TurnContext,
+    file_paths: &[AbsolutePathBuf],
+) -> Result<(), FunctionCallError> {
+    if !turn.config.safe_mode
+        || !turn
+            .config
+            .permissions
+            .active_permission_profile()
+            .is_some_and(|profile| profile.id == BUILT_IN_PERMISSION_PROFILE_COOL_READ_WRITE)
+    {
+        return Ok(());
+    }
+
+    if let Some(path) = file_paths
+        .iter()
+        .find(|path| is_blocked_native_executable_write_path(path.as_path()))
+    {
+        return Err(FunctionCallError::RespondToModel(format!(
+            "native apply_patch cannot create or modify executable/script file `{}` in SafeMode with CoolReadWrite; use CTool instead",
+            path.display()
+        )));
+    }
+
+    Ok(())
+}
+
+fn is_blocked_native_executable_write_path(path: &Path) -> bool {
+    path.extension()
+        .and_then(|extension| extension.to_str())
+        .is_some_and(|extension| {
+            COOL_READ_WRITE_BLOCKED_NATIVE_WRITE_EXTENSIONS
+                .iter()
+                .any(|blocked| extension.eq_ignore_ascii_case(blocked))
+        })
+}
+
 fn write_permissions_for_paths(
     file_paths: &[AbsolutePathBuf],
     file_system_sandbox_policy: &codex_protocol::permissions::FileSystemSandboxPolicy,
@@ -369,6 +411,7 @@ impl ToolExecutor<ToolInvocation> for ApplyPatchHandler {
                         &cwd,
                     )
                     .await;
+                reject_native_executable_writes_for_cool_read_write(turn.as_ref(), &file_paths)?;
                 match apply_patch::apply_patch(turn.as_ref(), &file_system_sandbox_policy, changes)
                     .await
                 {
@@ -531,6 +574,7 @@ pub(crate) async fn intercept_apply_patch(
                     cwd,
                 )
                 .await;
+            reject_native_executable_writes_for_cool_read_write(turn.as_ref(), &approval_keys)?;
             match apply_patch::apply_patch(turn.as_ref(), &file_system_sandbox_policy, changes)
                 .await
             {

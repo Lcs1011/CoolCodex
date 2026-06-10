@@ -10,6 +10,9 @@ use codex_model_provider_info::AMAZON_BEDROCK_PROVIDER_ID;
 use codex_model_provider_info::ModelProviderInfo;
 use codex_protocol::config_types::WebSearchMode;
 use codex_protocol::dynamic_tools::DynamicToolSpec;
+use codex_protocol::models::ActivePermissionProfile;
+use codex_protocol::models::BUILT_IN_PERMISSION_PROFILE_COOL_READ_WRITE;
+use codex_protocol::models::PermissionProfile;
 use codex_protocol::openai_models::ApplyPatchToolType;
 use codex_protocol::openai_models::ConfigShellToolType;
 use codex_protocol::openai_models::InputModality;
@@ -30,6 +33,7 @@ use codex_tools::ToolSpec;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 
+use crate::config::PermissionProfileSnapshot;
 use crate::session::tests::make_session_and_context;
 use crate::session::turn_context::TurnContext;
 use crate::tools::handlers::multi_agents_spec::MULTI_AGENT_V1_NAMESPACE;
@@ -431,6 +435,30 @@ fn apply_patch_accepts_environment_id(spec: &ToolSpec) -> bool {
     }
 }
 
+#[tokio::test]
+async fn cool_read_write_routes_only_ctool_specs_and_registry() {
+    let plan = probe(|turn| {
+        update_config(turn, |config| {
+            config.safe_mode = true;
+            config
+                .permissions
+                .set_permission_profile_from_session_snapshot(PermissionProfileSnapshot::active(
+                    PermissionProfile::cool_read_write(),
+                    ActivePermissionProfile::new(BUILT_IN_PERMISSION_PROFILE_COOL_READ_WRITE),
+                ))
+                .expect("cool read-write profile should install");
+        });
+        set_features(turn, &[Feature::ShellTool, Feature::UnifiedExec]);
+        turn.model_info.apply_patch_tool_type = Some(ApplyPatchToolType::Freeform);
+        turn.model_info.shell_type = ConfigShellToolType::ShellCommand;
+    })
+    .await;
+
+    plan.assert_visible_contains(&["ctool_read_file", "ctool_create_file"]);
+    plan.assert_registered_contains(&["ctool_read_file", "ctool_create_file"]);
+    plan.assert_visible_lacks(&["shell_command", "exec_command", "apply_patch"]);
+    plan.assert_registered_lacks(&["shell_command", "exec_command", "apply_patch"]);
+}
 #[tokio::test]
 async fn request_user_input_tool_respects_experimental_config_gate() {
     let enabled = probe(|_| {}).await;
