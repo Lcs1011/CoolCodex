@@ -46,8 +46,8 @@ use crate::tools::read::CToolRgSearch;
 use crate::tools::read::CToolRgSearchContext;
 use crate::tools::read::CToolTailFile;
 use crate::tools::special::CTOOL_ANNOTATE_MARKDOWN_TOOL_NAME;
-use crate::tools::special::CToolAnnotateMarkdown;
 use crate::tools::special::CTOOL_TAVILY_SEARCH_REQUEST_TOOL_NAME;
+use crate::tools::special::CToolAnnotateMarkdown;
 use crate::tools::special::CToolTavilySearchRequest;
 
 pub fn available_specs() -> Vec<CToolSpec> {

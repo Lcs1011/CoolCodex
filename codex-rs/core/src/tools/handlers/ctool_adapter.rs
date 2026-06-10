@@ -277,7 +277,7 @@ Extracts matching lines as a list. unique/sort help collect failure names or sum
   "red_second_confirmation": null
 }
 
-Controlled Tavily search tool. Supports action = search, extract, zoom, research, search_with_images, extract_with_images. Tavily token is read only from CoolSystemDir/config.toml under [ctool_tavily_search].tavily_api_key and is never returned in output. Results and request_log.md are written under CoolDir/cache/web_search/YYYY-MM-DD/. GREEN may auto-execute, YELLOW needs one Y/y confirmation, RED needs two Y/y confirmations, and BLOCKED is shown as 🔴🔴🔴 TAVILY SEARCH REQUEST: BLOCKED and recorded without network execution."#
+Controlled Tavily search tool. Supports action = search, extract, zoom, research, search_with_images, extract_with_images. Tavily token is read only from CoolSystemDir/config.toml under [ctool_tavily_search].tavily_api_key and is never returned in output. Results and request_log.md are written under CoolDir/cache/web_search/YYYY-MM-DD/. The tool returns only concise audit fields, output/log file paths, a short summary, and suggested_next_step; read the output file for full request/result details. GREEN may auto-execute, YELLOW needs one Y/y confirmation, RED needs two Y/y confirmations, and BLOCKED is recorded without network execution."#
         }
         "ctool_annotate_markdown" => {
             r#"Input JSON:

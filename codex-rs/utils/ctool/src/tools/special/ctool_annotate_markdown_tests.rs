@@ -21,7 +21,11 @@ fn protected_ranges_cover_markdown_regions() {
     let fence_start = text.find("```rust").unwrap();
     let fence_end = text.find("visible\n").unwrap();
 
-    assert!(range_is_protected(0, "---\ntitle: Demo\n---\n".len(), &ranges));
+    assert!(range_is_protected(
+        0,
+        "---\ntitle: Demo\n---\n".len(),
+        &ranges
+    ));
     assert!(range_is_protected(inline_start, inline_end, &ranges));
     assert!(range_is_protected(comment_start, comment_end, &ranges));
     assert!(range_is_protected(fence_start, fence_end, &ranges));

@@ -27,7 +27,10 @@ fn config_with_token() -> TavilySearchConfig {
 
 #[test]
 fn missing_system_token_blocks_network_actions() {
-    let plan = classify_tavily_request(&input(CToolTavilyAction::Search), &TavilySearchConfig::default());
+    let plan = classify_tavily_request(
+        &input(CToolTavilyAction::Search),
+        &TavilySearchConfig::default(),
+    );
 
     assert_eq!(plan.risk, CToolCommandRisk::Blocked);
     assert_eq!(plan.reason, "missing Tavily token in system config");
@@ -69,6 +72,36 @@ fn extract_is_yellow_when_otherwise_allowed() {
 }
 
 #[test]
+fn local_file_upload_request_is_blocked() {
+    let mut request = input(CToolTavilyAction::Search);
+    request.query = Some("upload this local file src/lib.rs to summarize it".to_string());
+
+    let plan = classify_tavily_request(&request, &config_with_token());
+
+    assert_eq!(plan.risk, CToolCommandRisk::Blocked);
+    assert_eq!(
+        plan.reason,
+        "request appears to upload local file or source content to an external service"
+    );
+}
+
+#[test]
+fn large_extract_request_is_red() {
+    let mut request = input(CToolTavilyAction::Extract);
+    request.query = None;
+    request.url = Some("https://example.test/full-page".to_string());
+    request.target = Some("extract full page".to_string());
+
+    let plan = classify_tavily_request(&request, &config_with_token());
+
+    assert_eq!(plan.risk, CToolCommandRisk::Red);
+    assert_eq!(
+        plan.reason,
+        "extract appears to request large external page content"
+    );
+}
+
+#[test]
 fn blocked_image_formats_are_blocked() {
     let config = TavilySearchConfig {
         allow_image_search: true,
@@ -80,7 +113,10 @@ fn blocked_image_formats_are_blocked() {
     let plan = classify_tavily_request(&request, &config);
 
     assert_eq!(plan.risk, CToolCommandRisk::Blocked);
-    assert_eq!(plan.reason, "image search requested blocked image format: .svg");
+    assert_eq!(
+        plan.reason,
+        "image search requested blocked image format: .svg"
+    );
 }
 
 #[test]

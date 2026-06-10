@@ -14,7 +14,6 @@ use crate::error::CToolResult;
 #[path = "command_request_tests.rs"]
 mod tests;
 
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum CToolCommandRisk {

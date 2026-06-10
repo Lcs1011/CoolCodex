@@ -29,6 +29,21 @@ const DEFAULT_MAX_SEARCH_RESULTS: usize = 8;
 const DEFAULT_MAX_EXTRACT_CHARS: usize = 12_000;
 const DEFAULT_MAX_ZOOM_CHARS: usize = 6_000;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum TavilyNetworkPurpose {
+    Search,
+    Extract,
+}
+
+impl TavilyNetworkPurpose {
+    fn label(self) -> &'static str {
+        match self {
+            TavilyNetworkPurpose::Search => "tavily_search",
+            TavilyNetworkPurpose::Extract => "tavily_extract",
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub struct CToolTavilySearchRequestInput {
     pub action: CToolTavilyAction,
@@ -97,9 +112,8 @@ pub struct CToolTavilySearchRequestOutput {
     pub output_file: String,
     pub log_file: String,
     pub summary: String,
+    pub suggested_next_step: String,
     pub user_feedback: Option<String>,
-    pub display_text: String,
-    pub banner: String,
     pub note: String,
 }
 
@@ -171,6 +185,7 @@ struct TavilyWriteTarget {
     output_path: PathBuf,
     log_path: PathBuf,
     file_name: String,
+    index: u64,
 }
 
 pub struct CToolTavilySearchRequest;
@@ -291,7 +306,19 @@ pub fn run_tavily_search_request(
         } else {
             None
         };
-        let markdown = execute_tavily_action(&input, &config, api_key.as_deref(), ctx)?;
+        let approved_label = if plan.risk == CToolCommandRisk::Green {
+            "Auto"
+        } else {
+            "UserConfirmed"
+        };
+        let markdown = execute_tavily_action(
+            &input,
+            &config,
+            api_key.as_deref(),
+            ctx,
+            &plan,
+            approved_label,
+        )?;
         std::fs::create_dir_all(&target.cache_dir)?;
         std::fs::write(&target.output_path, &markdown)?;
         append_tavily_log(
@@ -309,7 +336,15 @@ pub fn run_tavily_search_request(
     } else {
         std::fs::create_dir_all(&target.cache_dir)?;
         let status = if blocked { "Blocked" } else { "Rejected" };
-        let markdown = render_unexecuted_markdown(ctx, &input, &plan, status, &note, user_feedback.as_deref());
+        let markdown = render_unexecuted_markdown(
+            ctx,
+            &input,
+            &plan,
+            &banner,
+            status,
+            &note,
+            user_feedback.as_deref(),
+        );
         std::fs::write(&target.output_path, &markdown)?;
         append_tavily_log(
             &target,
@@ -323,17 +358,7 @@ pub fn run_tavily_search_request(
         short_summary_from_markdown(&markdown)
     };
 
-    let display_text = render_display_text(
-        &banner,
-        executed,
-        blocked,
-        rejected,
-        &target.output_path,
-        &target.log_path,
-        &summary,
-        &note,
-        user_feedback.as_deref(),
-    );
+    let suggested_next_step = suggested_next_step(&input, executed, blocked, rejected);
 
     Ok(CToolTavilySearchRequestOutput {
         will_execute: approved,
@@ -346,9 +371,8 @@ pub fn run_tavily_search_request(
         output_file: target.output_path.display().to_string(),
         log_file: target.log_path.display().to_string(),
         summary,
+        suggested_next_step,
         user_feedback,
-        display_text,
-        banner,
         note,
     })
 }
@@ -476,7 +500,13 @@ fn classify_tavily_request(
     let text = request_text_for_risk(input);
     let normalized = text.to_ascii_lowercase();
 
-    if input.action.requires_tavily() && config.tavily_api_key.as_deref().unwrap_or_default().is_empty() {
+    if input.action.requires_tavily()
+        && config
+            .tavily_api_key
+            .as_deref()
+            .unwrap_or_default()
+            .is_empty()
+    {
         return TavilyRequestPlan {
             risk: CToolCommandRisk::Blocked,
             reason: "missing Tavily token in system config".to_string(),
@@ -492,6 +522,13 @@ fn classify_tavily_request(
         return TavilyRequestPlan {
             risk: CToolCommandRisk::Blocked,
             reason: "request asks for download, browser, or executable web behavior".to_string(),
+        };
+    }
+    if looks_like_local_file_upload_request(&normalized) {
+        return TavilyRequestPlan {
+            risk: CToolCommandRisk::Blocked,
+            reason: "request appears to upload local file or source content to an external service"
+                .to_string(),
         };
     }
     if matches!(
@@ -522,6 +559,12 @@ fn classify_tavily_request(
         };
     }
     if input.action == CToolTavilyAction::Extract {
+        if looks_like_large_extract_request(&normalized) {
+            return TavilyRequestPlan {
+                risk: CToolCommandRisk::Red,
+                reason: "extract appears to request large external page content".to_string(),
+            };
+        }
         return TavilyRequestPlan {
             risk: CToolCommandRisk::Yellow,
             reason: "extract fetches external page content".to_string(),
@@ -551,18 +594,39 @@ fn execute_tavily_action(
     config: &TavilySearchConfig,
     api_key: Option<&str>,
     ctx: &CToolContext,
+    plan: &TavilyRequestPlan,
+    approved: &str,
 ) -> CToolResult<String> {
     match input.action {
-        CToolTavilyAction::Search | CToolTavilyAction::SearchWithImages => {
-            tavily_search_markdown(input, config, api_key.unwrap_or_default(), ctx, false)
-        }
-        CToolTavilyAction::Research => {
-            tavily_search_markdown(input, config, api_key.unwrap_or_default(), ctx, true)
-        }
+        CToolTavilyAction::Search | CToolTavilyAction::SearchWithImages => tavily_search_markdown(
+            input,
+            config,
+            api_key.unwrap_or_default(),
+            ctx,
+            plan,
+            approved,
+            false,
+        ),
+        CToolTavilyAction::Research => tavily_search_markdown(
+            input,
+            config,
+            api_key.unwrap_or_default(),
+            ctx,
+            plan,
+            approved,
+            true,
+        ),
         CToolTavilyAction::Extract | CToolTavilyAction::ExtractWithImages => {
-            tavily_extract_markdown(input, config, api_key.unwrap_or_default(), ctx)
+            tavily_extract_markdown(
+                input,
+                config,
+                api_key.unwrap_or_default(),
+                ctx,
+                plan,
+                approved,
+            )
         }
-        CToolTavilyAction::Zoom => zoom_markdown(input, config, ctx),
+        CToolTavilyAction::Zoom => zoom_markdown(input, config, ctx, plan, approved),
     }
 }
 
@@ -571,6 +635,8 @@ fn tavily_search_markdown(
     config: &TavilySearchConfig,
     api_key: &str,
     ctx: &CToolContext,
+    plan: &TavilyRequestPlan,
+    approved: &str,
     advanced: bool,
 ) -> CToolResult<String> {
     let query = required_field(input.query.as_deref(), "query")?;
@@ -583,7 +649,7 @@ fn tavily_search_markdown(
         "include_images": include_images,
         "search_depth": if advanced { "advanced" } else { "basic" },
     });
-    let response = post_tavily_json(TAVILY_SEARCH_URL, &body)?;
+    let response = post_tavily_json(TAVILY_SEARCH_URL, &body, TavilyNetworkPurpose::Search)?;
     let answer = response
         .get("answer")
         .and_then(Value::as_str)
@@ -592,9 +658,17 @@ fn tavily_search_markdown(
     let mut markdown = String::new();
     markdown.push_str("# Tavily Search Result\n\n");
     markdown.push_str("Provider: Tavily\n");
-    markdown.push_str(&format!("Kind: {}\n", if advanced { "Research" } else { "Search" }));
+    markdown.push_str(&format!(
+        "Kind: {}\n",
+        if advanced { "Research" } else { "Search" }
+    ));
     markdown.push_str(&format!("Time: {}\n", timestamp()));
-    markdown.push_str(&format!("CurrentDir: {}\n\n", ctx.scope_context.cool_workspace.display()));
+    markdown.push_str(&format!("Risk: {}\n", plan.risk.label()));
+    markdown.push_str(&format!("Approved: {approved}\n"));
+    markdown.push_str(&format!(
+        "CurrentDir: {}\n\n",
+        ctx.scope_context.cool_workspace.display()
+    ));
     markdown.push_str("## Query\n\n");
     markdown.push_str(query);
     markdown.push_str("\n\n## Short Summary\n\n");
@@ -603,7 +677,10 @@ fn tavily_search_markdown(
 
     if let Some(results) = response.get("results").and_then(Value::as_array) {
         for (index, result) in results.iter().enumerate() {
-            let title = result.get("title").and_then(Value::as_str).unwrap_or("Untitled");
+            let title = result
+                .get("title")
+                .and_then(Value::as_str)
+                .unwrap_or("Untitled");
             let url = result.get("url").and_then(Value::as_str).unwrap_or("");
             let content = result.get("content").and_then(Value::as_str).unwrap_or("");
             markdown.push_str(&format!("### {}. {}\n\n", index + 1, title));
@@ -624,6 +701,8 @@ fn tavily_extract_markdown(
     config: &TavilySearchConfig,
     api_key: &str,
     ctx: &CToolContext,
+    plan: &TavilyRequestPlan,
+    approved: &str,
 ) -> CToolResult<String> {
     let url = required_field(input.url.as_deref(), "url")?;
     ensure_http_url(url)?;
@@ -634,7 +713,7 @@ fn tavily_extract_markdown(
         "extract_depth": "basic",
         "include_images": include_images,
     });
-    let response = post_tavily_json(TAVILY_EXTRACT_URL, &body)?;
+    let response = post_tavily_json(TAVILY_EXTRACT_URL, &body, TavilyNetworkPurpose::Extract)?;
     let content = extract_tavily_content(&response);
     let content = truncate_chars(&content, config.max_extract_chars);
 
@@ -643,7 +722,12 @@ fn tavily_extract_markdown(
     markdown.push_str("Provider: Tavily\n");
     markdown.push_str("Kind: Extract\n");
     markdown.push_str(&format!("Time: {}\n", timestamp()));
-    markdown.push_str(&format!("CurrentDir: {}\n\n", ctx.scope_context.cool_workspace.display()));
+    markdown.push_str(&format!("Risk: {}\n", plan.risk.label()));
+    markdown.push_str(&format!("Approved: {approved}\n"));
+    markdown.push_str(&format!(
+        "CurrentDir: {}\n\n",
+        ctx.scope_context.cool_workspace.display()
+    ));
     markdown.push_str("## URL\n\n");
     markdown.push_str(url);
     markdown.push_str("\n\n## Short Summary\n\n");
@@ -659,10 +743,13 @@ fn zoom_markdown(
     input: &CToolTavilySearchRequestInput,
     config: &TavilySearchConfig,
     ctx: &CToolContext,
+    plan: &TavilyRequestPlan,
+    approved: &str,
 ) -> CToolResult<String> {
-    let source_file = input.source_file.as_ref().ok_or_else(|| {
-        CToolError::InvalidInput("zoom requires source_file".to_string())
-    })?;
+    let source_file = input
+        .source_file
+        .as_ref()
+        .ok_or_else(|| CToolError::InvalidInput("zoom requires source_file".to_string()))?;
     let target = required_field(input.target.as_deref(), "target")?;
     let source_path = resolve_cache_source_path(ctx, source_file);
     ensure_inside_web_cache(ctx, &source_path)?;
@@ -674,6 +761,8 @@ fn zoom_markdown(
     markdown.push_str("Provider: Tavily\n");
     markdown.push_str("Kind: Zoom\n");
     markdown.push_str(&format!("Time: {}\n", timestamp()));
+    markdown.push_str(&format!("Risk: {}\n", plan.risk.label()));
+    markdown.push_str(&format!("Approved: {approved}\n"));
     markdown.push_str(&format!("Source: {}\n", source_path.display()));
     markdown.push_str(&format!("Target: {target}\n\n"));
     markdown.push_str("## Short Summary\n\n");
@@ -684,20 +773,18 @@ fn zoom_markdown(
     Ok(markdown)
 }
 
-fn post_tavily_json(url: &str, body: &Value) -> CToolResult<Value> {
+fn post_tavily_json(url: &str, body: &Value, purpose: TavilyNetworkPurpose) -> CToolResult<Value> {
     let client = reqwest::blocking::Client::builder()
         .timeout(std::time::Duration::from_secs(30))
         .build()
-        .map_err(|error| CToolError::InvalidInput(format!("failed to build Tavily HTTP client: {error}")))?;
-    let response = client
-        .post(url)
-        .json(body)
-        .send()
-        .map_err(|error| CToolError::InvalidInput(format!("Tavily request failed: {error}")))?;
+        .map_err(|error| {
+            CToolError::InvalidInput(format!("failed to build Tavily HTTP client: {error}"))
+        })?;
+    let response = send_controlled_tavily_request(&client, url, body, purpose)?;
     let status = response.status();
-    let text = response
-        .text()
-        .map_err(|error| CToolError::InvalidInput(format!("failed to read Tavily response: {error}")))?;
+    let text = response.text().map_err(|error| {
+        CToolError::InvalidInput(format!("failed to read Tavily response: {error}"))
+    })?;
     if !status.is_success() {
         return Err(CToolError::InvalidInput(format!(
             "Tavily request returned HTTP {status}; response body is not echoed to avoid leaking secrets"
@@ -705,6 +792,30 @@ fn post_tavily_json(url: &str, body: &Value) -> CToolResult<Value> {
     }
     serde_json::from_str(&text)
         .map_err(|error| CToolError::InvalidInput(format!("invalid Tavily JSON response: {error}")))
+}
+
+fn send_controlled_tavily_request(
+    client: &reqwest::blocking::Client,
+    url: &str,
+    body: &Value,
+    purpose: TavilyNetworkPurpose,
+) -> CToolResult<reqwest::blocking::Response> {
+    let expected_url = match purpose {
+        TavilyNetworkPurpose::Search => TAVILY_SEARCH_URL,
+        TavilyNetworkPurpose::Extract => TAVILY_EXTRACT_URL,
+    };
+    if url != expected_url {
+        return Err(CToolError::InvalidInput(format!(
+            "blocked Tavily {} destination: {url}",
+            purpose.label()
+        )));
+    }
+
+    client
+        .post(url)
+        .json(body)
+        .send()
+        .map_err(|error| CToolError::InvalidInput(format!("Tavily request failed: {error}")))
 }
 
 fn append_tavily_images_section(markdown: &mut String, response: &Value) {
@@ -782,9 +893,11 @@ fn looks_like_http_image_url(text: &str) -> bool {
 }
 
 fn blocked_image_format(text: &str) -> Option<&'static str> {
-    [".svg", ".gif", ".bmp", ".ico", ".tif", ".tiff", ".heic", ".avif"]
-        .into_iter()
-        .find(|format| text.contains(format))
+    [
+        ".svg", ".gif", ".bmp", ".ico", ".tif", ".tiff", ".heic", ".avif",
+    ]
+    .into_iter()
+    .find(|format| text.contains(format))
 }
 
 fn extract_tavily_content(response: &Value) -> String {
@@ -824,6 +937,7 @@ fn build_write_target(
         output_path,
         log_path,
         file_name,
+        index,
     })
 }
 
@@ -911,12 +1025,20 @@ fn append_tavily_log(
     status: Option<&str>,
     user_feedback: Option<&str>,
 ) -> CToolResult<()> {
+    let needs_header = !target.log_path.exists() || target.log_path.metadata()?.len() == 0;
     let mut file = OpenOptions::new()
         .create(true)
         .append(true)
         .open(&target.log_path)?;
-    writeln!(file, "## {}", timestamp())?;
+    if needs_header {
+        writeln!(file, "# Tavily Search Request Log")?;
+        writeln!(file)?;
+        writeln!(file, "Date: {}", Local::now().format("%Y-%m-%d"))?;
+        writeln!(file)?;
+    }
+    writeln!(file, "## {:05}", target.index)?;
     writeln!(file)?;
+    writeln!(file, "Time: {}", timestamp())?;
     writeln!(file, "Provider: Tavily")?;
     writeln!(file, "Tool: {CTOOL_TAVILY_SEARCH_REQUEST_TOOL_NAME}")?;
     writeln!(file, "Action: {}", input.action.label())?;
@@ -925,7 +1047,11 @@ fn append_tavily_log(
     if let Some(status) = status {
         writeln!(file, "Status: {status}")?;
     }
-    writeln!(file, "CurrentDir: {}", ctx.scope_context.cool_workspace.display())?;
+    writeln!(
+        file,
+        "CurrentDir: {}",
+        ctx.scope_context.cool_workspace.display()
+    )?;
     writeln!(file)?;
     if let Some(query) = input.query.as_deref() {
         writeln!(file, "Query:")?;
@@ -957,6 +1083,7 @@ fn render_unexecuted_markdown(
     ctx: &CToolContext,
     input: &CToolTavilySearchRequestInput,
     plan: &TavilyRequestPlan,
+    request_preview: &str,
     status: &str,
     note: &str,
     user_feedback: Option<&str>,
@@ -969,7 +1096,13 @@ fn render_unexecuted_markdown(
     markdown.push_str(&format!("Risk: {}\n", plan.risk.label()));
     markdown.push_str("Approved: No\n");
     markdown.push_str(&format!("Status: {status}\n"));
-    markdown.push_str(&format!("CurrentDir: {}\n\n", ctx.scope_context.cool_workspace.display()));
+    markdown.push_str(&format!(
+        "CurrentDir: {}\n\n",
+        ctx.scope_context.cool_workspace.display()
+    ));
+    markdown.push_str("## Request Preview\n\n```text\n");
+    markdown.push_str(request_preview);
+    markdown.push_str("\n```\n\n");
     if let Some(query) = input.query.as_deref() {
         markdown.push_str("## Query\n\n");
         markdown.push_str(query);
@@ -994,43 +1127,33 @@ fn render_unexecuted_markdown(
     markdown
 }
 
-fn render_display_text(
-    banner: &str,
+fn suggested_next_step(
+    input: &CToolTavilySearchRequestInput,
     executed: bool,
     blocked: bool,
     rejected: bool,
-    output_file: &Path,
-    log_file: &Path,
-    summary: &str,
-    note: &str,
-    user_feedback: Option<&str>,
 ) -> String {
-    let mut text = String::new();
-    text.push_str(banner);
-    text.push_str("\n\nTAVILY SEARCH REQUEST RESULT\n");
-    text.push_str("==============================\n");
-    text.push_str(&format!("executed: {executed}\n"));
-    text.push_str(&format!("blocked: {blocked}\n"));
-    text.push_str(&format!("rejected: {rejected}\n"));
-    text.push_str("output_file: ");
-    text.push_str(&output_file.display().to_string());
-    text.push('\n');
-    text.push_str("log_file: ");
-    text.push_str(&log_file.display().to_string());
-    text.push('\n');
-    text.push_str("summary: ");
-    text.push_str(summary);
-    text.push('\n');
-    if let Some(user_feedback) = user_feedback {
-        text.push_str("user_feedback: ");
-        text.push_str(user_feedback);
-        text.push('\n');
+    if blocked {
+        return "Read the output file for the blocked policy reason, then use local CTool reads/searches or narrow the request.".to_string();
     }
-    text.push_str("note: ");
-    text.push_str(note);
-    text.push('\n');
-    text.push_str("==============================");
-    text
+    if rejected {
+        return "Follow the user feedback and prefer local CTool reads/searches before requesting network access again.".to_string();
+    }
+    if !executed {
+        return "Read the output file to review the request preview, then provide the required confirmation only if the request is still needed.".to_string();
+    }
+
+    match input.action {
+        CToolTavilyAction::Search | CToolTavilyAction::Research | CToolTavilyAction::SearchWithImages => {
+            "Read the output file with ctool_read_file. If a result is useful, request an extract for that specific URL.".to_string()
+        }
+        CToolTavilyAction::Extract | CToolTavilyAction::ExtractWithImages => {
+            "Read the output file with ctool_read_file. If a section needs focus, request a zoom against this cached Markdown file.".to_string()
+        }
+        CToolTavilyAction::Zoom => {
+            "Use the cached zoom output as the external reference; do not request more network access unless the local cache is insufficient.".to_string()
+        }
+    }
 }
 
 fn request_text_for_risk(input: &CToolTavilySearchRequestInput) -> String {
@@ -1081,7 +1204,9 @@ fn required_field<'a>(value: Option<&'a str>, name: &str) -> CToolResult<&'a str
         return Err(CToolError::InvalidInput(format!("{name} is required")));
     };
     if value.trim().is_empty() {
-        return Err(CToolError::InvalidInput(format!("{name} must not be empty")));
+        return Err(CToolError::InvalidInput(format!(
+            "{name} must not be empty"
+        )));
     }
     Ok(value)
 }
@@ -1111,9 +1236,20 @@ fn ensure_inside_web_cache(ctx: &CToolContext, path: &Path) -> CToolResult<()> {
         .join(COOL_DIR_NAME)
         .join("cache")
         .join("web_search");
-    let normalized_path = path.to_string_lossy().to_ascii_lowercase();
-    let normalized_cache = cache_root.to_string_lossy().to_ascii_lowercase();
-    if normalized_path.starts_with(&normalized_cache) {
+    let canonical_path = std::fs::canonicalize(path).map_err(|error| {
+        CToolError::InvalidInput(format!(
+            "failed to canonicalize Tavily zoom source: {} ({error})",
+            path.display()
+        ))
+    })?;
+    let canonical_cache = std::fs::canonicalize(&cache_root).map_err(|error| {
+        CToolError::InvalidInput(format!(
+            "failed to canonicalize Tavily web_search cache: {} ({error})",
+            cache_root.display()
+        ))
+    })?;
+
+    if canonical_path.starts_with(&canonical_cache) {
         Ok(())
     } else {
         Err(CToolError::OutOfScope {
@@ -1137,6 +1273,38 @@ fn zoom_excerpt(text: &str, target: &str, max_chars: usize) -> String {
     truncate_chars(&text[start..], max_chars)
 }
 
+fn looks_like_local_file_upload_request(text: &str) -> bool {
+    let upload_words = ["upload", "send", "submit", "post", "paste"];
+    let local_file_words = [
+        "local file",
+        "source file",
+        "private file",
+        "full file",
+        "entire file",
+        "workspace file",
+        ".rs",
+        ".toml",
+        ".env",
+        ".pem",
+        ".key",
+    ];
+
+    upload_words.iter().any(|word| text.contains(word))
+        && local_file_words.iter().any(|word| text.contains(word))
+}
+
+fn looks_like_large_extract_request(text: &str) -> bool {
+    [
+        "full page",
+        "entire page",
+        "whole page",
+        "all content",
+        "complete content",
+    ]
+    .iter()
+    .any(|needle| text.contains(needle))
+}
+
 fn first_keyword_match<'a>(text: &str, keywords: &'a [String]) -> Option<&'a str> {
     keywords.iter().find_map(|keyword| {
         let normalized = keyword.to_ascii_lowercase();
@@ -1150,8 +1318,22 @@ fn first_keyword_match<'a>(text: &str, keywords: &'a [String]) -> Option<&'a str
 
 fn looks_like_download_request(text: &str) -> bool {
     [
-        ".exe", ".msi", ".dll", ".bat", ".cmd", ".ps1", ".sh", ".zip", ".rar",
-        ".7z", ".tar", ".gz", "download", "git clone", "curl ", "wget ",
+        ".exe",
+        ".msi",
+        ".dll",
+        ".bat",
+        ".cmd",
+        ".ps1",
+        ".sh",
+        ".zip",
+        ".rar",
+        ".7z",
+        ".tar",
+        ".gz",
+        "download",
+        "git clone",
+        "curl ",
+        "wget ",
         "invoke-webrequest",
     ]
     .iter()
@@ -1159,9 +1341,14 @@ fn looks_like_download_request(text: &str) -> bool {
 }
 
 fn looks_like_browser_request(text: &str) -> bool {
-    ["open browser", "start http", "explorer http", "execute javascript"]
-        .iter()
-        .any(|needle| text.contains(needle))
+    [
+        "open browser",
+        "start http",
+        "explorer http",
+        "execute javascript",
+    ]
+    .iter()
+    .any(|needle| text.contains(needle))
 }
 
 fn truncate_chars(text: &str, max_chars: usize) -> String {

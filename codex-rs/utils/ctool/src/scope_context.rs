@@ -200,7 +200,21 @@ pub fn is_hard_protected_config_path(ctx: &CToolScopeContext, path: impl AsRef<P
     let path = lexical_normalize_path(path.as_ref());
     let cool_dir = lexical_normalize_path(locate_cool_dir(&ctx.session_root).as_path());
 
-    path_matches_rule(path, cool_dir)
+    path_matches_rule(&path, cool_dir) && !is_web_search_cache_path(ctx, &path)
+}
+
+pub fn is_web_search_cache_path(ctx: &CToolScopeContext, path: impl AsRef<Path>) -> bool {
+    let path = lexical_normalize_path(path.as_ref());
+
+    path_matches_rule(path, web_search_cache_root(ctx))
+}
+
+pub fn web_search_cache_root(ctx: &CToolScopeContext) -> PathBuf {
+    lexical_normalize_path(
+        &locate_cool_dir(&ctx.session_root)
+            .join("cache")
+            .join("web_search"),
+    )
 }
 
 pub fn is_protected_path(ctx: &CToolScopeContext, path: impl AsRef<Path>) -> bool {
@@ -244,6 +258,9 @@ enum PathAccess {
 fn path_access(ctx: &CToolScopeContext, path: impl AsRef<Path>) -> PathAccess {
     let path = lexical_normalize_path(path.as_ref());
 
+    if is_web_search_cache_path(ctx, &path) {
+        return PathAccess::Readonly;
+    }
     if is_hard_protected_config_path(ctx, &path) {
         return PathAccess::Hidden;
     }
@@ -400,3 +417,7 @@ fn lexical_normalize_path(path: &Path) -> PathBuf {
 
     output
 }
+
+#[cfg(test)]
+#[path = "scope_context_tests.rs"]
+mod tests;

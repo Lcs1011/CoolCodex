@@ -5,8 +5,8 @@ use serde::Serialize;
 use serde_json::Value;
 
 use crate::command_request::CToolCommandApproval;
-use crate::command_request::CToolCommandRisk;
 use crate::command_request::CToolCommandRequestRecordStatus;
+use crate::command_request::CToolCommandRisk;
 use crate::command_request::CToolCommandUserDecision;
 use crate::command_request::build_command_request_preview;
 use crate::command_request::execute_approved_command_request;
@@ -213,7 +213,6 @@ pub fn preview_command_request(
             CToolCommandApproval::Blocked => {}
         }
     }
-
 
     if (blocked || rejected) && result_file.is_none() {
         let cache_root = command_request_cache_root(ctx);

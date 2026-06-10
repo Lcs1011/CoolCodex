@@ -88,7 +88,6 @@ impl CTool for CToolAnnotateMarkdown {
 #[path = "ctool_annotate_markdown_tests.rs"]
 mod tests;
 
-
 pub fn annotate_markdown(
     ctx: &CToolContext,
     input: CToolAnnotateMarkdownInput,
@@ -181,7 +180,8 @@ pub fn annotate_markdown(
     let note = match (readonly_exception_used, input.dry_run) {
         (true, true) => "Dry run only; ReadOnly scope exception would be used.".to_string(),
         (true, false) => {
-            "ReadOnly scope exception used: only Markdown <mark> annotation was applied.".to_string()
+            "ReadOnly scope exception used: only Markdown <mark> annotation was applied."
+                .to_string()
         }
         (false, true) => "Dry run only; file was not modified.".to_string(),
         (false, false) => "Markdown annotation applied.".to_string(),
@@ -392,7 +392,11 @@ fn count_backticks(text: &str) -> usize {
 }
 
 fn line_number_at_byte(text: &str, byte_index: usize) -> usize {
-    text[..byte_index].bytes().filter(|byte| *byte == b'\n').count() + 1
+    text[..byte_index]
+        .bytes()
+        .filter(|byte| *byte == b'\n')
+        .count()
+        + 1
 }
 
 fn preview_around_line(text: &str, line_number: usize, context: usize) -> String {
