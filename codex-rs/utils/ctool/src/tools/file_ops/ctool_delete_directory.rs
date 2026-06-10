@@ -31,7 +31,7 @@ impl CTool for CToolDeleteDirectory {
     fn spec(&self) -> CToolSpec {
         CToolSpec {
             name: CTOOL_DELETE_DIRECTORY_TOOL_NAME,
-            description: "Delete one empty directory inside CToolBaseScope. Recursive deletion is never allowed.",
+            description: "Delete one empty directory inside CToolScopeBase. Recursive deletion is never allowed.",
         }
     }
 
@@ -75,7 +75,7 @@ pub fn delete_directory(
 
 fn ensure_not_current_dir(ctx: &CToolContext, path: &Path) -> CToolResult<()> {
     let path = std::fs::canonicalize(path)?;
-    let current_dir = std::fs::canonicalize(&ctx.scope_context.current_dir)?;
+    let current_dir = std::fs::canonicalize(&ctx.scope_context.cool_workspace)?;
 
     if path == current_dir {
         return Err(CToolError::InvalidInput(format!(

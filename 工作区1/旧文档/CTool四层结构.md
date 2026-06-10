@@ -10,63 +10,26 @@ SafeMode AboveAll 原则
 只有CTool 可以正常使用
 
 ## 第 2 层：PermissionProfile
-
-加入 Cool开头的模式。
+加入 Cool开头的模式。 
 核心是 CoolReadWrite
 
 Cool开头的模式
-只能使用 “CTool工具“
-
-
-
+只能使用 TCool工具
 
 
 ## 第 3 层：CToolScope  
 
-CToolScope 并非是直接限制 PermissionProfile 的视野范围
-而是 直接限制 CTool的视野范围 
-从而达到对 Cool开头 PermissionProfile 绝对控制
-因为 Cool开头 PermissionProfile 只能用 CTool进行读写
+CToolScope 并非是来限制 PermissionProfile 的视野范围
+而是 直接限制 CTool的视野范围 从而达到 绝对控制
+
+由 CToolScopeBase来设定基础范围 配合配置文件
 
 
-### CToolScopeBase
-
-分为以下四种类型
 None
-CoolWorkspace
+Workspace
 SelectedOnly
 TheEyeofProvidence
 
-
-CToolScopeBase 决定了 CToolScope的 基础视野 
-
-CToolScopeBase 位于 
-SessionRoot 的 .cool 中的 config.toml 设定
-
-
-无设定 默认为 None 无任何视野
-关于视野设计 详细位于《CToolScope 视野 详细设计 》
-这里没有太多赘
-
-
-
-
-### CoolWorkspace
-可以设置
-
-CoolWorkspace 位于 SessionRoot\.cool\config.toml 中设置；未设置时默认为 SessionRoot。
-
-
-
-
-## 启动Codex时要显示
-
-SafeMode 状态
-PermissionProfile 状态
-CToolScope 状态
-CoolWorkspace 路径
-
-之后考虑 在下方也持续显示
 
 ## 第4层 CTool
 
@@ -106,10 +69,109 @@ CoolWorkspace 路径
 | TG 发消息 | `CToolTelegramSendMessage` | `ctool_telegram_send_message.rs` | `ctool_telegram_send_message` |
 | TG 收指令 | `CToolTelegramPollCommand` | `ctool_telegram_poll_command.rs` | `ctool_telegram_poll_command` |
 
+已经推送成功 commit1 
+我们根据这个视野设计。 开始制定函数 你认为都需要哪些函数？ 把这些函数 一一列出来。
+
+## 视野设计 详细
+ 
+
+两个配置 Cool配置文件
+一个位于cmd调用 codex的文件夹 名为 .coolconfig.toml
+另一个位于 启动bat相同文件夹 名为 .coolsystemconfig.toml
+
+CTool不能修改  .coolconfig.toml 和 .coolsystemconfig.toml 直接在视野判定函数里 写死
+
+两个配置 Cool配置文件 中 都包含ctool_scope 配置视野分段
+
+```
+[ctool_scope] 
+visible_paths = [] 
+hide_paths = [] 
+protected_paths = []
+```
 
 
-### CToolCommandRequest
-这个会在专门的文档中详细介绍
+当下的权限设计
+#### 权限设计
+
+就叫 LaunchDir 如何，这个简洁易懂   你觉得合适吗？
+然后我们的 .coolcache  和 .coolconfig.toml 完全跟随 LaunchDir 文件夹 而不是 Coolworkspace
+
+Coolworkspace 应当再 .coolconfig.toml 中有设置。 没有设置 默认为 LaunchDir
+Coolworkspace 开头应该显示 具体目录 作为第四项
+
+
+readwrite  
+readonly  
+hide
+
+
+CToolBaseScope 对应的也应该是 Coolworkspace
+并且 Coolworkspace 在开头应该也标注出来具体是哪个文件夹
+
+
+我的意思是问，Codex 有没有系统性提示词？ 这个提示词决定了当前整个的绘画基调。
+
+
+System.filehide>System.fileReadOnly>System.filereadwrite >
+System.folderhide>System.folderReadOnly>System.folderreadwrite >
+LaunchDir.filehide>LaunchDir.fileReadOnly>LaunchDir.filereadwrite >
+LaunchDir.folderhide>LaunchDir.folderReadOnly>LaunchDir.folderreadwrite 
+
+另外，你得告诉我 Codex 是否有天然的，就是系统提示此文件夹？ 这个提示词是要贯穿始末的，它不是说某一次加载的 test，它决定了整个这一次对话这一个启动出来的 context 的整体会话气质。
+
+#### 加载顺序
+```
+1. main 初始化 SafeMode
+2. 解析 PermissionProfile
+3. 解析 CToolBaseScope
+4. 获取 CurrentDir，也就是当前 CMD 调用 codex 的文件夹
+5. 加载 .coolsystemconfig.toml  //暂时位于启动 bat相同文件夹  找不到所有内容按默认空算
+- 找不到：按空配置  
+- 格式错误：CTool 不启用，报错  
+6. 加载 WorkspaceRoot\.coolconfig.toml  
+- 找不到：按空配置  
+- 格式错误：CTool 不启用，报错  
+7. 构造 CToolScopeContext  
+8. 构造 CToolContext  
+9. 注册 CTool
+```
+
+
+
+#### 视野操作 相关命令
+命令正式为 /CToolScope 简写 /cs 
+整个命令无视大小写
+//CLI 本身是区分命令大小写的
+
+```
+/cs
+/cs show
+显示当前视野配置
+
+/cs <path>
+添加到 visible_paths
+
+/cs - <path>
+从 visible_paths 移除
+
+/cs hide <path>
+添加到 hide_paths
+
+/cs hide - <path>
+从 hide_paths 移除
+
+/cs base none
+/cs base workspace
+
+/cs protect <path>  //表示只读
+/cs protect - <path>
+
+```
+
+
+
+
 
 
 
@@ -174,45 +236,34 @@ codex-rs/   //Codex自带
 ```
 
 
-
-
 # 制作规划
+
 
 
 ## 第一阶段
 
-创建  CToolScopeBase 枚举
+是这样子的 我们先做这个 CToolScope 枚举
 
 包含
 None
-CoolWorkspace
+Workspace
 SelectedOnly
 TheEyeofProvidence
 
-
-前期做 CTool 的时候，只考虑 CoolWorkspace 这一种情况。 
+前期做 CTool 的时候，只考虑 workspace 这一种情况。 
 其他三种我们先暂时不考虑。
 然后我们第一步是把这个枚举给创建出来。 
-
-
-然后保证在启动 Codex 的时候，
-
-最开头显示的状态包括：
-
-SafeMode 状态
-PermissionProfile 状态
-CToolScope 状态
-CoolWorkspace 路径
-
+然后保证在启动 codex 的时候，
+显示第一行是 SafeMode 状态
+显示第二行是 PermissionProfile 状态
+显示第三行是 CToolScopeBase 状态
 
 ## 第二阶段
 
-PermissionProfile 添加 CoolReadWrite 
-
-
-这个模式，先不给任何工具，它不能调用任何 Codex默认工具。 
-它只能使用 CTool工具
+ permission profile 添加 CoolReadWrite 
+这个模式，先不给任何工具，它不能调用任何Codex工具。 
 并且让CoolReadWrite  作为默认的 permission profile 。
+
 
 
 ## 第三步

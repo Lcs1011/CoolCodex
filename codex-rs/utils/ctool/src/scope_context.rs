@@ -4,20 +4,25 @@ use std::path::PathBuf;
 
 use crate::error::CToolError;
 use crate::error::CToolResult;
-use crate::scope::CToolBaseScope;
+use crate::scope::CToolScopeBase;
 use crate::scope_config::CToolScopeConfig;
-use crate::scope_config::SYSTEM_CONFIG_FILE_NAME;
-use crate::scope_config::USER_CONFIG_FILE_NAME;
+use crate::scope_config::CToolScopeRuleSet;
 use crate::scope_config::empty_scope_config;
 use crate::scope_config::load_optional_cool_config;
+use crate::scope_config::load_optional_cool_session_config;
 use crate::scope_config::locate_cool_config_path;
+use crate::scope_config::locate_cool_dir;
+use crate::scope_config::locate_cool_scope_path;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CToolScopeContext {
     pub current_dir: PathBuf,
-    pub base_scope: CToolBaseScope,
+    pub session_root: PathBuf,
+    pub cool_workspace: PathBuf,
+    pub base_scope: CToolScopeBase,
 
     pub user_config_path: PathBuf,
+    pub session_config_path: PathBuf,
     pub system_config_path: Option<PathBuf>,
 
     pub user_config: CToolScopeConfig,
@@ -26,51 +31,65 @@ pub struct CToolScopeContext {
 
 pub fn build_ctool_scope_context(
     current_dir: impl AsRef<Path>,
-    base_scope: CToolBaseScope,
-    system_config_path: Option<PathBuf>,
+    fallback_base_scope: CToolScopeBase,
+    _system_config_path: Option<PathBuf>,
 ) -> CToolResult<CToolScopeContext> {
-    let current_dir = canonicalize_existing_path(current_dir.as_ref())?;
+    let session_root = canonicalize_existing_path(current_dir.as_ref())?;
+    let session_config_path = locate_cool_config_path(&session_root);
+    let session_scope_path = locate_cool_scope_path(&session_root);
 
-    let user_config_path = locate_cool_config_path(&current_dir);
-    let user_config = load_optional_cool_config(&user_config_path)?;
-    let system_config = match system_config_path.as_deref() {
-        Some(path) => load_optional_cool_config(path)?,
-        None => empty_scope_config(),
+    let session_config = load_optional_cool_session_config(&session_config_path)?;
+    let base_scope = session_config.scope_base.unwrap_or(fallback_base_scope);
+
+    let cool_workspace = match session_config.cool_workspace {
+        Some(path) if path.is_absolute() => canonicalize_existing_path(path)?,
+        Some(path) => canonicalize_existing_path(session_root.join(path))?,
+        None => session_root.clone(),
     };
 
-    let user_config = normalize_scope_config(user_config, &current_dir);
-    let system_config = normalize_scope_config(system_config, &current_dir);
+    let user_config = load_optional_cool_config(&session_scope_path)?;
+    let user_config = normalize_scope_config(user_config, &cool_workspace);
 
     Ok(CToolScopeContext {
-        current_dir,
+        current_dir: session_root.clone(),
+        session_root,
+        cool_workspace,
         base_scope,
-        user_config_path,
-        system_config_path,
+        user_config_path: session_scope_path,
+        session_config_path,
+        system_config_path: None,
         user_config,
-        system_config,
+        system_config: empty_scope_config(),
     })
 }
 
-pub fn normalize_scope_config(config: CToolScopeConfig, current_dir: &Path) -> CToolScopeConfig {
+pub fn normalize_scope_config(config: CToolScopeConfig, root: &Path) -> CToolScopeConfig {
     CToolScopeConfig {
-        visible_paths: normalize_scope_paths(config.visible_paths, current_dir),
-        hide_paths: normalize_scope_paths(config.hide_paths, current_dir),
-        protected_paths: normalize_scope_paths(config.protected_paths, current_dir),
+        files: normalize_rule_set(config.files, root),
+        folders: normalize_rule_set(config.folders, root),
     }
 }
 
-fn normalize_scope_paths(paths: Vec<PathBuf>, current_dir: &Path) -> Vec<PathBuf> {
+fn normalize_rule_set(rule_set: CToolScopeRuleSet, root: &Path) -> CToolScopeRuleSet {
+    CToolScopeRuleSet {
+        readwrite: normalize_scope_paths(rule_set.readwrite, root),
+        readonly: normalize_scope_paths(rule_set.readonly, root),
+        hide: normalize_scope_paths(rule_set.hide, root),
+    }
+}
+
+fn normalize_scope_paths(paths: Vec<PathBuf>, root: &Path) -> Vec<PathBuf> {
     paths
         .into_iter()
-        .map(|path| resolve_config_path(current_dir, &path))
+        .map(|path| resolve_config_path(root, &path))
         .collect()
 }
 
-fn resolve_config_path(current_dir: &Path, path: &Path) -> PathBuf {
+fn resolve_config_path(root: &Path, path: &Path) -> PathBuf {
     if path.is_absolute() {
         lexical_normalize_path(path)
     } else {
-        lexical_normalize_path(&current_dir.join(path))
+        lexical_normalize_path(&root.join(path))
     }
 }
 
@@ -80,7 +99,7 @@ pub fn resolve_user_path(ctx: &CToolScopeContext, path: impl AsRef<Path>) -> Pat
     if path.is_absolute() {
         lexical_normalize_path(path)
     } else {
-        lexical_normalize_path(&ctx.current_dir.join(path))
+        lexical_normalize_path(&ctx.cool_workspace.join(path))
     }
 }
 
@@ -115,6 +134,13 @@ pub fn canonicalize_parent_for_new_path(path: impl AsRef<Path>) -> CToolResult<P
     Ok(lexical_normalize_path(&parent.join(file_name)))
 }
 
+pub fn matches_any_exact_path(path: impl AsRef<Path>, paths: &[PathBuf]) -> bool {
+    let path = lexical_normalize_path(path.as_ref());
+    paths
+        .iter()
+        .any(|rule_path| path == lexical_normalize_path(rule_path))
+}
+
 pub fn path_matches_rule(path: impl AsRef<Path>, rule_path: impl AsRef<Path>) -> bool {
     let path = lexical_normalize_path(path.as_ref());
     let rule_path = lexical_normalize_path(rule_path.as_ref());
@@ -132,32 +158,18 @@ pub fn is_visible_by_base_scope(ctx: &CToolScopeContext, path: impl AsRef<Path>)
     let path = lexical_normalize_path(path.as_ref());
 
     match ctx.base_scope {
-        CToolBaseScope::None => false,
-        CToolBaseScope::Workspace => path_matches_rule(path, &ctx.current_dir),
-        CToolBaseScope::SelectedOnly | CToolBaseScope::TheEyeofProvidence => false,
+        CToolScopeBase::None => false,
+        CToolScopeBase::CoolWorkspace => path_matches_rule(path, &ctx.cool_workspace),
+        CToolScopeBase::SelectedOnly | CToolScopeBase::TheEyeofProvidence => false,
     }
 }
 
 pub fn can_read_path(ctx: &CToolScopeContext, path: impl AsRef<Path>) -> bool {
-    let path = lexical_normalize_path(path.as_ref());
-
-    if matches_any_path(&path, &ctx.system_config.hide_paths) {
-        return false;
+    match path_access(ctx, path) {
+        PathAccess::Hidden => false,
+        PathAccess::Readonly | PathAccess::Readwrite => true,
+        PathAccess::Unspecified => false,
     }
-
-    if matches_any_path(&path, &ctx.system_config.visible_paths) {
-        return true;
-    }
-
-    if matches_any_path(&path, &ctx.user_config.hide_paths) {
-        return false;
-    }
-
-    if matches_any_path(&path, &ctx.user_config.visible_paths) {
-        return true;
-    }
-
-    is_visible_by_base_scope(ctx, path)
 }
 
 pub fn can_search_path(ctx: &CToolScopeContext, path: impl AsRef<Path>) -> bool {
@@ -166,57 +178,23 @@ pub fn can_search_path(ctx: &CToolScopeContext, path: impl AsRef<Path>) -> bool 
 
 pub fn is_hard_protected_config_path(ctx: &CToolScopeContext, path: impl AsRef<Path>) -> bool {
     let path = lexical_normalize_path(path.as_ref());
-    let user_config_path = lexical_normalize_path(&ctx.user_config_path);
+    let cool_dir = lexical_normalize_path(locate_cool_dir(&ctx.session_root).as_path());
 
-    if path == user_config_path {
-        return true;
-    }
-
-    if let Some(system_config_path) = &ctx.system_config_path {
-        let system_config_path = lexical_normalize_path(system_config_path);
-        if path == system_config_path {
-            return true;
-        }
-    }
-
-    let Some(file_name) = path.file_name().and_then(|file_name| file_name.to_str()) else {
-        return false;
-    };
-
-    file_name.eq_ignore_ascii_case(USER_CONFIG_FILE_NAME)
-        || file_name.eq_ignore_ascii_case(SYSTEM_CONFIG_FILE_NAME)
+    path_matches_rule(path, cool_dir)
 }
 
 pub fn is_protected_path(ctx: &CToolScopeContext, path: impl AsRef<Path>) -> bool {
-    let path = lexical_normalize_path(path.as_ref());
-
-    if matches_any_path(&path, &ctx.system_config.protected_paths) {
-        return true;
-    }
-
-    if matches_any_path(&path, &ctx.user_config.protected_paths) {
-        return true;
-    }
-
-    is_hard_protected_config_path(ctx, path)
+    matches!(path_access(ctx, path), PathAccess::Readonly)
 }
 
 pub fn can_write_path(ctx: &CToolScopeContext, path: impl AsRef<Path>) -> bool {
-    let path = lexical_normalize_path(path.as_ref());
-
-    can_read_path(ctx, &path) && !is_protected_path(ctx, path)
+    matches!(path_access(ctx, path), PathAccess::Readwrite)
 }
 
 pub fn can_create_path(ctx: &CToolScopeContext, path: impl AsRef<Path>) -> bool {
     let path = lexical_normalize_path(path.as_ref());
 
     if is_hard_protected_config_path(ctx, &path) {
-        return false;
-    }
-
-    if matches_any_path(&path, &ctx.system_config.hide_paths)
-        || matches_any_path(&path, &ctx.user_config.hide_paths)
-    {
         return false;
     }
 
@@ -229,6 +207,68 @@ pub fn can_create_path(ctx: &CToolScopeContext, path: impl AsRef<Path>) -> bool 
     };
 
     can_write_path(ctx, parent)
+        && !matches!(
+            path_access(ctx, &path),
+            PathAccess::Hidden | PathAccess::Readonly
+        )
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum PathAccess {
+    Hidden,
+    Readonly,
+    Readwrite,
+    Unspecified,
+}
+
+fn path_access(ctx: &CToolScopeContext, path: impl AsRef<Path>) -> PathAccess {
+    let path = lexical_normalize_path(path.as_ref());
+
+    if is_hard_protected_config_path(ctx, &path) {
+        return PathAccess::Hidden;
+    }
+
+    if matches_any_exact_path(&path, &ctx.system_config.files.hide) {
+        return PathAccess::Hidden;
+    }
+    if matches_any_exact_path(&path, &ctx.system_config.files.readonly) {
+        return PathAccess::Readonly;
+    }
+    if matches_any_exact_path(&path, &ctx.system_config.files.readwrite) {
+        return PathAccess::Readwrite;
+    }
+    if matches_any_path(&path, &ctx.system_config.folders.hide) {
+        return PathAccess::Hidden;
+    }
+    if matches_any_path(&path, &ctx.system_config.folders.readonly) {
+        return PathAccess::Readonly;
+    }
+    if matches_any_path(&path, &ctx.system_config.folders.readwrite) {
+        return PathAccess::Readwrite;
+    }
+    if matches_any_exact_path(&path, &ctx.user_config.files.hide) {
+        return PathAccess::Hidden;
+    }
+    if matches_any_exact_path(&path, &ctx.user_config.files.readonly) {
+        return PathAccess::Readonly;
+    }
+    if matches_any_exact_path(&path, &ctx.user_config.files.readwrite) {
+        return PathAccess::Readwrite;
+    }
+    if matches_any_path(&path, &ctx.user_config.folders.hide) {
+        return PathAccess::Hidden;
+    }
+    if matches_any_path(&path, &ctx.user_config.folders.readonly) {
+        return PathAccess::Readonly;
+    }
+    if matches_any_path(&path, &ctx.user_config.folders.readwrite) {
+        return PathAccess::Readwrite;
+    }
+    if is_visible_by_base_scope(ctx, &path) {
+        return PathAccess::Readwrite;
+    }
+
+    PathAccess::Unspecified
 }
 
 pub fn ensure_read_allowed_by_scope(

@@ -50,7 +50,7 @@ impl CTool for CToolEditBatch {
     fn spec(&self) -> CToolSpec {
         CToolSpec {
             name: CTOOL_EDIT_BATCH_TOOL_NAME,
-            description: "Apply multiple exact replace/insert edits inside CToolBaseScope.",
+            description: "Apply multiple exact replace/insert edits inside CToolScopeBase.",
         }
     }
 

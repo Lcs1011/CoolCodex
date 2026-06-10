@@ -1,0 +1,368 @@
+
+/* ======================================================= */
+/* ================= 浅色模式 (LIGHT MODE) ================ */
+/* ======================================================== */
+
+
+/* ======================================================= */
+/* 1. 主题背景色 (全面启用原生变量 + 侧边栏精准兜底) */
+/* ======================================================= */
+
+body.theme-light {
+    /* 基础背景变量 */
+    --background-primary: #ffffff !important;
+    --background-secondary: #e0f2fe !important;
+    --background-primary-alt: #ffffff !important;
+    --background-secondary-alt: #bae6fd !important;
+    --titlebar-background: #bae6fd !important;
+    
+    /* --- 核心修复：通过官方变量安全重塑浅色标签页 --- */
+    --tab-container-background: #bae6fd !important; /* 标签栏底色：天蓝 */
+    --tab-background-active: #ffffff !important;    /* 选中标签页：纯白，与正文衔接 */
+    --tab-text-active: #666666 !important;          /* 选中文字：灰色 */
+    --tab-background: rgba(255, 255, 255, 0.5) !important; /* 未选中标签页：半透白 */
+    --tab-text: #334155 !important;                 /* 未选中文字：深灰 */
+    --tab-outline-color: rgba(0, 0, 0, 0.05) !important; /* 极弱边框轮廓 */
+    --tab-divider-color: transparent !important;    /* 隐藏生硬的分割线 */
+}
+
+/* --- 精准兜底：强制接管最左侧 Ribbon 和侧边栏文件树 --- */
+/* 防止部分面板忽略基础变量变灰 */
+body.theme-light .workspace-ribbon.side-dock-ribbon { background-color: #bae6fd !important; }
+
+body.theme-light .workspace-split.mod-left-split,
+body.theme-light .workspace-split.mod-left-split .workspace-leaf-content {
+    background-color: #e0f2fe !important; /* 恢复文件树的天蓝 */
+}
+
+
+/* ======================================================= */
+/* 2. 活动视口高亮 (Active Viewport Highlight) */
+/* ======================================================= */
+
+/* 仅为活动视口的头部标题栏添加深蓝色下划线高亮 */
+.workspace-leaf.mod-active .view-header {
+    border-bottom: 2px solid #2563eb !important; /* 经典的皇家深蓝色 */
+}
+
+/* 统一控制代码块的全局灰色背景变量 */
+body {
+    --my-code-bg: rgba(140, 140, 140, 0.15) !important; 
+    --my-code-border: rgba(140, 140, 140, 0.3) !important; 
+}
+
+
+/* ======================================================= */
+/* 3. 字体加粗与高亮 (Bold & Highlight) - 蓝色系适配版 */
+/* ======================================================= */
+
+/* --- 3.1 全局高亮形状 (保留所有高亮的圆角与边距) --- */
+.theme-light mark,
+.theme-light .markdown-rendered mark,
+.theme-light .cm-highlight {
+    border-radius: 4px !important;                       
+    padding: 1px 5px !important; 
+}
+
+/* --- 3.2 默认 == 高亮颜色 (仅针对默认高亮赋予蓝色) --- */
+.theme-light mark:not([class]):not([style]),
+.theme-light .markdown-rendered mark:not([class]):not([style]),
+.theme-light .cm-highlight:not([style]) {
+    background-color: rgba(186, 230, 253, 0.5) !important; 
+    color: #0f172a !important;                             
+}
+
+/* --- 3.3 加粗样式 ** ** --- */
+.theme-light strong,
+.theme-light .markdown-rendered strong,
+.theme-light .cm-strong {
+    font-weight: 780 !important; 
+    color: #1d4ed8 !important;                             
+}
+
+
+/* ======================================================= */
+/* 4. 标题颜色与大小统管 (Header Colors & Sizes) */
+/* ======================================================= */
+
+.inline-title {
+    color: #1e3a8a !important; 
+    font-size: 2em !important; 
+}
+
+.markdown-rendered h1, .cm-s-obsidian .cm-header-1, .cm-line.HyperMD-header-1 {
+    color: #1d4ed8 !important; 
+    font-size: 1.25em !important; 
+}
+
+.markdown-rendered h2, .cm-s-obsidian .cm-header-2, .cm-line.HyperMD-header-2 {
+    color: #2563eb !important; 
+    font-size: 1.15em !important; 
+}
+
+.markdown-rendered h3, .cm-s-obsidian .cm-header-3, .cm-line.HyperMD-header-3 {
+    color: #3b82f6 !important; 
+    font-size: 1.10em !important; 
+}
+
+.markdown-rendered h4, .cm-s-obsidian .cm-header-4, .cm-line.HyperMD-header-4 {
+    color: #60a5fa !important; 
+    font-size: 1.05em !important; 
+}
+
+.markdown-rendered h5, .cm-s-obsidian .cm-header-5, .cm-line.HyperMD-header-5 {
+    color: #6babfa !important; 
+    font-size: 1.05em !important; 
+}
+
+.markdown-rendered h6, .cm-s-obsidian .cm-header-6, .cm-line.HyperMD-header-6 {
+    color: #76b3fa !important; 
+    font-size: 1.05em !important; 
+}
+
+
+/* ======================================================= */
+/* 5. 标题右侧数字角标 (Header Badges) - 罗马数字 */
+/* ======================================================= */
+
+.markdown-rendered h1::after, .cm-line.HyperMD-header-1::after,
+.markdown-rendered h2::after, .cm-line.HyperMD-header-2::after,
+.markdown-rendered h3::after, .cm-line.HyperMD-header-3::after,
+.markdown-rendered h4::after, .cm-line.HyperMD-header-4::after,
+.markdown-rendered h5::after, .cm-line.HyperMD-header-5::after,
+.markdown-rendered h6::after, .cm-line.HyperMD-header-6::after {
+    font-family: "Times New Roman", Times, serif; 
+    font-size: 0.55em; 
+    font-weight: bold; 
+    font-style: normal; 
+    margin-left: 10px;            
+    border: 1.2px solid currentColor; 
+    padding: 1px 6px; 
+    border-radius: 2px; 
+    vertical-align: middle; 
+    line-height: 1; 
+    position: relative; 
+    top: 3px; 
+    letter-spacing: 1px; 
+    color: var(--text-normal) !important; 
+    opacity: 0.8; 
+}
+
+.markdown-rendered h1::after, .cm-line.HyperMD-header-1::after { content: "I"; } 
+.markdown-rendered h2::after, .cm-line.HyperMD-header-2::after { content: "II"; } 
+.markdown-rendered h3::after, .cm-line.HyperMD-header-3::after { content: "III"; } 
+.markdown-rendered h4::after, .cm-line.HyperMD-header-4::after { content: "IV"; } 
+.markdown-rendered h5::after, .cm-line.HyperMD-header-5::after { content: "V"; } 
+.markdown-rendered h6::after, .cm-line.HyperMD-header-6::after { content: "VI"; } 
+
+
+/* ======================================================= */
+/* 6. 代码块统一样式 (Code Block Styles) */
+/* ======================================================= */
+
+.markdown-rendered :not(pre) > code,
+.markdown-source-view.mod-cm6 .cm-inline-code {
+    background-color: var(--my-code-bg) !important; 
+    padding: 0.15em 0.4em !important; 
+    border-radius: 4px !important; 
+}
+
+.markdown-rendered pre {
+    background-color: var(--my-code-bg) !important; 
+    border: 1px solid var(--my-code-border) !important; 
+    border-radius: 6px !important; 
+    padding: 12px !important; 
+}
+
+.markdown-rendered pre > code {
+    background-color: transparent !important; 
+}
+
+.markdown-source-view.mod-cm6 .cm-line.HyperMD-codeblock,
+.markdown-source-view.mod-cm6 .cm-activeline.HyperMD-codeblock,
+.markdown-source-view.mod-cm6 .cm-line.HyperMD-codeblock-begin,
+.markdown-source-view.mod-cm6 .cm-line.HyperMD-codeblock-end {
+    background-color: var(--my-code-bg) !important; 
+}
+
+//Current filename: BlueTheme.css
+
+/* ======================================================= */
+/* 1. 主题背景色 (实体面板强行接管，完美适配深邃蓝) */
+/* ======================================================= */
+
+/* --- 深色模式 (Dark Mode) 界面面板强制上色 --- */
+/* 最左侧边栏 (Ribbon) & 顶部标题栏 */
+body.theme-dark .workspace-ribbon.side-dock-ribbon,
+body.theme-dark .titlebar,
+body.theme-dark .workspace-tab-header-container {
+    background-color: #0f172a !important; /* 较深的深邃蓝 */
+}
+
+/* 左侧文件树/列表面板 (Sidebar) */
+body.theme-dark .workspace-split.mod-left-split,
+body.theme-dark .workspace-split.mod-left-split .workspace-leaf-content {
+    background-color: #1e293b !important; /* 深邃蓝 */
+}
+
+/* 主编辑区 (内部画布) - 致命错误修复：删除了 .mod-root，防止活埋标签页 */
+body.theme-dark .workspace-split.mod-root .cm-scroller,
+body.theme-dark .workspace-split.mod-root .view-content {
+    background-color: #111111 !important; /* 纯深灰色 */
+}
+
+/* --- 保留兜底的变量设置 (防止某些小插件读取) --- */
+body.theme-dark {
+    --background-primary: #111111 !important;
+    --background-secondary: #1e293b !important;
+    --background-primary-alt: #333333 !important;
+    --background-secondary-alt: #0f172a !important;
+}
+
+
+/* ======================================================= */
+/* 2. 活动视口高亮 (Active Viewport Highlight) */
+/* ======================================================= */
+
+/* 仅为活动视口的头部标题栏添加深蓝色下划线高亮 */
+.workspace-leaf.mod-active .view-header {
+    border-bottom: 2px solid #2563eb !important; /* 经典的皇家深蓝色 */
+}
+
+/* 统一控制代码块的全局灰色背景变量（支持深色/浅色模式平滑过渡） */
+body {
+    --my-code-bg: rgba(140, 140, 140, 0.15) !important; /* 统一的浅灰/深灰透明底色 */
+    --my-code-border: rgba(140, 140, 140, 0.3) !important; /* 统一的边框颜色 */
+}
+
+/* ======================================================= */
+/* 3. 字体加粗与高亮 (Bold & Highlight) - 蓝色系适配版 */
+/* ======================================================= */
+
+/* --- 3.1 全局高亮形状 (保留所有高亮的圆角与边距) --- */
+.theme-dark mark,
+.theme-dark .markdown-rendered mark,
+.theme-dark .cm-highlight {
+    border-radius: 4px !important;                        
+    padding: 1px 5px !important; 
+}
+
+/* --- 3.2 默认 == 高亮颜色 (仅针对默认高亮赋予皇家深蓝) --- */
+.theme-dark mark:not([class]):not([style]),
+.theme-dark .markdown-rendered mark:not([class]):not([style]),
+.theme-dark .cm-highlight:not([style]) {
+    background-color: rgba(37, 99, 235, 0.42) !important; /* 皇家深蓝半透明 */
+    color: #ffffff !important;                            /* 纯白文字 */
+}
+
+/* --- 3.3 加粗样式 ** ** --- */
+.theme-dark strong,
+.theme-dark .markdown-rendered strong,
+.theme-dark .cm-strong {
+    font-weight: 780 !important;                          
+    color: #bfdbfe !important;                             /* 浅柔蓝，黑底辨识度极高 */
+}
+
+
+
+/* ======================================================= */
+/* 4. 标题颜色与大小统管 (Header Colors & Sizes) - 蓝色系微缩放梯度 */
+/* ======================================================= */
+
+.inline-title {
+    color: #1e3a8a !important; /* 极深邃蓝 */
+    font-size: 2em !important; 
+}
+
+.markdown-rendered h1, .cm-s-obsidian .cm-header-1, .cm-line.HyperMD-header-1 {
+    color: #1d4ed8 !important; /* 深海蓝 */
+    font-size: 1.25em !important; /* 过渡平滑且明显 */
+}
+
+.markdown-rendered h2, .cm-s-obsidian .cm-header-2, .cm-line.HyperMD-header-2 {
+    color: #2563eb !important; /* 皇家蓝 */
+    font-size: 1.15em !important; /* 过渡平滑且明显 */
+}
+
+.markdown-rendered h3, .cm-s-obsidian .cm-header-3, .cm-line.HyperMD-header-3 {
+    color: #3b82f6 !important; /* 经典蓝 */
+    font-size: 1.10em !important; /* 过渡平滑且明显 */
+}
+
+.markdown-rendered h4, .cm-s-obsidian .cm-header-4, .cm-line.HyperMD-header-4 {
+    color: #60a5fa !important; /* 亮天蓝 */
+    font-size: 1.05em !important; /* 确保比普通正文大一点 */
+}
+
+.markdown-rendered h5, .cm-s-obsidian .cm-header-5, .cm-line.HyperMD-header-5 {
+    color: #6babfa !important; /* 在4级基础上做极微妙的亮度变化 */
+    font-size: 1.05em !important; /* 大小和4级完全一致 */
+}
+
+.markdown-rendered h6, .cm-s-obsidian .cm-header-6, .cm-line.HyperMD-header-6 {
+    color: #76b3fa !important; /* 在5级基础上再做极微妙的亮度变化 */
+    font-size: 1.05em !important; /* 大小和4级完全一致 */
+}
+
+/* ======================================================= */
+/* 5. 标题右侧数字角标 (Header Badges) - 罗马数字 */
+/* ======================================================= */
+
+.markdown-rendered h1::after, .cm-line.HyperMD-header-1::after,
+.markdown-rendered h2::after, .cm-line.HyperMD-header-2::after,
+.markdown-rendered h3::after, .cm-line.HyperMD-header-3::after,
+.markdown-rendered h4::after, .cm-line.HyperMD-header-4::after,
+.markdown-rendered h5::after, .cm-line.HyperMD-header-5::after,
+.markdown-rendered h6::after, .cm-line.HyperMD-header-6::after {
+    font-family: "Times New Roman", Times, serif; 
+    font-size: 0.55em; 
+    font-weight: bold; 
+    font-style: normal; 
+    margin-left: 10px;            
+    border: 1.2px solid currentColor; 
+    padding: 1px 6px; 
+    border-radius: 2px; 
+    vertical-align: middle; 
+    line-height: 1; 
+    position: relative; 
+    top: 3px; 
+    letter-spacing: 1px; 
+    color: var(--text-normal) !important; 
+    opacity: 0.8; 
+}
+
+.markdown-rendered h1::after, .cm-line.HyperMD-header-1::after { content: "I"; } 
+.markdown-rendered h2::after, .cm-line.HyperMD-header-2::after { content: "II"; } 
+.markdown-rendered h3::after, .cm-line.HyperMD-header-3::after { content: "III"; } 
+.markdown-rendered h4::after, .cm-line.HyperMD-header-4::after { content: "IV"; } 
+.markdown-rendered h5::after, .cm-line.HyperMD-header-5::after { content: "V"; } 
+.markdown-rendered h6::after, .cm-line.HyperMD-header-6::after { content: "VI"; } 
+
+/* ======================================================= */
+/* 6. 代码块统一样式 (Code Block Styles) */
+/* ======================================================= */
+
+.markdown-rendered :not(pre) > code,
+.markdown-source-view.mod-cm6 .cm-inline-code {
+    background-color: var(--my-code-bg) !important; 
+    padding: 0.15em 0.4em !important; 
+    border-radius: 4px !important; 
+}
+
+.markdown-rendered pre {
+    background-color: var(--my-code-bg) !important; 
+    border: 1px solid var(--my-code-border) !important; 
+    border-radius: 6px !important; 
+    padding: 12px !important; 
+}
+
+.markdown-rendered pre > code {
+    background-color: transparent !important; 
+}
+
+.markdown-source-view.mod-cm6 .cm-line.HyperMD-codeblock,
+.markdown-source-view.mod-cm6 .cm-activeline.HyperMD-codeblock,
+.markdown-source-view.mod-cm6 .cm-line.HyperMD-codeblock-begin,
+.markdown-source-view.mod-cm6 .cm-line.HyperMD-codeblock-end {
+    background-color: var(--my-code-bg) !important; 
+}

@@ -33,7 +33,7 @@ impl CTool for CToolMoveDirectory {
     fn spec(&self) -> CToolSpec {
         CToolSpec {
             name: CTOOL_MOVE_DIRECTORY_TOOL_NAME,
-            description: "Move or rename one directory inside CToolBaseScope. Overwrite is never allowed.",
+            description: "Move or rename one directory inside CToolScopeBase. Overwrite is never allowed.",
         }
     }
 
@@ -79,7 +79,7 @@ pub fn move_directory(
 
 fn ensure_not_current_dir(ctx: &CToolContext, path: &Path) -> CToolResult<()> {
     let path = std::fs::canonicalize(path)?;
-    let current_dir = std::fs::canonicalize(&ctx.scope_context.current_dir)?;
+    let current_dir = std::fs::canonicalize(&ctx.scope_context.cool_workspace)?;
 
     if path == current_dir {
         return Err(CToolError::InvalidInput(format!(

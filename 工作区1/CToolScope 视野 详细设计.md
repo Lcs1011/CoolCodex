@@ -1,24 +1,35 @@
 
+
+
+# 基础视野
+
+
+基础视野 由  CToolScopeBase 枚举变量 决定
+
+CToolScopeBase 的默认值位于
+仅位于  SessionRoot   的 .cool 中 config.toml
+
+
+如果没有 找到默认值 则默认为 none
+
+ None 为基础视野
+ 即使 CoolWorkspace 默认等于 SessionRoot，
+ CTool 也仍然没有视野；
+ 只有 CToolScopeBase = CoolWorkspace 时，才使用 CoolWorkspace 路径作为基础视野
+
 # 视野设置
 
-# 基础视野设置
-由  CToolBaseScope
-决定
-
-仅位于  LaunchDir  .cool 中 config.toml
-
-如果没有
+CToolScopeBase枚举 位于 SessionRoot  .cool 中的  config.toml  设置
+CoolWorkspace  路径 也位于 SessionRoot  .cool 中的  config.toml  设置
 
 
 
+## 视野详细设置
+LauncherDir  .cool-system  中 scope.toml
+和 SessionRoot  .cool 中 scope.toml
 
-##
 
-SystemDir  .cool-system  中 config.toml
-和 LaunchDir  .cool 中 config.toml
-scope.toml
-
-其中有 以下分段 分别的决定 System级别的 和 的视野设置。
+其中有 以下分段 分别的决定 System级别 的 和SessionRoot 级别 的视野设置。
 
 ```
 [files]
@@ -38,63 +49,63 @@ hide = [
 
 
 
-## 视野权限
+
+
+## 视野设置权限
+
+### 原则概述
+
+系统 大于 Session
+
+文件大于文件夹 
+
+注：“文件规则优先于文件夹规则”是否符合预期。这意味着可以通过文件级规则对隐藏文件夹里的单个文件做例外放行
+但是SessionRoot 级别 无法越过 System级别
+
+禁止大于开放  （hide > readonly > readwrite）
+
+都大于 CToolScopeBase
+
+
+### 详细判定路径：
+System 和 SessionRoot 表示两个权限级别
 
 System.filehide>System.fileReadOnly>System.filereadwrite >
 System.folderhide>System.folderReadOnly>System.folderreadwrite >
-LaunchDir.filehide>LaunchDir.fileReadOnly>LaunchDir.filereadwrite >
-LaunchDir.folderhide>LaunchDir.folderReadOnly>LaunchDir.folderreadwrite >
-CToolBaseScope
+SessionRoot.filehide>SessionRoot.fileReadOnly>SessionRoot.filereadwrite >
+SessionRoot.folderhide>SessionRoot.folderReadOnly>SessionRoot.folderreadwrite >
+CToolScopeBase
 
 
 
 
-#### 权限设计
 
-就叫 LaunchDir 如何，这个简洁易懂   你觉得合适吗？
-然后我们的 .coolcache  和 .coolconfig.toml 完全跟随 LaunchDir 文件夹 而不是 Coolworkspace
-
-Coolworkspace 应当再 .coolconfig.toml 中有设置。 没有设置 默认为 LaunchDir
-Coolworkspace 开头应该显示 具体目录 作为第四项
-
-
-readwrite  
-readonly  
-hide
-
-
-CToolBaseScope 对应的也应该是 Coolworkspace
-并且 Coolworkspace 在开头应该也标注出来具体是哪个文件夹
-
-
-我的意思是问，Codex 有没有系统性提示词？ 这个提示词决定了当前整个的绘画基调。
-
-
-
-
-另外，你得告诉我 Codex 是否有天然的，就是系统提示此文件夹？ 这个提示词是要贯穿始末的，它不是说某一次加载的 test，它决定了整个这一次对话这一个启动出来的 context 的整体会话气质。
 
 #### 加载顺序
-```
+
 1. main 初始化 SafeMode
 2. 解析 PermissionProfile
-3. 解析 CToolBaseScope
-4. 获取 CurrentDir，也就是当前 CMD 调用 codex 的文件夹
-5. 加载 .coolsystemconfig.toml  //暂时位于启动 bat相同文件夹  找不到所有内容按默认空算
-- 找不到：按空配置  
-- 格式错误：CTool 不启用，报错  
-6. 加载 WorkspaceRoot\.coolconfig.toml  
-- 找不到：按空配置  
-- 格式错误：CTool 不启用，报错  
+3. 解析 CToolScopeBase
+4. 获取 SessionRoot，也就是当前 CMD 调用 codex 的文件夹
+
+5. 加载 LauncherDir\.cool-system\config.toml //暂时位于启动 bat相同文件夹  找不到所有内容按默认空算
+
+	- 找不到：按空配置  
+	- 格式错误：CTool 不启用，报错  
+6. 加载 SessionRoot\.cool\config.toml
+	- 找不到：按空配置  
+	- 格式错误：CTool 不启用，报错  
 7. 构造 CToolScopeContext  
 8. 构造 CToolContext  
 9. 注册 CTool
-```
+
 
 
 
 #### 视野操作 相关命令
-命令正式为 /CToolScope 简写 /cs 
+命令正式为 
+/CToolScope 简写 
+/cs 
 整个命令无视大小写
 //CLI 本身是区分命令大小写的
 

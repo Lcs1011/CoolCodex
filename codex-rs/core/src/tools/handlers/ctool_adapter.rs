@@ -154,7 +154,7 @@ Rules:
   "include_hidden": false
 }
 
-Use this to inspect project structure inside CToolBaseScope."#
+Use this to inspect project structure inside CToolScopeBase."#
         }
         "ctool_rg_search" => {
             r#"Input JSON:
@@ -167,7 +167,7 @@ Use this to inspect project structure inside CToolBaseScope."#
   "include_hidden": false
 }
 
-Use this to search UTF-8 text files by literal substring inside CToolBaseScope."#
+Use this to search UTF-8 text files by literal substring inside CToolScopeBase."#
         }
         "ctool_read_code_range" => {
             r#"Input JSON:

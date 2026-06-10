@@ -1,31 +1,31 @@
 use std::fmt;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum CToolBaseScope {
+pub enum CToolScopeBase {
     None,
-    Workspace,
+    CoolWorkspace,
     SelectedOnly,
     TheEyeofProvidence,
 }
 
-impl CToolBaseScope {
+impl CToolScopeBase {
     pub fn as_str(self) -> &'static str {
         match self {
-            CToolBaseScope::None => "None",
-            CToolBaseScope::Workspace => "Workspace",
-            CToolBaseScope::SelectedOnly => "SelectedOnly",
-            CToolBaseScope::TheEyeofProvidence => "TheEyeofProvidence",
+            CToolScopeBase::None => "None",
+            CToolScopeBase::CoolWorkspace => "CoolWorkspace",
+            CToolScopeBase::SelectedOnly => "SelectedOnly",
+            CToolScopeBase::TheEyeofProvidence => "TheEyeofProvidence",
         }
     }
 }
 
-impl Default for CToolBaseScope {
+impl Default for CToolScopeBase {
     fn default() -> Self {
-        CToolBaseScope::None
+        CToolScopeBase::None
     }
 }
 
-impl fmt::Display for CToolBaseScope {
+impl fmt::Display for CToolScopeBase {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(self.as_str())
     }

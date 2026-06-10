@@ -4,7 +4,7 @@
 //! catalog state into one-time TUI prompts or warning cells without owning the main event loop.
 
 use super::*;
-use ctool::CToolBaseScope;
+use ctool::CToolScopeBase;
 use std::collections::HashSet;
 use std::path::PathBuf;
 
@@ -60,9 +60,9 @@ pub(super) fn emit_permission_profile_status(app_event_tx: &AppEventSender, conf
 }
 
 pub(super) fn emit_ctool_scope_status(app_event_tx: &AppEventSender) {
-    let scope = CToolBaseScope::Workspace;
+    let scope = CToolScopeBase::None;
     app_event_tx.send(AppEvent::InsertHistoryCell(Box::new(
-        history_cell::new_info_event(format!("CToolBaseScope: {scope}")),
+        history_cell::new_info_event(format!("CToolScopeBase: {scope}")),
     )));
 }
 

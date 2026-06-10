@@ -81,12 +81,12 @@ pub fn preview_command_request(
     let request_reason = input.reason.clone();
 
     let command_config = load_merged_cool_command_config(
-        &ctx.scope_context.user_config_path,
+        &ctx.scope_context.session_config_path,
         ctx.scope_context.system_config_path.as_deref(),
     )?;
 
     let preview = build_command_request_preview(
-        &ctx.scope_context.current_dir,
+        &ctx.scope_context.cool_workspace,
         input.commands,
         &command_config,
         input.ai_risk_upgrade,
@@ -102,7 +102,7 @@ pub fn preview_command_request(
         "Preview only. Yellow and Red command requests are not executed yet.".to_string();
 
     if preview.approval == CToolCommandApproval::AutoApprovedGreen {
-        let report = execute_approved_command_request(&ctx.scope_context.current_dir, &preview)?;
+        let report = execute_approved_command_request(&ctx.scope_context.cool_workspace, &preview)?;
 
         executed = true;
         all_success = Some(report.all_success);
