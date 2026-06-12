@@ -1,0 +1,13 @@
+[files]
+readwrite = []
+readonly = []
+hide = []
+
+[folders]
+readwrite = []
+readonly = []
+hide = [
+  ".codex",
+  ".cool",
+  "工作区1/AI/Launchers/.cool-system"
+]

@@ -1,0 +1,363 @@
+
+
+
+/* ======================================================= */
+/* Active Viewport Highlight */
+/* ======================================================= */
+
+.workspace-leaf.mod-active .view-header {
+    border-bottom: 2px solid var(--cool-frame-accent) !important;
+}
+
+
+
+/* ======================================================= */
+/* Blue Theme Frame */
+/* Obsidian shell, sidebars, tabs, and active viewport. */
+/* ======================================================= */
+
+
+
+
+/* ======================================================= */
+/* Light Mode */
+/* ======================================================= */
+
+body {
+    /* Fallback accent: RGB(80, 135, 255). */
+    --cool-frame-accent: var(--interactive-accent, rgb(80, 135, 255));
+    --cool-frame-light-secondary: color-mix(in srgb, var(--cool-frame-accent) 12%, white);
+    --cool-frame-light-secondary-alt: color-mix(in srgb, var(--cool-frame-accent) 24%, white);
+    --cool-frame-dark-primary: color-mix(in srgb, var(--cool-frame-accent) 6%, #0b0b0f);
+    --cool-frame-dark-secondary: color-mix(in srgb, var(--cool-frame-accent) 16%, #111827);
+    --cool-frame-dark-primary-alt: color-mix(in srgb, var(--cool-frame-accent) 10%, #262626);
+    --cool-frame-dark-secondary-alt: color-mix(in srgb, var(--cool-frame-accent) 10%, #0b0b0f);
+}
+
+body.theme-light {
+    /* Base background variables */
+    --background-primary: #ffffff !important;
+    --background-secondary: var(--cool-frame-light-secondary) !important;
+    --background-primary-alt: #ffffff !important;
+    --background-secondary-alt: var(--cool-frame-light-secondary-alt) !important;
+    --titlebar-background: var(--cool-frame-light-secondary-alt) !important;
+
+}
+
+
+
+/* ======================================================= */
+/* Dark Mode */
+/* ======================================================= */
+
+
+body.theme-dark {
+    --background-primary: var(--cool-frame-dark-primary) !important;
+    --background-secondary: var(--cool-frame-dark-secondary) !important;
+    --background-primary-alt: var(--cool-frame-dark-primary-alt) !important;
+    --background-secondary-alt: var(--cool-frame-dark-secondary-alt) !important;
+}
+
+
+
+
+/* ======================================================= */
+/* Blue Theme Text */
+/* Markdown content, headings, highlights, and code blocks. */
+/* ======================================================= */
+
+body {
+    --my-code-bg: rgba(140, 140, 140, 0.15) !important;
+    --my-code-border: rgba(140, 140, 140, 0.3) !important;
+
+    /* Fallback accent: RGB(80, 135, 255). */
+    --cool-theme-accent: var(--interactive-accent, rgb(80, 135, 255));
+    --cool-heading-1: var(--cool-theme-accent);
+    --cool-heading-2: var(--cool-theme-accent);
+}
+
+body.theme-light {
+    --cool-heading-3: color-mix(in srgb, var(--cool-theme-accent) 88%, black);
+    --cool-heading-4: color-mix(in srgb, var(--cool-theme-accent) 76%, black);
+    --cool-heading-5: color-mix(in srgb, var(--cool-theme-accent) 64%, black);
+    --cool-heading-6: color-mix(in srgb, var(--cool-theme-accent) 52%, black);
+    --cool-heading-badge: color-mix(in srgb, var(--cool-theme-accent) 48%, white);
+    --cool-heading-badge-light: color-mix(in srgb, var(--cool-theme-accent) 62%, white);
+}
+
+body.theme-dark {
+    --cool-heading-3: color-mix(in srgb, var(--cool-theme-accent) 88%, white);
+    --cool-heading-4: color-mix(in srgb, var(--cool-theme-accent) 76%, white);
+    --cool-heading-5: color-mix(in srgb, var(--cool-theme-accent) 64%, white);
+    --cool-heading-6: color-mix(in srgb, var(--cool-theme-accent) 52%, white);
+    --cool-heading-badge: color-mix(in srgb, var(--cool-theme-accent) 35%, white);
+    --cool-heading-badge-light: color-mix(in srgb, var(--cool-theme-accent) 48%, white);
+}
+
+
+/* ======================================================= */
+/* Bold & Highlight */
+/* ======================================================= */
+
+.theme-light mark,
+.theme-light .markdown-rendered mark,
+.theme-light .cm-highlight,
+.theme-dark mark,
+.theme-dark .markdown-rendered mark,
+.theme-dark .cm-highlight {
+    border-radius: 4px !important;
+    padding: 1px 5px !important;
+}
+
+.theme-light mark:not([class]):not([style]),
+.theme-light .markdown-rendered mark:not([class]):not([style]),
+.theme-light .cm-highlight:not([style]) {
+    background-color: rgba(186, 230, 253, 0.5) !important;
+    color: #0f172a !important;
+}
+
+.theme-dark mark:not([class]):not([style]),
+.theme-dark .markdown-rendered mark:not([class]):not([style]),
+.theme-dark .cm-highlight:not([style]) {
+    background-color: rgba(37, 99, 235, 0.42) !important;
+    color: #ffffff !important;
+}
+
+.theme-light strong,
+.theme-light .markdown-rendered strong,
+.theme-light .cm-strong {
+    font-weight: 780 !important;
+    color: var(--cool-heading-1) !important;
+}
+
+.theme-dark strong,
+.theme-dark .markdown-rendered strong,
+.theme-dark .cm-strong {
+    font-weight: 780 !important;
+    color: var(--cool-heading-badge) !important;
+}
+
+
+/* ======================================================= */
+/* Header Colors & Sizes */
+/* ======================================================= */
+
+.inline-title {
+    color: var(--cool-heading-1) !important;
+    font-size: 2em !important;
+}
+
+.markdown-rendered h1,
+.cm-s-obsidian .cm-header-1,
+.cm-line.HyperMD-header-1 {
+    color: var(--cool-heading-1) !important;
+    font-size: 1.25em !important;
+}
+
+.markdown-rendered h2,
+.cm-s-obsidian .cm-header-2,
+.cm-line.HyperMD-header-2 {
+    color: var(--cool-heading-2) !important;
+    font-size: 1.15em !important;
+}
+
+.markdown-rendered h3,
+.cm-s-obsidian .cm-header-3,
+.cm-line.HyperMD-header-3 {
+    color: var(--cool-heading-3) !important;
+    font-size: 1.10em !important;
+}
+
+.markdown-rendered h4,
+.cm-s-obsidian .cm-header-4,
+.cm-line.HyperMD-header-4 {
+    color: var(--cool-heading-4) !important;
+    font-size: 1.05em !important;
+}
+
+.markdown-rendered h5,
+.cm-s-obsidian .cm-header-5,
+.cm-line.HyperMD-header-5 {
+    color: var(--cool-heading-5) !important;
+    font-size: 1.05em !important;
+}
+
+.markdown-rendered h6,
+.cm-s-obsidian .cm-header-6,
+.cm-line.HyperMD-header-6 {
+    color: var(--cool-heading-6) !important;
+    font-size: 1.05em !important;
+}
+
+
+
+/* Final heading color overrides for Obsidian reading view and live preview. */
+body.theme-light .inline-title,
+body.theme-dark .inline-title,
+body.theme-light .markdown-rendered h1,
+body.theme-dark .markdown-rendered h1,
+body.theme-light .markdown-rendered h2,
+body.theme-dark .markdown-rendered h2,
+body.theme-light .markdown-source-view.mod-cm6 .cm-line.HyperMD-header-1,
+body.theme-dark .markdown-source-view.mod-cm6 .cm-line.HyperMD-header-1,
+body.theme-light .markdown-source-view.mod-cm6 .cm-line.HyperMD-header-1 .cm-header-1,
+body.theme-dark .markdown-source-view.mod-cm6 .cm-line.HyperMD-header-1 .cm-header-1,
+body.theme-light .markdown-source-view.mod-cm6 .cm-line.HyperMD-header-2,
+body.theme-dark .markdown-source-view.mod-cm6 .cm-line.HyperMD-header-2,
+body.theme-light .markdown-source-view.mod-cm6 .cm-line.HyperMD-header-2 .cm-header-2,
+body.theme-dark .markdown-source-view.mod-cm6 .cm-line.HyperMD-header-2 .cm-header-2 {
+    color: var(--cool-heading-1) !important;
+}
+
+body.theme-light .markdown-rendered h3,
+body.theme-dark .markdown-rendered h3,
+body.theme-light .markdown-source-view.mod-cm6 .cm-line.HyperMD-header-3,
+body.theme-dark .markdown-source-view.mod-cm6 .cm-line.HyperMD-header-3,
+body.theme-light .markdown-source-view.mod-cm6 .cm-line.HyperMD-header-3 .cm-header-3,
+body.theme-dark .markdown-source-view.mod-cm6 .cm-line.HyperMD-header-3 .cm-header-3 {
+    color: var(--cool-heading-3) !important;
+}
+
+body.theme-light .markdown-rendered h4,
+body.theme-dark .markdown-rendered h4,
+body.theme-light .markdown-source-view.mod-cm6 .cm-line.HyperMD-header-4,
+body.theme-dark .markdown-source-view.mod-cm6 .cm-line.HyperMD-header-4,
+body.theme-light .markdown-source-view.mod-cm6 .cm-line.HyperMD-header-4 .cm-header-4,
+body.theme-dark .markdown-source-view.mod-cm6 .cm-line.HyperMD-header-4 .cm-header-4 {
+    color: var(--cool-heading-4) !important;
+}
+
+body.theme-light .markdown-rendered h5,
+body.theme-dark .markdown-rendered h5,
+body.theme-light .markdown-source-view.mod-cm6 .cm-line.HyperMD-header-5,
+body.theme-dark .markdown-source-view.mod-cm6 .cm-line.HyperMD-header-5,
+body.theme-light .markdown-source-view.mod-cm6 .cm-line.HyperMD-header-5 .cm-header-5,
+body.theme-dark .markdown-source-view.mod-cm6 .cm-line.HyperMD-header-5 .cm-header-5 {
+    color: var(--cool-heading-5) !important;
+}
+
+body.theme-light .markdown-rendered h6,
+body.theme-dark .markdown-rendered h6,
+body.theme-light .markdown-source-view.mod-cm6 .cm-line.HyperMD-header-6,
+body.theme-dark .markdown-source-view.mod-cm6 .cm-line.HyperMD-header-6,
+body.theme-light .markdown-source-view.mod-cm6 .cm-line.HyperMD-header-6 .cm-header-6,
+body.theme-dark .markdown-source-view.mod-cm6 .cm-line.HyperMD-header-6 .cm-header-6 {
+    color: var(--cool-heading-6) !important;
+}
+/* ======================================================= */
+/* Header Badges */
+/* ======================================================= */
+
+
+.markdown-rendered h1::after,
+.cm-line.HyperMD-header-1::after,
+.markdown-rendered h2::after,
+.cm-line.HyperMD-header-2::after,
+.markdown-rendered h3::after,
+.cm-line.HyperMD-header-3::after,
+.markdown-rendered h4::after,
+.cm-line.HyperMD-header-4::after,
+.markdown-rendered h5::after,
+.cm-line.HyperMD-header-5::after,
+.markdown-rendered h6::after,
+.cm-line.HyperMD-header-6::after {
+    font-family: "Times New Roman", Times, serif;
+    font-size: 0.55em;
+    font-weight: bold;
+    font-style: normal;
+    margin-left: 4px;
+    border: 0 !important;
+    padding: 1px 6px;
+    border-radius: 0;
+    vertical-align: middle;
+    line-height: 1;
+    position: relative;
+    top: 1px;
+    letter-spacing: 1px;
+    color: var(--cool-heading-badge) !important;
+    opacity: 0.8;
+}
+
+
+.theme-light .markdown-rendered h1::after,
+.theme-light .cm-line.HyperMD-header-1::after,
+.theme-light .markdown-rendered h2::after,
+.theme-light .cm-line.HyperMD-header-2::after,
+.theme-light .markdown-rendered h3::after,
+.theme-light .cm-line.HyperMD-header-3::after,
+.theme-light .markdown-rendered h4::after,
+.theme-light .cm-line.HyperMD-header-4::after,
+.theme-light .markdown-rendered h5::after,
+.theme-light .cm-line.HyperMD-header-5::after,
+.theme-light .markdown-rendered h6::after,
+.theme-light .cm-line.HyperMD-header-6::after {
+    color: var(--cool-heading-badge-light) !important;
+}
+.markdown-rendered h1::after,
+.cm-line.HyperMD-header-1::after,
+.markdown-rendered h2::after,
+.cm-line.HyperMD-header-2::after {
+    font-size: 0.68em;
+    padding: 1px 5px;
+    top: -1px;
+}
+
+.markdown-rendered h1::after,
+.cm-line.HyperMD-header-1::after {
+    content: "☾";
+}
+
+.markdown-rendered h2::after,
+.cm-line.HyperMD-header-2::after {
+    content: "★";
+}
+
+.markdown-rendered h3::after,
+.cm-line.HyperMD-header-3::after {
+    content: "III";
+}
+
+.markdown-rendered h4::after,
+.cm-line.HyperMD-header-4::after {
+    content: "IV";
+}
+
+.markdown-rendered h5::after,
+.cm-line.HyperMD-header-5::after {
+    content: "V";
+}
+
+.markdown-rendered h6::after,
+.cm-line.HyperMD-header-6::after {
+    content: "VI";
+}
+
+
+/* ======================================================= */
+/* Code Block Styles */
+/* ======================================================= */
+
+.markdown-rendered :not(pre) > code,
+.markdown-source-view.mod-cm6 .cm-inline-code {
+    background-color: var(--my-code-bg) !important;
+    padding: 0.15em 0.4em !important;
+    border-radius: 4px !important;
+}
+
+.markdown-rendered pre {
+    background-color: var(--my-code-bg) !important;
+    border: 1px solid var(--my-code-border) !important;
+    border-radius: 6px !important;
+    padding: 12px !important;
+}
+
+.markdown-rendered pre > code {
+    background-color: transparent !important;
+}
+
+.markdown-source-view.mod-cm6 .cm-line.HyperMD-codeblock,
+.markdown-source-view.mod-cm6 .cm-activeline.HyperMD-codeblock,
+.markdown-source-view.mod-cm6 .cm-line.HyperMD-codeblock-begin,
+.markdown-source-view.mod-cm6 .cm-line.HyperMD-codeblock-end {
+    background-color: var(--my-code-bg) !important;
+}

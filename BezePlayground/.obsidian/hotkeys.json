@@ -1,0 +1,10 @@
+{
+  "workspace:copy-full-path": [
+    {
+      "modifiers": [
+        "Alt"
+      ],
+      "key": "C"
+    }
+  ]
+}

@@ -9,6 +9,7 @@ use crate::scope_config::CToolScopeConfig;
 use crate::scope_config::load_optional_cool_config;
 use crate::scope_context::CToolScopeContext;
 use crate::scope_context::normalize_scope_config;
+use crate::scope_context::resolve_user_path;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CToolScopeCommand {
@@ -32,7 +33,7 @@ pub enum CToolScopeTarget {
 pub enum CToolScopeRule {
     Readwrite,
     Readonly,
-    Hide,
+    Hidden,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -94,9 +95,9 @@ fn parse_scope_rule_command(tokens: &[&str]) -> CToolResult<CToolScopeCommand> {
             index += 1;
             CToolScopeRule::Readonly
         }
-        Some(token) if token == "hide" => {
+        Some(token) if token == "hidden" || token == "hide" => {
             index += 1;
-            CToolScopeRule::Hide
+            CToolScopeRule::Hidden
         }
         _ => CToolScopeRule::Readwrite,
     };
@@ -126,9 +127,9 @@ pub fn handle_ctool_scope_command(
         CToolScopeCommand::Show => Ok(show_ctool_scope(ctx)),
         CToolScopeCommand::SetBaseScope(base_scope) => {
             ctx.base_scope = base_scope;
-            save_session_base_scope(ctx, base_scope)?;
+            save_character_base_scope(ctx, base_scope)?;
             Ok(format!(
-                "CToolScopeBase set to {} for current session.",
+                "CToolScopeBase set to {} for current Character.",
                 ctx.base_scope
             ))
         }
@@ -138,6 +139,7 @@ pub fn handle_ctool_scope_command(
             action,
             path,
         } => {
+            let path = resolve_user_path(ctx, path);
             update_user_config(ctx, |config| {
                 update_scope_rule(config, target, rule, action, path.clone())
             })?;
@@ -156,14 +158,14 @@ pub fn show_ctool_scope(ctx: &CToolScopeContext) -> String {
     let mut output = String::new();
 
     let _ = writeln!(output, "CToolScopeBase: {}", ctx.base_scope);
-    let _ = writeln!(output, "SessionRoot: {}", ctx.session_root.display());
+    let _ = writeln!(output, "CharacterRoot: {}", ctx.character_root.display());
     let _ = writeln!(output, "CoolWorkspace: {}", ctx.cool_workspace.display());
     let _ = writeln!(
         output,
-        "SessionConfig: {}",
-        ctx.session_config_path.display()
+        "CharacterConfig: {}",
+        ctx.character_config_path.display()
     );
-    let _ = writeln!(output, "SessionScope: {}", ctx.user_config_path.display());
+    let _ = writeln!(output, "CharacterScope: {}", ctx.user_config_path.display());
 
     match &ctx.system_config_path {
         Some(path) => {
@@ -175,22 +177,22 @@ pub fn show_ctool_scope(ctx: &CToolScopeContext) -> String {
     }
 
     let _ = writeln!(output);
-    let _ = writeln!(output, "[Session files]");
+    let _ = writeln!(output, "[Character files]");
     write_path_list(&mut output, "readwrite", &ctx.user_config.files.readwrite);
     write_path_list(&mut output, "readonly", &ctx.user_config.files.readonly);
-    write_path_list(&mut output, "hide", &ctx.user_config.files.hide);
+    write_path_list(&mut output, "hidden", &ctx.user_config.files.hidden);
 
     let _ = writeln!(output);
-    let _ = writeln!(output, "[Session folders]");
+    let _ = writeln!(output, "[Character folders]");
     write_path_list(&mut output, "readwrite", &ctx.user_config.folders.readwrite);
     write_path_list(&mut output, "readonly", &ctx.user_config.folders.readonly);
-    write_path_list(&mut output, "hide", &ctx.user_config.folders.hide);
+    write_path_list(&mut output, "hidden", &ctx.user_config.folders.hidden);
 
     let _ = writeln!(output);
     let _ = writeln!(output, "[System files]");
     write_path_list(&mut output, "readwrite", &ctx.system_config.files.readwrite);
     write_path_list(&mut output, "readonly", &ctx.system_config.files.readonly);
-    write_path_list(&mut output, "hide", &ctx.system_config.files.hide);
+    write_path_list(&mut output, "hidden", &ctx.system_config.files.hidden);
 
     let _ = writeln!(output);
     let _ = writeln!(output, "[System folders]");
@@ -200,7 +202,7 @@ pub fn show_ctool_scope(ctx: &CToolScopeContext) -> String {
         &ctx.system_config.folders.readwrite,
     );
     write_path_list(&mut output, "readonly", &ctx.system_config.folders.readonly);
-    write_path_list(&mut output, "hide", &ctx.system_config.folders.hide);
+    write_path_list(&mut output, "hidden", &ctx.system_config.folders.hidden);
 
     output
 }
@@ -219,7 +221,7 @@ impl CToolScopeRule {
         match self {
             CToolScopeRule::Readwrite => "readwrite",
             CToolScopeRule::Readonly => "readonly",
-            CToolScopeRule::Hide => "hide",
+            CToolScopeRule::Hidden => "hidden",
         }
     }
 }
@@ -257,7 +259,7 @@ pub fn add_hide_path(config: &mut CToolScopeConfig, path: PathBuf) -> bool {
     update_scope_rule(
         config,
         CToolScopeTarget::Folder,
-        CToolScopeRule::Hide,
+        CToolScopeRule::Hidden,
         CToolScopeAction::Add,
         path,
     )
@@ -267,7 +269,7 @@ pub fn remove_hide_path(config: &mut CToolScopeConfig, path: &Path) -> bool {
     update_scope_rule(
         config,
         CToolScopeTarget::Folder,
-        CToolScopeRule::Hide,
+        CToolScopeRule::Hidden,
         CToolScopeAction::Remove,
         path.to_path_buf(),
     )
@@ -303,10 +305,10 @@ fn update_scope_rule(
     let paths = match (target, rule) {
         (CToolScopeTarget::File, CToolScopeRule::Readwrite) => &mut config.files.readwrite,
         (CToolScopeTarget::File, CToolScopeRule::Readonly) => &mut config.files.readonly,
-        (CToolScopeTarget::File, CToolScopeRule::Hide) => &mut config.files.hide,
+        (CToolScopeTarget::File, CToolScopeRule::Hidden) => &mut config.files.hidden,
         (CToolScopeTarget::Folder, CToolScopeRule::Readwrite) => &mut config.folders.readwrite,
         (CToolScopeTarget::Folder, CToolScopeRule::Readonly) => &mut config.folders.readonly,
-        (CToolScopeTarget::Folder, CToolScopeRule::Hide) => &mut config.folders.hide,
+        (CToolScopeTarget::Folder, CToolScopeRule::Hidden) => &mut config.folders.hidden,
     };
 
     match action {
@@ -337,18 +339,21 @@ pub fn save_current_dir_cool_config(path: &Path, config: &CToolScopeConfig) -> C
     })
 }
 
-fn save_session_base_scope(ctx: &CToolScopeContext, base_scope: CToolScopeBase) -> CToolResult<()> {
-    let path = &ctx.session_config_path;
+fn save_character_base_scope(
+    ctx: &CToolScopeContext,
+    base_scope: CToolScopeBase,
+) -> CToolResult<()> {
+    let path = &ctx.character_config_path;
     let mut value = if path.exists() {
         let text = std::fs::read_to_string(path).map_err(|error| {
             CToolError::InvalidInput(format!(
-                "failed to read Cool session config file: {} ({error})",
+                "failed to read Cool character config file: {} ({error})",
                 path.display()
             ))
         })?;
         toml::from_str::<toml::Value>(&text).map_err(|error| {
             CToolError::InvalidInput(format!(
-                "failed to parse Cool session config file: {} ({error})",
+                "failed to parse Cool character config file: {} ({error})",
                 path.display()
             ))
         })?
@@ -358,7 +363,7 @@ fn save_session_base_scope(ctx: &CToolScopeContext, base_scope: CToolScopeBase) 
 
     let Some(table) = value.as_table_mut() else {
         return Err(CToolError::InvalidInput(format!(
-            "Cool session config must be a TOML table: {}",
+            "Cool character config must be a TOML table: {}",
             path.display()
         )));
     };
@@ -370,7 +375,7 @@ fn save_session_base_scope(ctx: &CToolScopeContext, base_scope: CToolScopeBase) 
 
     let text = toml::to_string_pretty(&value).map_err(|error| {
         CToolError::InvalidInput(format!(
-            "failed to serialize Cool session config TOML: {error}"
+            "failed to serialize Cool character config TOML: {error}"
         ))
     })?;
 
@@ -385,7 +390,7 @@ fn save_session_base_scope(ctx: &CToolScopeContext, base_scope: CToolScopeBase) 
 
     std::fs::write(path, text).map_err(|error| {
         CToolError::InvalidInput(format!(
-            "failed to save Cool session config file: {} ({error})",
+            "failed to save Cool character config file: {} ({error})",
             path.display()
         ))
     })
@@ -400,7 +405,7 @@ fn update_user_config(
 
     save_current_dir_cool_config(&ctx.user_config_path, &raw_config)?;
 
-    ctx.user_config = normalize_scope_config(raw_config, &ctx.cool_workspace);
+    ctx.user_config = normalize_scope_config(raw_config, &ctx.character_root);
 
     Ok(())
 }
@@ -413,7 +418,7 @@ fn parse_base_scope(value: &str) -> CToolResult<CToolScopeBase> {
         }
         "selectedonly" | "selected_only" | "selected-only" => Ok(CToolScopeBase::SelectedOnly),
         "theeyeofprovidence" | "the_eye_of_providence" | "the-eye-of-providence" => {
-            Ok(CToolScopeBase::TheEyeofProvidence)
+            Ok(CToolScopeBase::TheEyeOfProvidence)
         }
         _ => Err(CToolError::InvalidInput(format!(
             "unsupported CToolScopeBase: {value}"
@@ -479,3 +484,7 @@ fn write_path_list(output: &mut String, label: &str, paths: &[PathBuf]) {
         let _ = writeln!(output, "  - {}", path.display());
     }
 }
+
+#[cfg(test)]
+#[path = "scope_command_tests.rs"]
+mod tests;

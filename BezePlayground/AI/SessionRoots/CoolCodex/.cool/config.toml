@@ -1,0 +1,4 @@
+ctool_scope_base = "CoolWorkspace"
+
+# Temporary development workspace. When AI is moved to C:\Arsenal, update if needed.
+cool_workspace = "C:\\CodexLab\\codex"

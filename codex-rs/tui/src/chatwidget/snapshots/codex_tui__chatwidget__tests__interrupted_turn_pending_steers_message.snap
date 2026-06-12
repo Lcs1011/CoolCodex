@@ -1,5 +1,6 @@
 ---
-source: tui/src/chatwidget/tests.rs
+source: tui/src/chatwidget/tests/review_mode.rs
+assertion_line: 1325
 expression: info
 ---
-• Model interrupted to submit steer instructions.
+ⓘ Model interrupted to submit steer instructions.

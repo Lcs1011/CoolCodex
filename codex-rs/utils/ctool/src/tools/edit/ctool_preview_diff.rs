@@ -12,6 +12,7 @@ use crate::tool::CTool;
 use crate::tool::CToolSpec;
 use crate::tools::edit::ctool_edit_insert::apply_insert_after_line_to_text;
 use crate::tools::edit::ctool_edit_replace::apply_exact_replace_to_text;
+use crate::tools::edit::ensure_editable_text_file_size;
 
 pub const CTOOL_PREVIEW_DIFF_TOOL_NAME: &str = "ctool_preview_diff";
 
@@ -79,6 +80,7 @@ pub fn preview_diff(
     }
 
     let path = gate::ensure_read_allowed(ctx, &input.path)?;
+    ensure_editable_text_file_size(&path, "preview_diff")?;
 
     let before = std::fs::read_to_string(&path)?;
     let mut after = before.clone();

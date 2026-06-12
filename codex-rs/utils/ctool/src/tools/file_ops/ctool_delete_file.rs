@@ -59,6 +59,12 @@ pub fn delete_file(
     }
 
     if let Some(expected_content) = input.expected_content {
+        if metadata.len() != expected_content.len() as u64 {
+            return Err(CToolError::InvalidInput(format!(
+                "expected_content did not match actual file content: {}",
+                path.display()
+            )));
+        }
         let actual_content = std::fs::read_to_string(&path)?;
         if actual_content != expected_content {
             return Err(CToolError::InvalidInput(format!(

@@ -3667,7 +3667,6 @@ async fn render_clear_ui_header_after_long_transcript_for_snapshot() -> String {
         make_header(true),
         Arc::new(crate::history_cell::new_info_event(
             "startup tip that used to replay".to_string(),
-            /*hint*/ None,
         )) as Arc<dyn HistoryCell>,
         user_cell("Tell me a long story about a town with a dark lighthouse."),
         agent_cell(story_part_one),

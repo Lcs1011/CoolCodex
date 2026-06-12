@@ -1,0 +1,100 @@
+/* =========================================
+   1. 基础架构 (绿色和红色共享的底层排版逻辑)
+   ========================================= */
+.callout[data-callout="annotation"],
+.callout[data-callout="critical-annotation"] {
+    --callout-icon: none;
+    position: relative; 
+    overflow: hidden;   
+    border-radius: 6px; 
+}
+
+.callout[data-callout="annotation"] .callout-title,
+.callout[data-callout="critical-annotation"] .callout-title {
+    display: none;
+}
+
+.callout[data-callout="annotation"] .callout-content,
+.callout[data-callout="critical-annotation"] .callout-content {
+    font-family: var(--font-monospace);
+    font-size: 0.95em;
+    position: relative;
+    z-index: 1; 
+}
+
+/* =========================================
+   2. 巨型水印的通用排版
+   ========================================= */
+.callout[data-callout="annotation"]::after,
+.callout[data-callout="critical-annotation"]::after {
+    position: absolute;
+    bottom: -8px; 
+    right: -4px;  
+    font-size: 4em; 
+    font-weight: 900; 
+    font-style: italic; 
+    font-family: 'Arial Black', Impact, sans-serif; 
+    pointer-events: none; 
+    z-index: 0;
+    letter-spacing: -2px; 
+    user-select: none; 
+}
+
+/* 🟢 专属水印文字：常规批注 */
+.callout[data-callout="annotation"]::after {
+    content: "ANNOTATION"; 
+}
+/* 🔴 专属水印文字：最高级警告 */
+.callout[data-callout="critical-annotation"]::after {
+    content: "CRITICAL_ANNOTATION"; 
+}
+
+/* =========================================
+   3. ☀️ 浅色模式 (Light Mode) 颜色控制
+   ========================================= */
+/* 🟢 浅色：清茶绿 */
+.theme-light .callout[data-callout="annotation"] {
+    background-color: #f0f7f4; 
+    color: #2c3e35; 
+    border: 2px solid #a8d5ba !important; 
+}
+.theme-light .callout[data-callout="annotation"]::after {
+    color: #79b791;
+    opacity: 0.12; 
+}
+
+/* 🔴 浅色：警报红 (极淡的红底，刺眼的深红字，血红边框) */
+.theme-light .callout[data-callout="critical-annotation"] {
+    background-color: #fdf2f2; 
+    color: #5c1616; 
+    border: 2px solid #fca5a5 !important; 
+}
+.theme-light .callout[data-callout="critical-annotation"]::after {
+    color: #f87171;
+    opacity: 0.12; 
+}
+
+/* =========================================
+   4. 🌙 深色模式 (Dark Mode) 颜色控制
+   ========================================= */
+/* 🟢 深色：暗夜绿 */
+.theme-dark .callout[data-callout="annotation"] {
+    background-color: #121e16; 
+    color: #b8d1c2; 
+    border: 2px solid #2d5a3f !important; 
+}
+.theme-dark .callout[data-callout="annotation"]::after {
+    color: #427e5b;
+    opacity: 0.08; 
+}
+
+/* 🔴 深色：危险深红 (极黑的红底，粉红色的字保证阅读，深血红边框) */
+.theme-dark .callout[data-callout="critical-annotation"] {
+    background-color: #241111; 
+    color: #fecdd3; 
+    border: 2px solid #7f1d1d !important; 
+}
+.theme-dark .callout[data-callout="critical-annotation"]::after {
+    color: #991b1b;
+    opacity: 0.08; 
+}

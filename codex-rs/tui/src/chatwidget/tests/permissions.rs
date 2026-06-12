@@ -43,6 +43,28 @@ fn app_server_workspace_write_profile(extra_root: AbsolutePathBuf) -> Permission
                     access: FileSystemAccessMode::Write,
                 },
             ],
+
+fn selected_permissions_popup_row(chat: &ChatWidget) -> String {
+    let popup = render_bottom_popup(chat, /*width*/ 80);
+    popup
+        .lines()
+        .find(|line| line.trim_start().starts_with('\u{203a}'))
+        .unwrap_or_else(|| panic!("expected selected permissions row: {popup}"))
+        .to_string()
+}
+
+fn move_permissions_popup_selection_to(chat: &mut ChatWidget, label: &str) {
+    for _ in 0..16 {
+        let selected_row = selected_permissions_popup_row(chat);
+        if selected_row.contains(label) {
+            return;
+        }
+        chat.handle_key_event(KeyEvent::from(KeyCode::Down));
+    }
+
+    let popup = render_bottom_popup(chat, /*width*/ 80);
+    panic!("failed to select permissions row containing {label:?}: {popup}");
+}
             glob_scan_max_depth: None,
         },
     }
@@ -239,7 +261,7 @@ async fn profile_permissions_full_access_opens_confirmation() {
     chat.config.notices.hide_full_access_warning = None;
 
     chat.open_permissions_popup();
-    chat.handle_key_event(KeyEvent::from(KeyCode::Up));
+    move_permissions_popup_selection_to(&mut chat, "Full Access");
     chat.handle_key_event(KeyEvent::from(KeyCode::Enter));
 
     let events = std::iter::from_fn(|| rx.try_recv().ok()).collect::<Vec<_>>();
@@ -686,7 +708,8 @@ async fn approvals_popup_navigation_skips_disabled() {
     );
     assert!(rx.try_recv().is_err(), "no history should be emitted");
 
-    // Press Enter; selection should land on an enabled preset and dispatch updates.
+    // Press Enter on a known enabled preset and dispatch updates.
+    move_permissions_popup_selection_to(&mut chat, ASK_FOR_APPROVAL_LABEL);
     chat.handle_key_event(KeyEvent::from(KeyCode::Enter));
     let mut app_events = Vec::new();
     while let Ok(ev) = rx.try_recv() {
@@ -1126,9 +1149,7 @@ async fn permissions_full_access_history_cell_emitted_only_after_confirmation() 
     chat.config.notices.hide_full_access_warning = None;
 
     chat.open_permissions_popup();
-    chat.handle_key_event(KeyEvent::from(KeyCode::Down));
-    #[cfg(target_os = "windows")]
-    chat.handle_key_event(KeyEvent::from(KeyCode::Down));
+    move_permissions_popup_selection_to(&mut chat, "Full Access");
     chat.handle_key_event(KeyEvent::from(KeyCode::Enter));
 
     let mut open_confirmation_event = None;

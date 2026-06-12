@@ -1,0 +1,61 @@
+
+
+
+/* ======================================================= */
+/* Blue Theme Frame */
+/* Obsidian shell, sidebars, tabs, and active viewport. */
+/* ======================================================= */
+
+
+
+
+/* ======================================================= */
+/* Light Mode */
+/* ======================================================= */
+
+body {
+    /* Fallback accent: RGB(80, 135, 255). */
+    --cool-frame-accent: var(--interactive-accent, rgb(80, 135, 255));
+    --cool-frame-light-secondary: color-mix(in srgb, var(--cool-frame-accent) 12%, white);
+    --cool-frame-light-secondary-alt: color-mix(in srgb, var(--cool-frame-accent) 24%, white);
+    --cool-frame-dark-primary: color-mix(in srgb, var(--cool-frame-accent) 6%, #0b0b0f);
+    --cool-frame-dark-secondary: color-mix(in srgb, var(--cool-frame-accent) 16%, #111827);
+    --cool-frame-dark-primary-alt: color-mix(in srgb, var(--cool-frame-accent) 10%, #262626);
+    --cool-frame-dark-secondary-alt: color-mix(in srgb, var(--cool-frame-accent) 10%, #0b0b0f);
+}
+
+body.theme-light {
+    /* Base background variables */
+    --background-primary: #ffffff !important;
+    --background-secondary: var(--cool-frame-light-secondary) !important;
+    --background-primary-alt: #ffffff !important;
+    --background-secondary-alt: var(--cool-frame-light-secondary-alt) !important;
+    --titlebar-background: var(--cool-frame-light-secondary-alt) !important;
+
+}
+
+
+
+/* ======================================================= */
+/* Dark Mode */
+/* ======================================================= */
+
+
+body.theme-dark {
+    --background-primary: var(--cool-frame-dark-primary) !important;
+    --background-secondary: var(--cool-frame-dark-secondary) !important;
+    --background-primary-alt: var(--cool-frame-dark-primary-alt) !important;
+    --background-secondary-alt: var(--cool-frame-dark-secondary-alt) !important;
+}
+
+
+
+
+
+/* ======================================================= */
+/* Active Viewport Highlight */
+/* ======================================================= */
+
+.workspace-leaf.mod-active .view-header {
+    border-bottom: 2px solid var(--cool-frame-accent) !important;
+}

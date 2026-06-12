@@ -120,6 +120,10 @@ fn collect_directory_items(
 
     gate::ensure_search_allowed(ctx, current)?;
 
+    if depth >= max_depth {
+        return Ok(());
+    }
+
     let mut entries = Vec::new();
     for entry in fs::read_dir(current)? {
         entries.push(entry?);

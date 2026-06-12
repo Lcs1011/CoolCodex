@@ -5,7 +5,7 @@ pub enum CToolScopeBase {
     None,
     CoolWorkspace,
     SelectedOnly,
-    TheEyeofProvidence,
+    TheEyeOfProvidence,
 }
 
 impl CToolScopeBase {
@@ -14,7 +14,7 @@ impl CToolScopeBase {
             CToolScopeBase::None => "None",
             CToolScopeBase::CoolWorkspace => "CoolWorkspace",
             CToolScopeBase::SelectedOnly => "SelectedOnly",
-            CToolScopeBase::TheEyeofProvidence => "TheEyeofProvidence",
+            CToolScopeBase::TheEyeOfProvidence => "TheEyeOfProvidence",
         }
     }
 }

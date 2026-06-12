@@ -1,11 +1,12 @@
 ---
 source: tui/src/chatwidget/tests/status_and_layout.rs
+assertion_line: 1310
 expression: "rendered_cases.join(\"\\n---\\n\")"
 ---
-• Workspace owner notified.
+ⓘ Workspace owner notified.
 
 ---
-• Workspace owner was already notified recently.
+ⓘ Workspace owner was already notified recently.
 
 ---
-• Could not notify your workspace owner. Please try again.
+ⓘ Could not notify your workspace owner. Please try again.

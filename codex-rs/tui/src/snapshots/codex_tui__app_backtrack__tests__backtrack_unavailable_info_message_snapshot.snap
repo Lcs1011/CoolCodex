@@ -1,5 +1,6 @@
 ---
 source: tui/src/app_backtrack.rs
+assertion_line: 982
 expression: rendered
 ---
-• No previous message to edit.
+ⓘ No previous message to edit.

@@ -10,6 +10,7 @@ use crate::error::CToolResult;
 use crate::gate;
 use crate::tool::CTool;
 use crate::tool::CToolSpec;
+use crate::tools::edit::ensure_editable_text_file_size;
 
 pub const CTOOL_EDIT_REPLACE_TOOL_NAME: &str = "ctool_edit_replace";
 
@@ -51,6 +52,7 @@ pub fn edit_replace(
 ) -> CToolResult<CToolEditReplaceOutput> {
     gate::ensure_read_allowed(ctx, &input.path)?;
     let path = gate::ensure_write_allowed(ctx, &input.path)?;
+    ensure_editable_text_file_size(&path, "edit_replace")?;
 
     let before = std::fs::read_to_string(&path)?;
     let after = apply_exact_replace_to_text(&before, &input.old_string, &input.new_string)?;

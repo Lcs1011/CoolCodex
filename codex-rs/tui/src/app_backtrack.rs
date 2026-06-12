@@ -940,7 +940,6 @@ mod tests {
             )) as Arc<dyn HistoryCell>,
             Arc::new(crate::history_cell::new_info_event(
                 "Context compacted".to_string(),
-                /*hint*/ None,
             )) as Arc<dyn HistoryCell>,
             Arc::new(AgentMessageCell::new(
                 vec![Line::from("second")],
@@ -960,7 +959,6 @@ mod tests {
             )) as Arc<dyn HistoryCell>,
             Arc::new(crate::history_cell::new_info_event(
                 "Context compacted".to_string(),
-                /*hint*/ None,
             )) as Arc<dyn HistoryCell>,
         ];
 
@@ -978,10 +976,7 @@ mod tests {
 
     #[test]
     fn backtrack_unavailable_info_message_snapshot() {
-        let cell = crate::history_cell::new_info_event(
-            NO_PREVIOUS_MESSAGE_TO_EDIT.to_string(),
-            /*hint*/ None,
-        );
+        let cell = crate::history_cell::new_info_event(NO_PREVIOUS_MESSAGE_TO_EDIT.to_string());
         let rendered = render_lines(&cell.display_lines(/*width*/ 80)).join("\n");
 
         insta::assert_snapshot!(rendered);

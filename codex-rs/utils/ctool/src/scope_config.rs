@@ -21,10 +21,12 @@ pub const COOL_SYSTEM_DIR_ENV: &str = "COOL_SYSTEM_DIR";
 pub const COOL_SYSTEM_CONFIG_ENV: &str = "COOL_SYSTEM_CONFIG";
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
-pub struct CToolSessionConfig {
+pub struct CToolCharacterConfig {
     pub scope_base: Option<CToolScopeBase>,
     pub cool_workspace: Option<PathBuf>,
 }
+
+pub type CToolSessionConfig = CToolCharacterConfig;
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, Default)]
 pub struct CToolScopeConfig {
@@ -40,12 +42,12 @@ pub struct CToolScopeRuleSet {
     pub readwrite: Vec<PathBuf>,
     #[serde(default)]
     pub readonly: Vec<PathBuf>,
-    #[serde(default)]
-    pub hide: Vec<PathBuf>,
+    #[serde(default, alias = "hide")]
+    pub hidden: Vec<PathBuf>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Default)]
-struct CoolSessionConfigToml {
+struct CoolCharacterConfigToml {
     #[serde(default)]
     ctool_scope_base: Option<String>,
     #[serde(default)]
@@ -66,28 +68,36 @@ impl Default for CoolCommandConfigToml {
     }
 }
 
-pub fn empty_session_config() -> CToolSessionConfig {
-    CToolSessionConfig::default()
+pub fn empty_character_config() -> CToolCharacterConfig {
+    CToolCharacterConfig::default()
+}
+
+pub fn empty_session_config() -> CToolCharacterConfig {
+    empty_character_config()
 }
 
 pub fn empty_scope_config() -> CToolScopeConfig {
     CToolScopeConfig::default()
 }
 
-pub fn locate_cool_dir(session_root: impl AsRef<Path>) -> PathBuf {
-    session_root.as_ref().join(COOL_DIR_NAME)
+pub fn locate_cool_dir(character_root: impl AsRef<Path>) -> PathBuf {
+    character_root.as_ref().join(COOL_DIR_NAME)
 }
 
-pub fn locate_cool_config_path(session_root: impl AsRef<Path>) -> PathBuf {
-    locate_cool_dir(session_root).join(CONFIG_FILE_NAME)
+pub fn locate_cool_config_path(character_root: impl AsRef<Path>) -> PathBuf {
+    locate_cool_dir(character_root).join(CONFIG_FILE_NAME)
 }
 
-pub fn locate_cool_scope_path(session_root: impl AsRef<Path>) -> PathBuf {
-    locate_cool_dir(session_root).join(SCOPE_FILE_NAME)
+pub fn locate_cool_scope_path(character_root: impl AsRef<Path>) -> PathBuf {
+    locate_cool_dir(character_root).join(SCOPE_FILE_NAME)
 }
 
-pub fn locate_cool_command_path(session_root: impl AsRef<Path>) -> PathBuf {
-    locate_cool_dir(session_root).join(COMMAND_FILE_NAME)
+pub fn locate_cool_command_path(character_root: impl AsRef<Path>) -> PathBuf {
+    locate_cool_dir(character_root).join(COMMAND_FILE_NAME)
+}
+
+pub fn locate_cool_system_dir_from_launcher(launcher_dir: impl AsRef<Path>) -> PathBuf {
+    launcher_dir.as_ref().join(COOL_SYSTEM_DIR_NAME)
 }
 
 pub fn locate_cool_system_dir() -> Option<PathBuf> {
@@ -128,29 +138,33 @@ pub fn locate_cool_system_command_path() -> Option<PathBuf> {
     locate_cool_system_dir().map(|dir| dir.join(COMMAND_FILE_NAME))
 }
 
-pub fn load_optional_cool_session_config(path: &Path) -> CToolResult<CToolSessionConfig> {
+pub fn load_optional_cool_character_config(path: &Path) -> CToolResult<CToolCharacterConfig> {
     if !path.exists() {
-        return Ok(empty_session_config());
+        return Ok(empty_character_config());
     }
 
     let text = std::fs::read_to_string(path).map_err(|error| {
         CToolError::InvalidInput(format!(
-            "failed to read Cool session config file: {} ({error})",
+            "failed to read Cool character config file: {} ({error})",
             path.display()
         ))
     })?;
 
-    parse_cool_session_config_toml(&text).map_err(|error| {
+    parse_cool_character_config_toml(&text).map_err(|error| {
         CToolError::InvalidInput(format!(
-            "failed to parse Cool session config file: {} ({error})",
+            "failed to parse Cool character config file: {} ({error})",
             path.display()
         ))
     })
 }
 
-pub fn parse_cool_session_config_toml(text: &str) -> CToolResult<CToolSessionConfig> {
-    let file: CoolSessionConfigToml = toml::from_str(text).map_err(|error| {
-        CToolError::InvalidInput(format!("invalid Cool session TOML config: {error}"))
+pub fn load_optional_cool_session_config(path: &Path) -> CToolResult<CToolCharacterConfig> {
+    load_optional_cool_character_config(path)
+}
+
+pub fn parse_cool_character_config_toml(text: &str) -> CToolResult<CToolCharacterConfig> {
+    let file: CoolCharacterConfigToml = toml::from_str(text).map_err(|error| {
+        CToolError::InvalidInput(format!("invalid Cool character TOML config: {error}"))
     })?;
 
     let scope_base = match file.ctool_scope_base.as_deref() {
@@ -158,10 +172,14 @@ pub fn parse_cool_session_config_toml(text: &str) -> CToolResult<CToolSessionCon
         None => None,
     };
 
-    Ok(CToolSessionConfig {
+    Ok(CToolCharacterConfig {
         scope_base,
         cool_workspace: file.cool_workspace,
     })
+}
+
+pub fn parse_cool_session_config_toml(text: &str) -> CToolResult<CToolCharacterConfig> {
+    parse_cool_character_config_toml(text)
 }
 
 pub fn load_optional_cool_config(path: &Path) -> CToolResult<CToolScopeConfig> {
@@ -197,7 +215,7 @@ fn parse_scope_base(value: &str) -> CToolResult<CToolScopeBase> {
         }
         "selectedonly" | "selected_only" | "selected-only" => Ok(CToolScopeBase::SelectedOnly),
         "theeyeofprovidence" | "the_eye_of_providence" | "the-eye-of-providence" => {
-            Ok(CToolScopeBase::TheEyeofProvidence)
+            Ok(CToolScopeBase::TheEyeOfProvidence)
         }
         _ => Err(CToolError::InvalidInput(format!(
             "unsupported CToolScopeBase: {value}"
@@ -238,14 +256,14 @@ pub fn parse_cool_command_config_toml(text: &str) -> CToolResult<CToolCommandCon
 }
 
 pub fn load_merged_cool_command_config(
-    session_command_path: &Path,
+    character_command_path: &Path,
     system_command_path: Option<&Path>,
 ) -> CToolResult<CToolCommandConfig> {
-    let session_config = load_optional_cool_command_config(session_command_path)?;
+    let character_config = load_optional_cool_command_config(character_command_path)?;
     let system_config = match system_command_path {
         Some(path) => load_optional_cool_command_config(path)?,
         None => empty_command_config(),
     };
 
-    Ok(merge_command_configs(session_config, system_config))
+    Ok(merge_command_configs(character_config, system_config))
 }

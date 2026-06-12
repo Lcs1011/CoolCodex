@@ -15,6 +15,8 @@ pub enum SlashCommand {
     Model,
     Ide,
     Permissions,
+    #[strum(to_string = "cs", serialize = "ctoolscope")]
+    CToolScope,
     Keymap,
     Vim,
     #[strum(serialize = "setup-default-sandbox")]
@@ -123,6 +125,7 @@ impl SlashCommand {
                 "start a side conversation in an ephemeral fork"
             }
             SlashCommand::Permissions => "choose what Codex is allowed to do",
+            SlashCommand::CToolScope => "show or update CTool scope",
             SlashCommand::Keymap => "remap TUI shortcuts",
             SlashCommand::Vim => "toggle Vim mode for the composer",
             SlashCommand::ElevateSandbox => "set up elevated agent sandbox",
@@ -157,6 +160,7 @@ impl SlashCommand {
                 | SlashCommand::Goal
                 | SlashCommand::Ide
                 | SlashCommand::Keymap
+                | SlashCommand::CToolScope
                 | SlashCommand::Mcp
                 | SlashCommand::Raw
                 | SlashCommand::Pets
@@ -192,6 +196,7 @@ impl SlashCommand {
             | SlashCommand::Model
             | SlashCommand::Personality
             | SlashCommand::Permissions
+            | SlashCommand::CToolScope
             | SlashCommand::Keymap
             | SlashCommand::Vim
             | SlashCommand::ElevateSandbox

@@ -13,6 +13,7 @@ use crate::tool::CTool;
 use crate::tool::CToolSpec;
 use crate::tools::edit::ctool_edit_insert::apply_insert_after_line_to_text;
 use crate::tools::edit::ctool_edit_replace::apply_exact_replace_to_text;
+use crate::tools::edit::ensure_editable_text_file_size;
 
 pub const CTOOL_EDIT_BATCH_TOOL_NAME: &str = "ctool_edit_batch";
 
@@ -89,6 +90,7 @@ pub fn edit_batch(
             } => {
                 gate::ensure_read_allowed(ctx, &path)?;
                 let path = gate::ensure_write_allowed(ctx, &path)?;
+                ensure_editable_text_file_size(&path, "edit_batch")?;
 
                 if !text_by_path.contains_key(&path) {
                     text_by_path.insert(path.clone(), std::fs::read_to_string(&path)?);
@@ -107,6 +109,7 @@ pub fn edit_batch(
             } => {
                 gate::ensure_read_allowed(ctx, &path)?;
                 let path = gate::ensure_write_allowed(ctx, &path)?;
+                ensure_editable_text_file_size(&path, "edit_batch")?;
 
                 if !text_by_path.contains_key(&path) {
                     text_by_path.insert(path.clone(), std::fs::read_to_string(&path)?);

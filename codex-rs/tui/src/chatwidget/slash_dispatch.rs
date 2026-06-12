@@ -124,6 +124,28 @@ impl ChatWidget {
         self.request_side_conversation(parent_thread_id, /*user_message*/ None);
     }
 
+    fn handle_ctool_scope_command_text(&mut self, input: &str) {
+        let mut ctx = match ctool::CToolContext::workspace(&self.config.cwd) {
+            Ok(ctx) => ctx,
+            Err(error) => {
+                self.add_error_message(format!("CToolScope failed to initialize: {error}"));
+                return;
+            }
+        };
+        let command = match ctool::parse_ctool_scope_command(input) {
+            Ok(command) => command,
+            Err(error) => {
+                self.add_error_message(error.to_string());
+                return;
+            }
+        };
+
+        match ctool::handle_ctool_scope_command(command, &mut ctx.scope_context) {
+            Ok(output) => self.add_info_message(output, /*hint*/ None),
+            Err(error) => self.add_error_message(error.to_string()),
+        }
+    }
+
     fn emit_raw_output_mode_changed(&self, enabled: bool) {
         self.app_event_tx
             .send(AppEvent::RawOutputModeChanged { enabled });
@@ -287,6 +309,9 @@ impl ChatWidget {
             }
             SlashCommand::Permissions => {
                 self.open_permissions_popup();
+            }
+            SlashCommand::CToolScope => {
+                self.handle_ctool_scope_command_text("/cs");
             }
             SlashCommand::Vim => {
                 self.toggle_vim_mode_and_notify();
@@ -631,6 +656,9 @@ impl ChatWidget {
                 "verbose" => self.add_mcp_output(McpServerStatusDetail::Full),
                 _ => self.add_error_message("Usage: /mcp [verbose]".to_string()),
             },
+            SlashCommand::CToolScope => {
+                self.handle_ctool_scope_command_text(&format!("/cs {trimmed}"));
+            }
             SlashCommand::Keymap => match trimmed.to_ascii_lowercase().as_str() {
                 "" => self.open_keymap_picker(),
                 "debug" => {
@@ -971,6 +999,7 @@ impl ChatWidget {
         match cmd {
             SlashCommand::Ide
             | SlashCommand::Status
+            | SlashCommand::CToolScope
             | SlashCommand::DebugConfig
             | SlashCommand::Ps
             | SlashCommand::Stop

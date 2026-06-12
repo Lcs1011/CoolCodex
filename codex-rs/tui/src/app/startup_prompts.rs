@@ -4,7 +4,6 @@
 //! catalog state into one-time TUI prompts or warning cells without owning the main event loop.
 
 use super::*;
-use ctool::CToolScopeBase;
 use std::collections::HashSet;
 use std::path::PathBuf;
 
@@ -59,11 +58,22 @@ pub(super) fn emit_permission_profile_status(app_event_tx: &AppEventSender, conf
     )));
 }
 
-pub(super) fn emit_ctool_scope_status(app_event_tx: &AppEventSender) {
-    let scope = CToolScopeBase::None;
-    app_event_tx.send(AppEvent::InsertHistoryCell(Box::new(
-        history_cell::new_info_event(format!("CToolScopeBase: {scope}")),
-    )));
+pub(super) fn emit_ctool_scope_status(app_event_tx: &AppEventSender, config: &Config) {
+    match ctool::CToolContext::workspace(&config.cwd) {
+        Ok(ctx) => {
+            let scope_status = ctool::show_ctool_scope(&ctx.scope_context);
+            app_event_tx.send(AppEvent::InsertHistoryCell(Box::new(
+                history_cell::new_info_event(scope_status),
+            )));
+        }
+        Err(error) => {
+            app_event_tx.send(AppEvent::InsertHistoryCell(Box::new(
+                history_cell::new_warning_event(format!(
+                    "CToolScope: failed to initialize ({error})"
+                )),
+            )));
+        }
+    }
 }
 
 fn permission_profile_status_name(config: &Config) -> String {
@@ -552,8 +562,8 @@ mod tests {
         .join("\n");
 
         insta::assert_snapshot!(rendered, @r"
-âš  Skipped loading 1 skill(s) due to invalid SKILL.md files.
-âš  /repo/.codex/skills/abc/SKILL.md: invalid description
+⚠ Skipped loading 1 skill(s) due to invalid SKILL.md files.
+⚠ /repo/.codex/skills/abc/SKILL.md: invalid description
 ");
     }
 }

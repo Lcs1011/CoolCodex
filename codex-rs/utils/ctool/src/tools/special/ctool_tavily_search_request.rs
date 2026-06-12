@@ -214,18 +214,18 @@ pub fn run_tavily_search_request(
     input: CToolTavilySearchRequestInput,
 ) -> CToolResult<CToolTavilySearchRequestOutput> {
     let system_config = load_system_tavily_config(ctx)?;
-    let misplaced_token_path = find_session_tavily_token_path(ctx)?;
-    let session_config = load_session_tavily_config(ctx)?;
+    let misplaced_token_path = find_character_tavily_token_path(ctx)?;
+    let character_config = load_character_tavily_config(ctx)?;
     let config = merge_tavily_configs(
         system_config.ctool_tavily_search,
-        session_config.ctool_tavily_search,
+        character_config.ctool_tavily_search,
     );
     let mut plan = classify_tavily_request(&input, &config);
     if let Some(path) = misplaced_token_path {
         plan = TavilyRequestPlan {
             risk: CToolCommandRisk::Blocked,
             reason: format!(
-                "tavily_api_key is only allowed in CoolSystemDir\\config.toml, not {}",
+                "tavily_api_key is only allowed in CoolSystemDir\\tavily.toml, not {}",
                 path.display()
             ),
         };
@@ -393,15 +393,15 @@ fn load_system_tavily_config(ctx: &CToolContext) -> CToolResult<TavilyConfigToml
     })
 }
 
-fn load_session_tavily_config(ctx: &CToolContext) -> CToolResult<TavilyConfigToml> {
-    let path = &ctx.scope_context.session_config_path;
+fn load_character_tavily_config(ctx: &CToolContext) -> CToolResult<TavilyConfigToml> {
+    let path = &ctx.scope_context.character_config_path;
     if !path.exists() {
         return Ok(default_tavily_config_toml());
     }
     let text = std::fs::read_to_string(path)?;
     toml::from_str(&text).map_err(|error| {
         CToolError::InvalidInput(format!(
-            "failed to parse Tavily session config: {} ({error})",
+            "failed to parse Tavily character config: {} ({error})",
             path.display()
         ))
     })
@@ -415,27 +415,27 @@ fn default_tavily_config_toml() -> TavilyConfigToml {
 
 fn merge_tavily_configs(
     system: TavilySearchConfig,
-    session: TavilySearchConfig,
+    character: TavilySearchConfig,
 ) -> TavilySearchConfig {
     TavilySearchConfig {
-        enabled: system.enabled && session.enabled,
+        enabled: system.enabled && character.enabled,
         provider: system.provider,
         tavily_api_key: system.tavily_api_key,
-        allow_text_search: system.allow_text_search && session.allow_text_search,
-        allow_extract: system.allow_extract && session.allow_extract,
-        allow_zoom: system.allow_zoom && session.allow_zoom,
-        allow_research: system.allow_research && session.allow_research,
-        allow_image_search: system.allow_image_search && session.allow_image_search,
-        max_search_results: system.max_search_results.min(session.max_search_results),
-        max_extract_chars: system.max_extract_chars.min(session.max_extract_chars),
-        max_zoom_chars: system.max_zoom_chars.min(session.max_zoom_chars),
-        sensitive_keywords: merge_strings(system.sensitive_keywords, session.sensitive_keywords),
-        blocked_keywords: merge_strings(system.blocked_keywords, session.blocked_keywords),
+        allow_text_search: system.allow_text_search && character.allow_text_search,
+        allow_extract: system.allow_extract && character.allow_extract,
+        allow_zoom: system.allow_zoom && character.allow_zoom,
+        allow_research: system.allow_research && character.allow_research,
+        allow_image_search: system.allow_image_search && character.allow_image_search,
+        max_search_results: system.max_search_results.min(character.max_search_results),
+        max_extract_chars: system.max_extract_chars.min(character.max_extract_chars),
+        max_zoom_chars: system.max_zoom_chars.min(character.max_zoom_chars),
+        sensitive_keywords: merge_strings(system.sensitive_keywords, character.sensitive_keywords),
+        blocked_keywords: merge_strings(system.blocked_keywords, character.blocked_keywords),
     }
 }
 
-fn merge_strings(mut system: Vec<String>, session: Vec<String>) -> Vec<String> {
-    for item in session {
+fn merge_strings(mut system: Vec<String>, character: Vec<String>) -> Vec<String> {
+    for item in character {
         if !system.iter().any(|existing| existing == &item) {
             system.push(item);
         }
@@ -443,11 +443,11 @@ fn merge_strings(mut system: Vec<String>, session: Vec<String>) -> Vec<String> {
     system
 }
 
-fn find_session_tavily_token_path(ctx: &CToolContext) -> CToolResult<Option<PathBuf>> {
+fn find_character_tavily_token_path(ctx: &CToolContext) -> CToolResult<Option<PathBuf>> {
     for path in [
-        &ctx.scope_context.session_config_path,
+        &ctx.scope_context.character_config_path,
         &ctx.scope_context.user_config_path,
-        &ctx.scope_context.session_command_path,
+        &ctx.scope_context.character_command_path,
     ] {
         if !path.exists() {
             continue;
@@ -463,12 +463,12 @@ fn find_session_tavily_token_path(ctx: &CToolContext) -> CToolResult<Option<Path
 fn require_tavily_api_key(config: &TavilySearchConfig) -> CToolResult<&str> {
     let Some(api_key) = config.tavily_api_key.as_deref() else {
         return Err(CToolError::InvalidInput(
-            "missing tavily_api_key in CoolSystemDir\\config.toml".to_string(),
+            "missing tavily_api_key in CoolSystemDir\\tavily.toml".to_string(),
         ));
     };
     if api_key.trim().is_empty() {
         return Err(CToolError::InvalidInput(
-            "empty tavily_api_key in CoolSystemDir\\config.toml".to_string(),
+            "empty tavily_api_key in CoolSystemDir\\tavily.toml".to_string(),
         ));
     }
     Ok(api_key)
@@ -922,7 +922,7 @@ fn build_write_target(
 ) -> CToolResult<TavilyWriteTarget> {
     let cache_dir = ctx
         .scope_context
-        .session_root
+        .character_root
         .join(COOL_DIR_NAME)
         .join("cache")
         .join("web_search")
@@ -1232,7 +1232,7 @@ fn resolve_cache_source_path(ctx: &CToolContext, source_file: &Path) -> PathBuf 
 fn ensure_inside_web_cache(ctx: &CToolContext, path: &Path) -> CToolResult<()> {
     let cache_root = ctx
         .scope_context
-        .session_root
+        .character_root
         .join(COOL_DIR_NAME)
         .join("cache")
         .join("web_search");

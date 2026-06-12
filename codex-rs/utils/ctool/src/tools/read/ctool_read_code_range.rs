@@ -14,6 +14,7 @@ use crate::tool::CToolSpec;
 pub const CTOOL_READ_CODE_RANGE_TOOL_NAME: &str = "ctool_read_code_range";
 
 const MAX_READ_CODE_RANGE_LINES: usize = 400;
+const MAX_READ_CODE_RANGE_FILE_BYTES: u64 = 2 * 1024 * 1024;
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub struct CToolReadCodeRangeInput {
@@ -72,8 +73,27 @@ pub fn read_code_range(
     }
 
     let path = gate::ensure_read_allowed(ctx, &input.path)?;
+    let metadata = std::fs::metadata(&path)?;
+    if !metadata.is_file() {
+        return Err(CToolError::InvalidInput(format!(
+            "path is not a file: {}",
+            path.display()
+        )));
+    }
+    if metadata.len() > MAX_READ_CODE_RANGE_FILE_BYTES {
+        return Err(CToolError::InvalidInput(format!(
+            "file is too large for read_code_range: {} bytes; max bytes: {}",
+            metadata.len(),
+            MAX_READ_CODE_RANGE_FILE_BYTES
+        )));
+    }
 
-    let text = std::fs::read_to_string(&path)?;
+    let text = std::fs::read_to_string(&path).map_err(|error| {
+        CToolError::InvalidInput(format!(
+            "file is not valid UTF-8 text: {} ({error})",
+            path.display()
+        ))
+    })?;
     let lines: Vec<&str> = text.lines().collect();
     let total_lines = lines.len();
 

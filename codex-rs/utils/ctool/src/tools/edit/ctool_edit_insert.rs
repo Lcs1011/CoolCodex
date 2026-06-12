@@ -10,6 +10,7 @@ use crate::error::CToolResult;
 use crate::gate;
 use crate::tool::CTool;
 use crate::tool::CToolSpec;
+use crate::tools::edit::ensure_editable_text_file_size;
 
 pub const CTOOL_EDIT_INSERT_TOOL_NAME: &str = "ctool_edit_insert";
 
@@ -55,6 +56,7 @@ pub fn edit_insert(
 ) -> CToolResult<CToolEditInsertOutput> {
     gate::ensure_read_allowed(ctx, &input.path)?;
     let path = gate::ensure_write_allowed(ctx, &input.path)?;
+    ensure_editable_text_file_size(&path, "edit_insert")?;
 
     let before = std::fs::read_to_string(&path)?;
     let after = apply_insert_after_line_to_text(&before, input.insert_after_line, &input.content)?;

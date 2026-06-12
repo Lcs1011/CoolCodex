@@ -17,6 +17,7 @@ const DEFAULT_TAIL_LINES: usize = 200;
 const MAX_TAIL_LINES: usize = 2000;
 const DEFAULT_TAIL_BYTES: u64 = 64 * 1024;
 const MAX_TAIL_BYTES: u64 = 512 * 1024;
+const MAX_TAIL_FILE_BYTES: u64 = 8 * 1024 * 1024;
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub struct CToolTailFileInput {
@@ -78,6 +79,13 @@ pub fn tail_file(
         return Err(CToolError::InvalidInput(format!(
             "path is not a file: {}",
             path.display()
+        )));
+    }
+    if metadata.len() > MAX_TAIL_FILE_BYTES {
+        return Err(CToolError::InvalidInput(format!(
+            "file is too large for tail_file: {} bytes; max bytes: {}",
+            metadata.len(),
+            MAX_TAIL_FILE_BYTES
         )));
     }
 

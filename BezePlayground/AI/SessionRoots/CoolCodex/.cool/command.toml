@@ -1,0 +1,24 @@
+[ctool_command]
+enabled = true
+
+green_exact_commands = [
+  "git status",
+  "git diff"
+]
+
+green_prefixes = []
+
+yellow_prefixes = [
+  "cargo check",
+  "cargo build",
+  "cargo test",
+  "cargo fmt",
+  "git add",
+  "git commit",
+  "rg"
+]
+
+red_prefixes = []
+red_contains = []
+blocked_prefixes = []
+blocked_contains = []

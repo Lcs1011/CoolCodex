@@ -3,6 +3,32 @@ pub mod ctool_edit_insert;
 pub mod ctool_edit_replace;
 pub mod ctool_preview_diff;
 
+use std::path::Path;
+
+use crate::error::CToolError;
+use crate::error::CToolResult;
+
+const MAX_EDIT_FILE_BYTES: u64 = 2 * 1024 * 1024;
+
+pub(crate) fn ensure_editable_text_file_size(path: &Path, operation: &str) -> CToolResult<()> {
+    let metadata = std::fs::metadata(path)?;
+    if !metadata.is_file() {
+        return Err(CToolError::InvalidInput(format!(
+            "{operation} requires a file: {}",
+            path.display()
+        )));
+    }
+    if metadata.len() > MAX_EDIT_FILE_BYTES {
+        return Err(CToolError::InvalidInput(format!(
+            "file is too large for {operation}: {} bytes; max bytes: {}",
+            metadata.len(),
+            MAX_EDIT_FILE_BYTES
+        )));
+    }
+
+    Ok(())
+}
+
 pub use ctool_edit_replace::CTOOL_EDIT_REPLACE_TOOL_NAME;
 pub use ctool_edit_replace::CToolEditReplace;
 pub use ctool_edit_replace::CToolEditReplaceInput;

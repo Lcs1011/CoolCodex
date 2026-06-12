@@ -1,0 +1,15 @@
+[cool]
+name = "CoolCode System Config"
+version = 1
+
+[ctool_tavily_search]
+enabled = false
+provider = "tavily"
+allow_text_search = true
+allow_extract = true
+allow_zoom = true
+allow_research = true
+allow_image_search = false
+max_search_results = 8
+max_extract_chars = 12000
+max_zoom_chars = 6000

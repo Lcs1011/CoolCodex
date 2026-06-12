@@ -3,6 +3,7 @@ use std::io::Write as _;
 use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
+use std::time::Instant;
 
 use chrono::Local;
 use serde::Deserialize;
@@ -147,6 +148,9 @@ impl Default for CToolCommandConfig {
                 "|".to_string(),
             ],
             blocked_prefixes: vec![
+                "/cs".to_string(),
+                "/ctoolscope".to_string(),
+                "ctoolscope".to_string(),
                 "python -m venv".to_string(),
                 "py -m venv".to_string(),
                 "python3 -m venv".to_string(),
@@ -206,6 +210,8 @@ impl Default for CToolCommandConfig {
                 "scripts\\activate".to_string(),
                 "activate.bat".to_string(),
                 "activate.ps1".to_string(),
+                "/cs".to_string(),
+                "/ctoolscope".to_string(),
             ],
         }
     }
@@ -257,6 +263,9 @@ pub struct CToolCommandExecutionItem {
     pub command: String,
     pub exit_code: Option<i32>,
     pub success: bool,
+    pub started_at: String,
+    pub ended_at: String,
+    pub duration_ms: u128,
     pub stdout_preview: String,
     pub stderr_preview: String,
 }
@@ -270,11 +279,11 @@ pub fn default_command_config() -> CToolCommandConfig {
 }
 
 pub fn merge_command_configs(
-    session_config: CToolCommandConfig,
+    character_config: CToolCommandConfig,
     system_config: CToolCommandConfig,
 ) -> CToolCommandConfig {
     let mut merged = CToolCommandConfig {
-        enabled: session_config.enabled && system_config.enabled,
+        enabled: character_config.enabled && system_config.enabled,
         green_exact_commands: Vec::new(),
         green_prefixes: Vec::new(),
         yellow_prefixes: Vec::new(),
@@ -290,25 +299,28 @@ pub fn merge_command_configs(
     );
     append_unique_strings(
         &mut merged.green_exact_commands,
-        session_config.green_exact_commands,
+        character_config.green_exact_commands,
     );
     append_unique_strings(&mut merged.green_prefixes, system_config.green_prefixes);
-    append_unique_strings(&mut merged.green_prefixes, session_config.green_prefixes);
+    append_unique_strings(&mut merged.green_prefixes, character_config.green_prefixes);
     append_unique_strings(&mut merged.yellow_prefixes, system_config.yellow_prefixes);
-    append_unique_strings(&mut merged.yellow_prefixes, session_config.yellow_prefixes);
+    append_unique_strings(
+        &mut merged.yellow_prefixes,
+        character_config.yellow_prefixes,
+    );
     append_unique_strings(&mut merged.red_prefixes, system_config.red_prefixes);
-    append_unique_strings(&mut merged.red_prefixes, session_config.red_prefixes);
+    append_unique_strings(&mut merged.red_prefixes, character_config.red_prefixes);
     append_unique_strings(&mut merged.red_contains, system_config.red_contains);
-    append_unique_strings(&mut merged.red_contains, session_config.red_contains);
+    append_unique_strings(&mut merged.red_contains, character_config.red_contains);
     append_unique_strings(&mut merged.blocked_prefixes, system_config.blocked_prefixes);
     append_unique_strings(
         &mut merged.blocked_prefixes,
-        session_config.blocked_prefixes,
+        character_config.blocked_prefixes,
     );
     append_unique_strings(&mut merged.blocked_contains, system_config.blocked_contains);
     append_unique_strings(
         &mut merged.blocked_contains,
-        session_config.blocked_contains,
+        character_config.blocked_contains,
     );
 
     merged
@@ -319,13 +331,44 @@ pub fn classify_command(
     config: &CToolCommandConfig,
 ) -> CToolCommandClassification {
     let raw_command = command.as_ref().trim().to_string();
-    let normalized_command = normalize_command_for_match(&raw_command);
 
     if raw_command.is_empty() {
         return CToolCommandClassification {
             command: raw_command,
             risk: CToolCommandRisk::Red,
             reason: "empty command".to_string(),
+        };
+    }
+
+    let segments = split_command_segments(&raw_command);
+    let mut highest = CToolCommandRisk::Green;
+    let mut reasons = Vec::new();
+
+    for segment in &segments {
+        let classification = classify_command_segment(segment, config);
+        highest = highest.max(classification.risk);
+        reasons.push(format!("{}: {}", segment, classification.reason));
+    }
+
+    CToolCommandClassification {
+        command: raw_command,
+        risk: highest,
+        reason: reasons.join("; "),
+    }
+}
+
+fn classify_command_segment(
+    command: &str,
+    config: &CToolCommandConfig,
+) -> CToolCommandClassification {
+    let raw_command = command.trim().to_string();
+    let normalized_command = normalize_command_for_match(&raw_command);
+
+    if raw_command.is_empty() {
+        return CToolCommandClassification {
+            command: raw_command,
+            risk: CToolCommandRisk::Red,
+            reason: "empty command segment".to_string(),
         };
     }
 
@@ -341,6 +384,13 @@ pub fn classify_command(
             command: raw_command,
             risk: CToolCommandRisk::Blocked,
             reason: format!("matched blocked prefix rule: {rule}"),
+        };
+    }
+    if is_directory_switch_command(&normalized_command) {
+        return CToolCommandClassification {
+            command: raw_command,
+            risk: CToolCommandRisk::Red,
+            reason: "cd/pushd directory switch is at least red".to_string(),
         };
     }
     if let Some(rule) = first_contains_match(&normalized_command, &config.red_contains) {
@@ -469,15 +519,15 @@ pub fn render_command_request_banner(preview: &CToolCommandRequestPreview) -> St
             text.push_str("No confirmation required.\n");
         }
         CToolCommandApproval::ConfirmOnce => {
-            text.push_str("Confirm once: provide a Y/y confirmation to execute.\n");
+            text.push_str("Confirm? Type Y to run, N to reject:\n");
         }
         CToolCommandApproval::ConfirmTwice => {
-            text.push_str("Confirm twice: provide two separate Y/y confirmations to execute.\n");
+            text.push_str("First confirm? Type Y:\n");
+            text.push_str("Second confirm? Type Y:\n");
         }
         CToolCommandApproval::Blocked => {
             text.push_str("Blocked: hard policy\n");
             text.push_str("No confirmation is allowed.\n");
-            text.push_str("It will never be executed.\n");
         }
     }
     text.push_str("==============================");
@@ -524,18 +574,26 @@ pub fn execute_approved_command_request(
 
     for (index, command) in preview.commands.iter().enumerate() {
         let command_started_at = Local::now();
+        let timer = Instant::now();
         result_text.push_str(&format!("### {}. `{}`\n\n", index + 1, command.command));
         result_text.push_str(&format!(
-            "StartedAt: {}\n\n",
+            "StartedAt: {}\n",
             command_started_at.format("%Y-%m-%d %H:%M:%S")
         ));
 
         let output = run_shell_command(current_dir, &command.command)?;
+        let duration_ms = timer.elapsed().as_millis();
+        let command_ended_at = Local::now();
         let stdout = String::from_utf8_lossy(&output.stdout).to_string();
         let stderr = String::from_utf8_lossy(&output.stderr).to_string();
         let exit_code = output.status.code();
         let success = output.status.success();
 
+        result_text.push_str(&format!(
+            "EndedAt: {}\n",
+            command_ended_at.format("%Y-%m-%d %H:%M:%S")
+        ));
+        result_text.push_str(&format!("DurationMs: {duration_ms}\n"));
         result_text.push_str(&format!("ExitCode: {:?}\n", exit_code));
         result_text.push_str(&format!("Success: {success}\n\n"));
         result_text.push_str("#### Stdout\n\n```text\n");
@@ -549,6 +607,9 @@ pub fn execute_approved_command_request(
             command: command.command.clone(),
             exit_code,
             success,
+            started_at: command_started_at.format("%Y-%m-%d %H:%M:%S").to_string(),
+            ended_at: command_ended_at.format("%Y-%m-%d %H:%M:%S").to_string(),
+            duration_ms,
             stdout_preview: truncate_for_preview(&stdout, 4000),
             stderr_preview: truncate_for_preview(&stderr, 4000),
         });
@@ -684,13 +745,28 @@ fn append_command_request_log(
     status: Option<&str>,
     user_feedback: Option<&str>,
 ) -> CToolResult<()> {
+    let needs_header = !log_path.exists() || std::fs::metadata(log_path)?.len() == 0;
     let mut file = OpenOptions::new()
         .create(true)
         .append(true)
         .open(log_path)?;
 
-    writeln!(file, "## {}", Local::now().format("%Y-%m-%d %H:%M:%S"))?;
+    if needs_header {
+        writeln!(file, "# CTool Command Request Log")?;
+        writeln!(file)?;
+        writeln!(file, "Date: {}", Local::now().format("%Y-%m-%d"))?;
+        writeln!(file)?;
+    }
+
+    let request_id = result_path
+        .file_name()
+        .and_then(|file_name| file_name.to_str())
+        .and_then(|file_name| file_name.split('_').next())
+        .unwrap_or("unknown");
+
+    writeln!(file, "## {request_id}")?;
     writeln!(file)?;
+    writeln!(file, "Time: {}", Local::now().format("%Y-%m-%d %H:%M:%S"))?;
     writeln!(file, "Risk: {}", preview.final_risk.label())?;
     writeln!(file, "Approved: {}", if approved { "Yes" } else { "No" })?;
     if let Some(status) = status {
@@ -797,6 +873,74 @@ fn starts_with_yes(input: &str) -> bool {
         .chars()
         .next()
         .is_some_and(|first_char| first_char == 'Y' || first_char == 'y')
+}
+
+fn split_command_segments(command: &str) -> Vec<String> {
+    let mut segments = Vec::new();
+    let mut current = String::new();
+    let mut chars = command.chars().peekable();
+    let mut quote: Option<char> = None;
+
+    while let Some(ch) = chars.next() {
+        if matches!(ch, '\'' | '"') {
+            if quote == Some(ch) {
+                quote = None;
+            } else if quote.is_none() {
+                quote = Some(ch);
+            }
+            current.push(ch);
+            continue;
+        }
+
+        if quote.is_some() {
+            current.push(ch);
+            continue;
+        }
+
+        match ch {
+            '&' if chars.peek() == Some(&'&') => {
+                chars.next();
+                push_command_segment(&mut segments, &mut current);
+            }
+            '|' if chars.peek() == Some(&'|') => {
+                chars.next();
+                push_command_segment(&mut segments, &mut current);
+            }
+            ';' | '|' | '(' | ')' | '<' => {
+                push_command_segment(&mut segments, &mut current);
+            }
+            '>' => {
+                if chars.peek() == Some(&'>') {
+                    chars.next();
+                }
+                push_command_segment(&mut segments, &mut current);
+            }
+            _ => current.push(ch),
+        }
+    }
+
+    push_command_segment(&mut segments, &mut current);
+
+    if segments.is_empty() {
+        vec![command.trim().to_string()]
+    } else {
+        segments
+    }
+}
+
+fn push_command_segment(segments: &mut Vec<String>, current: &mut String) {
+    let segment = current.trim();
+    if !segment.is_empty() {
+        segments.push(segment.to_string());
+    }
+    current.clear();
+}
+
+fn is_directory_switch_command(command: &str) -> bool {
+    matches!(
+        command.split_whitespace().next(),
+        Some("cd" | "chdir" | "pushd" | "set-location")
+    )
 }
 
 fn feedback_from_reject_input(input: &str) -> Option<String> {

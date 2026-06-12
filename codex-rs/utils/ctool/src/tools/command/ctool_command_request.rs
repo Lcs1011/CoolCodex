@@ -92,7 +92,7 @@ pub fn preview_command_request(
 ) -> CToolResult<CToolCommandRequestOutput> {
     let request_reason = input.reason.clone();
     let command_config = load_merged_cool_command_config(
-        &ctx.scope_context.session_command_path,
+        &ctx.scope_context.character_command_path,
         ctx.scope_context.system_command_path.as_deref(),
     )?;
 
@@ -289,7 +289,7 @@ fn approval_label(approval: CToolCommandApproval) -> &'static str {
 
 fn command_request_cache_root(ctx: &CToolContext) -> PathBuf {
     ctx.scope_context
-        .session_root
+        .character_root
         .join(COOL_DIR_NAME)
         .join("cache")
         .join("command_request")

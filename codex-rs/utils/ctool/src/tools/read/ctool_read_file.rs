@@ -66,6 +66,13 @@ pub fn read_file(
             path.display()
         )));
     }
+    if metadata.len() > input.max_bytes {
+        return Err(CToolError::InvalidInput(format!(
+            "file is too large for read_file: {} bytes; max bytes: {}",
+            metadata.len(),
+            input.max_bytes
+        )));
+    }
 
     let bytes = std::fs::read(&path)?;
     let byte_len = bytes.len() as u64;
