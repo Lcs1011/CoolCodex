@@ -1,4 +1,5 @@
 
+退出的时候清理缓存
 位于 CoolSystemDir\tavily.toml 中设置 token
 
 示范：(里面的 token 是瞎写的)
@@ -61,3 +62,7 @@ toml 专门用来 config的类型。所以文件名没必要config
 ### 确认类字段 (按需填)
 
 如果是高风险请求，根据系统提示补全 risk_confirmation、red_first_confirmation 或 red_second_confirmation。
+
+
+#### 123
+

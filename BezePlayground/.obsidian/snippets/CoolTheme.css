@@ -127,14 +127,14 @@ body.theme-dark {
 .theme-light .markdown-rendered strong,
 .theme-light .cm-strong {
     font-weight: 780 !important;
-    color: var(--cool-heading-1) !important;
+    color: var(--cool-heading-6) !important;
 }
 
 .theme-dark strong,
 .theme-dark .markdown-rendered strong,
 .theme-dark .cm-strong {
     font-weight: 780 !important;
-    color: var(--cool-heading-badge) !important;
+    color: var(--cool-heading-6) !important;
 }
 
 
@@ -276,6 +276,20 @@ body.theme-dark .markdown-source-view.mod-cm6 .cm-line.HyperMD-header-6 .cm-head
     letter-spacing: 1px;
     color: var(--cool-heading-badge) !important;
     opacity: 0.8;
+}
+
+.markdown-rendered h2::after,
+.cm-line.HyperMD-header-2::after,
+.markdown-rendered h3::after,
+.cm-line.HyperMD-header-3::after,
+.markdown-rendered h4::after,
+.cm-line.HyperMD-header-4::after,
+.markdown-rendered h5::after,
+.cm-line.HyperMD-header-5::after,
+.markdown-rendered h6::after,
+.cm-line.HyperMD-header-6::after {
+    margin-left: 1px;
+    left: -2px;
 }
 
 
