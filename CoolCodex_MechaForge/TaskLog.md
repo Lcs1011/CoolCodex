@@ -2,9 +2,9 @@
 
 Source: clipboard
 
-OperationID: 0008 修复CToolScopeHelp结尾和Show函数头
+OperationID: 0009 统一CToolScopeBase枚举顺序和显示字符串
 
-## ModifyFile Path: C:\Arsenal\CoolAI\CoolCodex\codex-rs\utils\ctool\src\scope_command.rs
+## ModifyFile Path: C:\Arsenal\CoolAI\CoolCodex\codex-rs\utils\ctool\src\scope.rs
 Succeed
 
 ## End
