@@ -906,6 +906,35 @@ fn main() -> anyhow::Result<()> {
     })
 }
 
+#[cfg(windows)]
+fn ensure_cool_launched_by_bat() -> anyhow::Result<()> {
+    match std::env::var("COOL_LAUNCHED_BY_BAT") {
+        Ok(value) if value.trim() == "1" => Ok(()),
+        _ => anyhow::bail!(
+            "CoolCodex must be started by LauncherBat. Please use RunCodex.bat."
+        ),
+    }
+}
+
+#[cfg(not(windows))]
+fn ensure_cool_launched_by_bat() -> anyhow::Result<()> {
+    Ok(())
+}
+
+fn read_cool_safe_mode_env() -> anyhow::Result<Option<bool>> {
+    let Ok(value) = std::env::var("COOL_SAFE_MODE") else {
+        return Ok(None);
+    };
+
+    let normalized = value.trim().to_ascii_lowercase();
+    match normalized.as_str() {
+        "" => Ok(None),
+        "on" => Ok(Some(true)),
+        "off" => Ok(Some(false)),
+        _ => anyhow::bail!("unsupported COOL_SAFE_MODE value: {value}"),
+    }
+}
+
 async fn cli_main(arg0_paths: Arg0DispatchPaths) -> anyhow::Result<()> {
     let MultitoolCli {
         config_overrides: mut root_config_overrides,
@@ -921,6 +950,17 @@ async fn cli_main(arg0_paths: Arg0DispatchPaths) -> anyhow::Result<()> {
     let root_remote = remote.remote;
     let root_remote_auth_token_env = remote.remote_auth_token_env;
     let root_strict_config = interactive.strict_config;
+
+    ensure_cool_launched_by_bat()?;
+
+    if let Some(env_safe_mode) = read_cool_safe_mode_env()? {
+        interactive.safe_mode = if env_safe_mode {
+            SafeModeCliArg::On
+        } else {
+            SafeModeCliArg::Off
+        };
+    }
+
     let root_safe_mode = interactive.safe_mode.is_on();
     safe_mode::init(root_safe_mode);
 

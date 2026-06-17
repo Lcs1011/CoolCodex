@@ -18,6 +18,12 @@ C:\Arsenal\CoolAI\Launchers
 
 
 
+```
+执行新的Task 文件中的任务, 文件已更新！ 执行任务前，先清空"C:\Arsenal\CoolAI\CoolCodex\CoolCodex_MechaForge\TaskLog.md"。任务更新在"C:\Arsenal\CoolAI\CoolCodex\CoolCodex_MechaForge\Task.md" 中，请傻瓜执行。为彻底杜绝死循环与Token浪费，强制开启【精准模式】：绝对禁止全量读取文件！每个文件的修改，**最多只允许调用 1 次 workspace_search_text 和 1 次 read_file（前后20行）！** 【绝对红线】：1. 拿到 1 次搜索和读取结果后，必须立刻执行 edit_file，或立刻放弃。2. 如果仅有的 1 次搜索没找到，或读取没对上，**绝对禁止换关键字重试！绝对禁止扩大读取范围！** 立刻放弃该文件，将失败直接记录到 TaskLog.md，并强制开启下一任务。3. 若发现任务代码已存在，立刻跳过。 单文件修改完毕或放弃后，必须主动声明清空历史上下文，严禁全文复读。
+```
+
+
+
 
 产品诉求
 

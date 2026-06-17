@@ -3,18 +3,18 @@ use std::fmt;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CToolScopeBase {
     None,
-    CoolWorkspace,
     SelectedOnly,
+    CoolWorkspace,
     TheEyeOfProvidence,
 }
 
 impl CToolScopeBase {
     pub fn as_str(self) -> &'static str {
         match self {
-            CToolScopeBase::None => "None",
-            CToolScopeBase::CoolWorkspace => "CoolWorkspace",
-            CToolScopeBase::SelectedOnly => "SelectedOnly",
-            CToolScopeBase::TheEyeOfProvidence => "TheEyeOfProvidence",
+            CToolScopeBase::None => "none",
+            CToolScopeBase::SelectedOnly => "selected-only",
+            CToolScopeBase::CoolWorkspace => "cool-workspace",
+            CToolScopeBase::TheEyeOfProvidence => "the-eye-of-providence",
         }
     }
 }

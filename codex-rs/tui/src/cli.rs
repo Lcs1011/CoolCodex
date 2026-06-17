@@ -9,6 +9,7 @@ use codex_utils_cli::SharedCliOptions;
 pub enum SafeModeCliArg {
     On,
     Off,
+    Ask,
 }
 
 impl SafeModeCliArg {

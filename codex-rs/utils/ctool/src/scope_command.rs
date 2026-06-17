@@ -413,13 +413,19 @@ fn update_user_config(
 fn parse_base_scope(value: &str) -> CToolResult<CToolScopeBase> {
     match value.to_ascii_lowercase().as_str() {
         "none" => Ok(CToolScopeBase::None),
-        "workspace" | "coolworkspace" | "cool_workspace" | "cool-workspace" => {
+
+        "selected-only" | "selectedonly" | "selected_only" => {
+            Ok(CToolScopeBase::SelectedOnly)
+        }
+
+        "cool-workspace" | "coolworkspace" | "cool_workspace" | "workspace" => {
             Ok(CToolScopeBase::CoolWorkspace)
         }
-        "selectedonly" | "selected_only" | "selected-only" => Ok(CToolScopeBase::SelectedOnly),
-        "theeyeofprovidence" | "the_eye_of_providence" | "the-eye-of-providence" => {
-            Ok(CToolScopeBase::TheEyeOfProvidence)
-        }
+
+        "the-eye-of-providence"
+        | "theeyeofprovidence"
+        | "the_eye_of_providence" => Ok(CToolScopeBase::TheEyeOfProvidence),
+
         _ => Err(CToolError::InvalidInput(format!(
             "unsupported CToolScopeBase: {value}"
         ))),
