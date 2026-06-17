@@ -2,13 +2,8 @@
 
 Source: clipboard
 
-OperationID: 0009 统一CToolScopeBase枚举顺序和显示字符串
+OperationID: 0010 删除CToolScopeBase重复Display尾巴
 
-## ModifyFile Path: C:\Arsenal\CoolAI\CoolCodex\codex-rs\utils\ctool\src\scope.rs
-Succeed
+Status: Failed
 
-## End
-Succeed
-
-
-Status: Succeed
+Reason: DeleteLine out of range in C:\Arsenal\CoolAI\CoolCodex\codex-rs\utils\ctool\src\scope.rs: 35-37, line_count=35
