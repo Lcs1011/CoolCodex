@@ -366,12 +366,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "0000 CoolCodex 产品大纲.md",
+                "file": "compact.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "0000 CoolCodex 产品大纲"
+              "title": "compact"
             }
           }
         ],
@@ -448,13 +448,13 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "0000 CoolCodex 产品大纲.md",
+                "file": "compact.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "0000 CoolCodex 产品大纲 的大纲"
+              "title": "compact 的大纲"
             }
           },
           {
@@ -538,32 +538,32 @@
   },
   "active": "38c06028f7191147",
   "lastOpenFiles": [
+    "CoolCLI 设置 设计哲学.md",
+    "error.md",
+    "Task.md",
+    "TaskLog.md",
+    "Tokens.md",
+    "你好，现在我正在制作一个项目。.md",
+    "傻瓜指令.md",
+    "傻瓜指令执行反馈.md",
+    "傻瓜指令执行规则.md",
+    "提示词.md",
+    "未命名.md",
+    "未命名 1.md",
+    "未命名 2.md",
+    "未命名 4.md",
+    "未命名 3.md",
+    "读取 修改 创建 删除 门禁卡.md",
+    "0201 CoolChat.md",
+    "compact.md",
+    "0002 网络门禁.md",
     "0001 SafeMode.md",
+    "0000 CoolCodex 产品大纲.md",
     "CoolBot/00 CoolOperation.md",
     "CoolBot/01 CoolBot 脚本制作规划.md",
     "CoolBot/02CoolBot开发日志.md",
     "CoolBot/随身携带摄像头.md",
     "CoolBot/随身携弹主板硬件.md",
-    "0103 CToolScope 视野 详细设计.md",
-    "Task.md",
-    "0000 CoolCodex 产品大纲.md",
-    "CoolCLI 设置.md",
-    "CoolCLI 设置 设计哲学.md",
-    "0101 CoolCLI 一些定义和基本设定.md",
-    "TaskLog.md",
-    "CoolGolem/一个简洁的欺骗手段.md",
-    "0005 对于Skill 和Plugin的安全策略.md",
-    "0105 CTool 基础工具.md",
-    "0108 CToolTavilySearchRequest.md",
-    "0002 网络门禁.md",
-    "审批功能.md",
-    "0107 CToolCommandRequest.md",
-    "compact.md",
-    "CoolBot/02 CoolBot 脚本制作流程.md",
-    "0109 CToolTavilySearchRequest.md",
-    "CoolGolem/大小脑体系.md",
-    "`ctool_tavily_search_request` 产品大纲 (重构版).md",
-    "未命名 2.md",
     "CoolGolem",
     "CoolBot",
     "未命名 1",

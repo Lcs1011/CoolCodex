@@ -1,10 +1,10 @@
-Task 0001-Fix-A：只修 scope.rs
+Task 0001-Fix-B：替换 CToolCommandPolicy 枚举
 
 根目录：  
 C:\Arsenal\CoolAI\CoolCodex
 
 只允许修改 1 个文件：  
-codex-rs\utils\ctool\src\scope.rs
+codex-rs\utils\ctool\src\command_request.rs
 
 禁止修改其他文件。  
 禁止运行 cargo、just、git、npm、pnpm、powershell、cmd、bat、sh。  
@@ -12,113 +12,99 @@ codex-rs\utils\ctool\src\scope.rs
 禁止测试。  
 禁止格式化整个工程。  
 禁止读取 Task.md 多次。  
-禁止全量读取其他源码文件。
+禁止全量读取源码文件。
 
-本任务目标：  
-把 CToolScopeBase 修成权威口径。
+目标：  
+把 command_request.rs 里的 CToolCommandPolicy 从旧的 Safe/Ask 枚举，替换成权威口径的 Green/Yellow/Red/Blocked/BlockAll 枚举。
 
-权威口径：  
-枚举顺序必须是：  
-None  
-SelectedOnly  
-CoolWorkspace  
-TheEyeOfProvidence
+文件：  
+codex-rs\utils\ctool\src\command_request.rs
 
-as_str 输出必须是：  
-None -> none  
-SelectedOnly -> selected-only  
-CoolWorkspace -> cool-workspace  
-TheEyeOfProvidence -> the-eye-of-providence
+位置：  
+在文件开头附近，大约第 17 行附近。  
+它位于：  
+mod tests;  
+后面，  
+pub enum CToolCommandRisk  
+前面。
 
-Default 必须是：  
-CToolScopeBase::None
+只搜索一次，搜索词：  
+pub enum CToolCommandPolicy
 
-Display 必须写出 as_str。
+读取命中点前后 20 行后，直接执行下面替换。
 
-执行规则：
+把这段旧代码：
 
-1. 只搜索一次。
-    
-2. 只读取一次命中附近内容。
-    
-3. 命中后立刻 edit_file。
-    
-4. 如果没命中，立刻放弃并记录失败。
-    
-5. 不允许换关键词重试。
-    
-6. 不允许扩大读取范围。
-    
-7. 不允许读取其他源码文件。
-    
-
-目标文件：  
-codex-rs\utils\ctool\src\scope.rs
-
-搜索词：  
-pub enum CToolScopeBase
-
-如果文件内容已经完全等于下面内容，则跳过：
-
-use std::fmt;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]  
-pub enum CToolScopeBase {  
-None,  
-SelectedOnly,  
-CoolWorkspace,  
-TheEyeOfProvidence,  
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]  
+#[serde(rename_all = "snake_case")]  
+pub enum CToolCommandPolicy {  
+Safe,  
+Ask,  
 }
 
-impl CToolScopeBase {  
+替换成这段新代码：
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]  
+pub enum CToolCommandPolicy {  
+#[serde(rename = "green")]  
+Green,  
+#[serde(rename = "yellow")]  
+Yellow,  
+#[serde(rename = "red")]  
+Red,  
+#[serde(rename = "block", alias = "blocked")]  
+Blocked,  
+#[serde(rename = "block-all", alias = "block_all", alias = "blockall")]  
+BlockAll,  
+}
+
+impl CToolCommandPolicy {  
 pub fn as_str(self) -> &'static str {  
 match self {  
-CToolScopeBase::None => "none",  
-CToolScopeBase::SelectedOnly => "selected-only",  
-CToolScopeBase::CoolWorkspace => "cool-workspace",  
-CToolScopeBase::TheEyeOfProvidence => "the-eye-of-providence",  
+CToolCommandPolicy::Green => "green",  
+CToolCommandPolicy::Yellow => "yellow",  
+CToolCommandPolicy::Red => "red",  
+CToolCommandPolicy::Blocked => "block",  
+CToolCommandPolicy::BlockAll => "block-all",  
 }  
 }  
 }
 
-impl Default for CToolScopeBase {  
+impl Default for CToolCommandPolicy {  
 fn default() -> Self {  
-CToolScopeBase::None  
+CToolCommandPolicy::BlockAll  
 }  
 }
 
-impl fmt::Display for CToolScopeBase {  
-fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {  
-f.write_str(self.as_str())  
-}  
-}
+注意：
 
-如果不完全等于，则把 codex-rs\utils\ctool\src\scope.rs 的全部内容替换为上面这段内容。
+1. 不要修改 CToolCommandRisk。
+    
+2. 不要修改 CToolCommandApproval。
+    
+3. 不要修改 CToolCommandConfig。
+    
+4. 不要接入 command.toml 合并逻辑。
+    
+5. 不要改任何测试文件。
+    
+6. 找不到旧代码就放弃本文件，不要换关键词，不要扩大搜索。
+    
 
-完成后，在这个文件追加记录：  
-C:\Arsenal\CoolAI\CoolCodex\CoolCodex_MechaForge\TempLog.md
+完成后，把下面内容写入：  
+C:\Arsenal\CoolAI\CoolCodex\CoolCodex_MechaForge\TaskLog.md
 
-记录内容：
-
-# Task 0001-Fix-A Result
+# Task 0001-Fix-B Result
 
 Changed:
 
-- codex-rs\utils\ctool\src\scope.rs
-    
-
-Skipped:
-
-- 如果已经符合要求，在这里写 skipped
-    
-
-Failed:
-
-- 如果失败，写失败原因
+- codex-rs\utils\ctool\src\command_request.rs
     
 
 Notes:
 
+- 只替换 CToolCommandPolicy
+    
 - 未运行构建
     
 - 未运行测试

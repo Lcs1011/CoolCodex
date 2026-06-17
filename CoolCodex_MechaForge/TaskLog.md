@@ -1,5 +1,5 @@
-# TaskLog — 0001-Fix-A：只修 scope.rs
+# TaskLog — 0001-Fix-B：替换 CToolCommandPolicy 枚举
 
-## scope.rs — CToolScopeBase 枚举
-- **状态**：✅ 跳过（已符合权威口径）
-- **说明**：枚举顺序 `None, SelectedOnly, CoolWorkspace, TheEyeOfProvidence` 已正确；`as_str()` 输出、`Default`、`Display` 均符合要求，无需修改。
+## command_request.rs — CToolCommandPolicy 枚举替换
+- **状态**：✅ 完成
+- **说明**：将旧的 `Safe`/`Ask` 枚举替换为权威口径的 `Green`/`Yellow`/`Red`/`Blocked`/`BlockAll` 枚举，每个变体使用 `#[serde(rename = "...")]` 属性，`Blocked` 和 `BlockAll` 额外带有 `alias` 属性。

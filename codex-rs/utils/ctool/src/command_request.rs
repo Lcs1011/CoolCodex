@@ -16,10 +16,17 @@ use crate::error::CToolResult;
 mod tests;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
-#[serde(rename_all = "snake_case")]
 pub enum CToolCommandPolicy {
-    Safe,
-    Ask,
+    #[serde(rename = "green")]
+    Green,
+    #[serde(rename = "yellow")]
+    Yellow,
+    #[serde(rename = "red")]
+    Red,
+    #[serde(rename = "block", alias = "blocked")]
+    Blocked,
+    #[serde(rename = "block-all", alias = "block_all", alias = "blockall")]
+    BlockAll,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
