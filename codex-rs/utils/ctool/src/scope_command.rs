@@ -235,7 +235,7 @@ pub fn show_ctool_scope_help() -> String {
     ]
     .join(\"\\n\")
 }
-pub fn show_ctool_scope(ctx: &CToolScopeContext) -> String {
+    .join("\n")
     let mut output = String::new();
 
     let _ = writeln!(output, "CToolScopeBase: {}", ctx.base_scope);
