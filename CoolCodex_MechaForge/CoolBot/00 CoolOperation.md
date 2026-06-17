@@ -58,7 +58,7 @@
 | 运行CMD指令      | `RunCmd`        |                                                                         |
 | 延迟           | `Delay`         | 上一个**指令完成后**等待<br>注意 是上一个命令 报告完成后 <br>开始等待，并非上一个命令刚执行<br>专门用于应付莫名其妙的Bug |
 | 截图           | `Screenshot`    |                                                                         |
-| 结束指令         | `End`           | 无需提供git相关指令<br>结束时使用End指令<br>会自动完成git提交等其他相关工作                          |
+| 结束指令         | `End`           |                                                                         |
 
 ### 以下是具体指令讲解
 
@@ -252,9 +252,13 @@ warning: unused import: `codex_model_provider_info::ModelProviderInfo`
 ### 结束指令 End
 使用 二级标题 End 即可 无内容
 End指令必须存在且必须是最后一个指令
-例如：
+如下：
 ```
 ## End
 ```
+
+coolbot-config.toml 中
+end_action = 'git-commit-push'
+则结束时会自动执行 push
 
 

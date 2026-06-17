@@ -1,97 +1,50 @@
 ``````CoolOperation
-# OperationID 0008 修复ScopePathAccess权重
+# OperationID 0001 CoolBot创建功能测试
 
-## ModifyFile
-### Path C:\Arsenal\CoolAI\CoolCodex\codex-rs\utils\ctool\src\scope_context.rs
+## CreateFolder
+### Path C:\Arsenal\CoolAI\AIPlayground\CoolBotTest
 
-### DeleteLine
-306-372
+## CreateFolder
+### Path C:\Arsenal\CoolAI\AIPlayground\CoolBotTest\FolderA
 
-### InsertContent
-305
+## CreateFolder
+### Path C:\Arsenal\CoolAI\AIPlayground\CoolBotTest\FolderToClear
+
+## CreateFolder
+### Path C:\Arsenal\CoolAI\AIPlayground\CoolBotTest\FolderToRemove
+
+## CreateFile
+### Path C:\Arsenal\CoolAI\AIPlayground\CoolBotTest\modify_target.txt
 #### Content
 `````
-fn path_access(ctx: &CToolScopeContext, path: impl AsRef<Path>) -> PathAccess {
-    let path = lexical_normalize_path(path.as_ref());
+line 1
+line 2
+line 3
+line 4
+line 5
+`````
 
-    if ctx.base_scope == CToolScopeBase::None {
-        return PathAccess::Unspecified;
-    }
+## CreateFile
+### Path C:\Arsenal\CoolAI\AIPlayground\CoolBotTest\clear_target.txt
+#### Content
+`````
+this file will be cleared in the next test
+line 2
+line 3
+`````
 
-    if is_web_search_cache_path(ctx, &path) {
-        return PathAccess::Readonly;
-    }
+## CreateFile
+### Path C:\Arsenal\CoolAI\AIPlayground\CoolBotTest\remove_target.txt
+#### Content
+`````
+this file will be removed in the next test
+`````
 
-    if is_hard_protected_config_path(ctx, &path) {
-        return PathAccess::Hidden;
-    }
-
-    if let Some(access) = path_access_from_rule_sets(
-        &path,
-        &ctx.system_config.privileged_files,
-        &ctx.system_config.privileged_folders,
-    ) {
-        return access;
-    }
-
-    if let Some(access) = path_access_from_rule_sets(
-        &path,
-        &ctx.user_config.privileged_files,
-        &ctx.user_config.privileged_folders,
-    ) {
-        return access;
-    }
-
-    if let Some(access) =
-        path_access_from_rule_sets(&path, &ctx.system_config.files, &ctx.system_config.folders)
-    {
-        return access;
-    }
-
-    if let Some(access) =
-        path_access_from_rule_sets(&path, &ctx.user_config.files, &ctx.user_config.folders)
-    {
-        return access;
-    }
-
-    if is_visible_by_base_scope(ctx, &path) {
-        return PathAccess::Readwrite;
-    }
-
-    PathAccess::Unspecified
-}
-
-fn path_access_from_rule_sets(
-    path: &Path,
-    file_rules: &CToolScopeRuleSet,
-    folder_rules: &CToolScopeRuleSet,
-) -> Option<PathAccess> {
-    if matches_any_exact_path(path, &file_rules.hidden) {
-        return Some(PathAccess::Hidden);
-    }
-
-    if matches_any_exact_path(path, &file_rules.readonly) {
-        return Some(PathAccess::Readonly);
-    }
-
-    if matches_any_exact_path(path, &file_rules.readwrite) {
-        return Some(PathAccess::Readwrite);
-    }
-
-    if matches_any_path(path, &folder_rules.hidden) {
-        return Some(PathAccess::Hidden);
-    }
-
-    if matches_any_path(path, &folder_rules.readonly) {
-        return Some(PathAccess::Readonly);
-    }
-
-    if matches_any_path(path, &folder_rules.readwrite) {
-        return Some(PathAccess::Readwrite);
-    }
-
-    None
-}
+## CreateFile
+### Path C:\Arsenal\CoolAI\AIPlayground\CoolBotTest\FolderToClear\inside.txt
+#### Content
+`````
+this child file will be cleared with the folder in the next test
 `````
 
 ## End

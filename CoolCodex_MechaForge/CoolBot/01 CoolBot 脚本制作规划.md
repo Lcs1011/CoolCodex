@@ -4,7 +4,7 @@
 
 ### 标准路径
 
-启动器位置
+启动器位置，该位置已被添加到全局变量
 `C:\Arsenal\CoolAI\Launchers\cbot.bat` 
 
 配置位置
@@ -12,6 +12,7 @@
 
 写rust脚本的位置
 `C:\Arsenal\CoolAI\CoolBot` 
+
 
 ```
 C:\Arsenal\CoolAI\
@@ -42,35 +43,33 @@ C:\Arsenal\CoolAI\
 
 # 包含的各个功能
 
-
-### 支持的指令
+### 支持的CMD指令
+通过将启动器命名为 cbot ，并将启动位置添加到系统环境变量，从而做到 支持CMD指令
 
 和设置 相关的指令 其实都是对 coolbot-config.toml   的读写
 
-`/CBot c` 并回车时
+
+cbot c
 执行剪切板的内容 c 代表 clipboard
 
-`/CBot d` 并回车时
-执行 设置的defautl 路径的md
+cbot 回车
+提示继续按回车执行 剪切板的内容
 
-如果没有设置
-就提示找不到 无法执行
+cbot d
+执行 设置的default 路径的md
+如果没有设置efautl 路径 就提示找不到 无法执行
 
-`/CBot <执行文件的绝对路径径>`
+`cbot <执行文件的绝对路径径>`
 执行绝对路径的md文件
 
-/CBot status 
+cbot status 
 显示当前状态 所有设置
 
-/cbot set 执行文件路径
+cbot set 执行文件路径
 
-/cbot set 输出结论文件绝对路径
-
-/cbot add push 地址
-push地址可能不止一个 
+cbot set 输出结论文件绝对路径
 
 
-/cbot delete push 地址
 
 ###
 成功执行完毕之后会执行 
