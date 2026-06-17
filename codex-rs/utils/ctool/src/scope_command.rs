@@ -156,8 +156,6 @@ pub fn handle_ctool_scope_command(
 
 pub fn show_ctool_scope(ctx: &CToolScopeContext) -> String {
     let mut output = String::new();
-pub fn show_ctool_scope(ctx: &CToolScopeContext) -> String {
-    let mut output = String::new();
 
     let _ = writeln!(output, "CToolScopeBase: {}", ctx.base_scope);
     let _ = writeln!(output, "CharacterRoot: {}", ctx.character_root.display());
