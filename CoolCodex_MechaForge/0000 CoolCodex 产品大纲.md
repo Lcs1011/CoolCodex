@@ -1,9 +1,23 @@
 
-原版Codex开源仓库
+
+原版OpenAI 官方CodexCLI开源仓库
 https://github.com/openai/codex
 
-我自己的CoolCodex仓库
-https://github.com/Lcs1011/Coolcode
+我自己改良版的CoolCodex仓库
+https://github.com/Lcs1011/CoolCodex
+
+我的CoolCodex 位于本地的文件夹路径
+```
+C:\Arsenal\CoolAI\CoolCodex
+```
+
+我的Launcher 位于本地的文件夹路径
+```
+C:\Arsenal\CoolAI\Launchers
+```
+
+
+
 
 产品诉求
 

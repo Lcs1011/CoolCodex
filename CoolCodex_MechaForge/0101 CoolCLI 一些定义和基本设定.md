@@ -1,27 +1,32 @@
 
+## 名词设定
 
 
-我们管采用 Cool 架构的 CLI， 不管是被 Cool架构 深度改造过的，还是纯粹从零开始开发的 ，都叫做 **CoolCLI**
+管采用 Cool 架构的 CLI， 不管是深度改造 的开源CLI，还是纯粹从零开始开发的 ，都叫做 **CoolCLI**
 
 被 Cool架构深度改造过的 叫 **CoolCodex**
-我是用 Cool架构 从零创造的第一个 CLI叫做  **CodeElemental**
+
+用 Cool架构 从零创造的第一个 CLI叫做  **CodeElemental**
 
 
+我们通过一个 bat文件启动 CoolCLI，我们管这个 bat文件叫 就叫做 **LauncherBat**
 
-我们通过一个 bat文件启动 CoolCLI，我们管这个 bat文件叫 就叫做 LauncherBat
+
+接下来 介绍 
 
 
-接下来 介绍 LauncherDir、CharacterRoot、CoolWorkspace 三个概念
+## 三个路径概念
+
+LauncherDir、CoolCharacterRoot、CoolWorkspace 三个概念
 三者互相解耦 没有必然关系
 
+通过将三个 文件夹概念互相 解耦 ，可以让 同一个工作区 有不同风格的Character进行工作
+同时 LauncherBat 都集中在 LauncherDir 可以共享 系统级别设定 避免麻烦
 
-## LauncherDir 
+### LauncherDir 
 
-LauncherDir 不是手动设置的
-我们管 启动用的 bat 所在的 文件夹，叫做 LauncherDir
-
-LauncherDir 文件夹中存在 .cool-system 文件夹，
-其中包含 CoolCLI的 系统级别设置
+LauncherDir 非通过变量设置 LauncherBat 所在的文件夹即为 LauncherDir
+LauncherDir 文件夹中存在 .cool-system 文件夹，里面保存 CoolCLI的 系统级别设置
 
 
 ```
@@ -36,28 +41,19 @@ LauncherDir\.cool-system
 ```
 
 
-## CharacterRoot 
+### CoolCharacterRoot 
 
-规范的做法是 使用 cd命令 在 LauncherBat 中设置 CharacterRoot
-
-
-CharacterRoot 指的是 CMD启动  CoolCLI时  先导航到的文件夹
-
-举个例子，位于 Codex最下方显示的那个路径 就是我们定义的 CharacterRoot
+在正式启动CLI的 exe文件之前，会先导航到 CoolCharacterRoot 文件夹再启动。
+举个例子 CoolCharacterRoot路径，也就是位于 Codex最下方显示的那个路径
+（这样设定有一个好处，如果改造的CLI如果有残留，会产生文件，也会产生在专属文件夹里，不会搞乱环境）
 ![[file-20260612132052716.png]]
-
-
-之所以起这个名字，是因为这个文件夹很可能包含 对于角色的 相关设计
-而我使用 character 这个单词，没有使用 agent，是因为我希望更加拟人化。
-而且 agent 这个名字都被叫混乱了，你都快搞不清楚 agent 它到底指的是 CLI 还是某一个 CLI 中的人格。
-
 
 CharacterRoot  文件夹中 有 .cool文件夹，里面包含了 CharacterRoot 级别的 设置
 以及相关缓存等
 
 
 ```
-CharacterRoot\.cool   
+CoolCharacterRoot\.cool   
 │
 ├─ config.toml       普通项目配置
 ├─ scope.toml        视野配置
@@ -69,32 +65,40 @@ CharacterRoot\.cool
 ```
 
 
-## CoolWorkspace
-
-位于 CharacterRoot 中 .cool 的 config.toml    里设置
-
-如果找不到 该设置，则 CoolWorkspace 默认等于 CharacterRoot
-
-CoolWorkspace 是，CLI 工作聚焦的文件夹。
-并且，CToolCommandRequest 工具默认基于的路径 是 CoolWorkspace
-而不是 CharacterRoot
+#### 命名哲学
+之所以用 Character这个单词，是因为Agent这个名字被叫混乱了。 快分不清到底是CLI还是某个具体人格。
+并且Character也更加拟人化
 
 
-## 简称
+### CoolWorkspace
+CoolWorkspace 是一个 CoolCLI的 当前 Character主要工作区
 
-**CoolSystemDir** 表示  .cool-system 文件夹路径
-即 `LauncherDir\.cool-system`
+CoolWorkspace 是 CToolCommandRequest 工具默认基于的路径
 
-**CoolDir** 表示 .cool 文件夹路径 
-即 `CharacterRoot\.cool`
+注意：
+CToolCommandRequest 工具默认基于的路径是 CoolWorkspace
+而非 CoolCharacterRoot
 
-这么起简称，就是直接让文件夹和简称同名。
+## 路径简称补充
 
-##
-通过将三个 文件夹概念互相 解耦
-好处在于 同一个工作区 可以用完全不同风格的 CoolCLI 进行操作
-每个 CoolCLI 有自己的 CharacterRoot 级别的 设定
-又能共享 System级别的设定 ，避免麻烦
+###
+设置文件中如果出现`.`  指代的就是 CoolCharacterRoot 路径
+所有的相对路径，都是以 CoolCharacterRoot 为起点
+
+### LaunchDir
+CMD 召唤 LaucherBat 时 所位于的路径
+
+### CoolSystemDir
+表示 `LauncherDir\.cool-system`
+
+命名哲学：文件夹和简称同名
+
+### CoolDir
+表示 `CoolCharacterRoot\.cool`
+
+
+### CoolCLIExePath
+表示 CoolCLI的 exe文件 的文件绝对路径
 
 
 
