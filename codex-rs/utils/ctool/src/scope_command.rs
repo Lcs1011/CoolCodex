@@ -179,6 +179,42 @@ pub fn show_ctool_scope(ctx: &CToolScopeContext) -> String {
     let _ = writeln!(output);
     let _ = writeln!(output, "[Character files]");
     write_path_list(&mut output, "readwrite", &ctx.user_config.files.readwrite);
+    let _ = writeln!(output, "[Character privileged files]");
+    write_path_list(
+        &mut output,
+        "readwrite",
+        &ctx.user_config.privileged_files.readwrite,
+    );
+    write_path_list(
+        &mut output,
+        "readonly",
+        &ctx.user_config.privileged_files.readonly,
+    );
+    write_path_list(
+        &mut output,
+        "hidden",
+        &ctx.user_config.privileged_files.hidden,
+    );
+
+    let _ = writeln!(output);
+    let _ = writeln!(output, "[Character privileged folders]");
+    write_path_list(
+        &mut output,
+        "readwrite",
+        &ctx.user_config.privileged_folders.readwrite,
+    );
+    write_path_list(
+        &mut output,
+        "readonly",
+        &ctx.user_config.privileged_folders.readonly,
+    );
+    write_path_list(
+        &mut output,
+        "hidden",
+        &ctx.user_config.privileged_folders.hidden,
+    );
+
+    let _ = writeln!(output);
     write_path_list(&mut output, "readonly", &ctx.user_config.files.readonly);
     write_path_list(&mut output, "hidden", &ctx.user_config.files.hidden);
 
@@ -191,6 +227,42 @@ pub fn show_ctool_scope(ctx: &CToolScopeContext) -> String {
     let _ = writeln!(output);
     let _ = writeln!(output, "[System files]");
     write_path_list(&mut output, "readwrite", &ctx.system_config.files.readwrite);
+    let _ = writeln!(output, "[System privileged files]");
+    write_path_list(
+        &mut output,
+        "readwrite",
+        &ctx.system_config.privileged_files.readwrite,
+    );
+    write_path_list(
+        &mut output,
+        "readonly",
+        &ctx.system_config.privileged_files.readonly,
+    );
+    write_path_list(
+        &mut output,
+        "hidden",
+        &ctx.system_config.privileged_files.hidden,
+    );
+
+    let _ = writeln!(output);
+    let _ = writeln!(output, "[System privileged folders]");
+    write_path_list(
+        &mut output,
+        "readwrite",
+        &ctx.system_config.privileged_folders.readwrite,
+    );
+    write_path_list(
+        &mut output,
+        "readonly",
+        &ctx.system_config.privileged_folders.readonly,
+    );
+    write_path_list(
+        &mut output,
+        "hidden",
+        &ctx.system_config.privileged_folders.hidden,
+    );
+
+    let _ = writeln!(output);
     write_path_list(&mut output, "readonly", &ctx.system_config.files.readonly);
     write_path_list(&mut output, "hidden", &ctx.system_config.files.hidden);
 
