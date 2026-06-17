@@ -30,6 +30,3 @@ impl fmt::Display for CToolScopeBase {
         f.write_str(self.as_str())
     }
 }
-        f.write_str(self.as_str())
-    }
-}

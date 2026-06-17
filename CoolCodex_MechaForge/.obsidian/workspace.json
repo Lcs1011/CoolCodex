@@ -240,12 +240,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "CoolBot/00 CoolOperation.md",
+                "file": "CoolBot/开发版本.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "00 CoolOperation"
+              "title": "开发版本"
             }
           },
           {
@@ -392,7 +392,7 @@
             "state": {
               "type": "search",
               "state": {
-                "query": "傻瓜",
+                "query": "telegram",
                 "matchingCase": false,
                 "explainSearch": false,
                 "collapseAll": false,
@@ -413,7 +413,8 @@
               "title": "书签"
             }
           }
-        ]
+        ],
+        "currentTab": 1
       }
     ],
     "direction": "horizontal",
@@ -433,13 +434,13 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "CoolBot/00 CoolOperation.md",
+                "file": "CoolBot/01 CoolBot 脚本制作规划.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "00 CoolOperation 的大纲"
+              "title": "01 CoolBot 脚本制作规划 的大纲"
             }
           },
           {
@@ -521,12 +522,13 @@
       "bases:新建数据库": false
     }
   },
-  "active": "3212d755e61ddb1b",
+  "active": "25fa37e02f00a49b",
   "lastOpenFiles": [
-    "CoolBot/CBotNetLinker.md",
-    "CoolBot/00 CoolOperation.md",
+    "0002 网络门禁.md",
     "CoolBot/01 CoolBot 脚本制作规划.md",
     "CoolBot/开发版本.md",
+    "CoolBot/00 CoolOperation.md",
+    "CoolBot/CBotNetLinker.md",
     "CoolBot/02CoolBot开发日志.md",
     "Task.md",
     "未命名 4.md",
@@ -548,7 +550,6 @@
     "未命名 2.md",
     "未命名 3.md",
     "读取 修改 创建 删除 门禁卡.md",
-    "0201 CoolChat.md",
     "CoolGolem",
     "CoolBot",
     "未命名 1",
