@@ -2,7 +2,7 @@
 
 Source: clipboard
 
-OperationID: 0002-B 补充CToolScope显示Privileged规则
+OperationID: 0003 修复CToolScopeShow显示顺序
 
 ## ModifyFile Path: C:\Arsenal\CoolAI\CoolCodex\codex-rs\utils\ctool\src\scope_command.rs
 Succeed

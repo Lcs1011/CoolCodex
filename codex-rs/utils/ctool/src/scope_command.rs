@@ -156,6 +156,8 @@ pub fn handle_ctool_scope_command(
 
 pub fn show_ctool_scope(ctx: &CToolScopeContext) -> String {
     let mut output = String::new();
+pub fn show_ctool_scope(ctx: &CToolScopeContext) -> String {
+    let mut output = String::new();
 
     let _ = writeln!(output, "CToolScopeBase: {}", ctx.base_scope);
     let _ = writeln!(output, "CharacterRoot: {}", ctx.character_root.display());
@@ -179,6 +181,16 @@ pub fn show_ctool_scope(ctx: &CToolScopeContext) -> String {
     let _ = writeln!(output);
     let _ = writeln!(output, "[Character files]");
     write_path_list(&mut output, "readwrite", &ctx.user_config.files.readwrite);
+    write_path_list(&mut output, "readonly", &ctx.user_config.files.readonly);
+    write_path_list(&mut output, "hidden", &ctx.user_config.files.hidden);
+
+    let _ = writeln!(output);
+    let _ = writeln!(output, "[Character folders]");
+    write_path_list(&mut output, "readwrite", &ctx.user_config.folders.readwrite);
+    write_path_list(&mut output, "readonly", &ctx.user_config.folders.readonly);
+    write_path_list(&mut output, "hidden", &ctx.user_config.folders.hidden);
+
+    let _ = writeln!(output);
     let _ = writeln!(output, "[Character privileged files]");
     write_path_list(
         &mut output,
@@ -215,18 +227,22 @@ pub fn show_ctool_scope(ctx: &CToolScopeContext) -> String {
     );
 
     let _ = writeln!(output);
-    write_path_list(&mut output, "readonly", &ctx.user_config.files.readonly);
-    write_path_list(&mut output, "hidden", &ctx.user_config.files.hidden);
-
-    let _ = writeln!(output);
-    let _ = writeln!(output, "[Character folders]");
-    write_path_list(&mut output, "readwrite", &ctx.user_config.folders.readwrite);
-    write_path_list(&mut output, "readonly", &ctx.user_config.folders.readonly);
-    write_path_list(&mut output, "hidden", &ctx.user_config.folders.hidden);
-
-    let _ = writeln!(output);
     let _ = writeln!(output, "[System files]");
     write_path_list(&mut output, "readwrite", &ctx.system_config.files.readwrite);
+    write_path_list(&mut output, "readonly", &ctx.system_config.files.readonly);
+    write_path_list(&mut output, "hidden", &ctx.system_config.files.hidden);
+
+    let _ = writeln!(output);
+    let _ = writeln!(output, "[System folders]");
+    write_path_list(
+        &mut output,
+        "readwrite",
+        &ctx.system_config.folders.readwrite,
+    );
+    write_path_list(&mut output, "readonly", &ctx.system_config.folders.readonly);
+    write_path_list(&mut output, "hidden", &ctx.system_config.folders.hidden);
+
+    let _ = writeln!(output);
     let _ = writeln!(output, "[System privileged files]");
     write_path_list(
         &mut output,
@@ -261,20 +277,6 @@ pub fn show_ctool_scope(ctx: &CToolScopeContext) -> String {
         "hidden",
         &ctx.system_config.privileged_folders.hidden,
     );
-
-    let _ = writeln!(output);
-    write_path_list(&mut output, "readonly", &ctx.system_config.files.readonly);
-    write_path_list(&mut output, "hidden", &ctx.system_config.files.hidden);
-
-    let _ = writeln!(output);
-    let _ = writeln!(output, "[System folders]");
-    write_path_list(
-        &mut output,
-        "readwrite",
-        &ctx.system_config.folders.readwrite,
-    );
-    write_path_list(&mut output, "readonly", &ctx.system_config.folders.readonly);
-    write_path_list(&mut output, "hidden", &ctx.system_config.folders.hidden);
 
     output
 }

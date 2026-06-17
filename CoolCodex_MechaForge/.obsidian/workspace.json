@@ -56,12 +56,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Task.md",
+                "file": "CoolBot/开发版本.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Task"
+              "title": "开发版本"
             }
           },
           {
@@ -433,13 +433,13 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "Task.md",
+                "file": "CoolBot/开发版本.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "Task 的大纲"
+              "title": "开发版本 的大纲"
             }
           },
           {
@@ -523,11 +523,11 @@
   },
   "active": "f753a334e2ffaa07",
   "lastOpenFiles": [
-    "CoolBot/第一版.md",
     "CoolBot/00 CoolOperation.md",
-    "CoolBot/01 CoolBot 脚本制作规划.md",
-    "Task.md",
+    "CoolBot/开发版本.md",
     "CoolBot/02CoolBot开发日志.md",
+    "Task.md",
+    "CoolBot/01 CoolBot 脚本制作规划.md",
     "未命名 4.md",
     "CoolGolem/随身携弹主板硬件.md",
     "CoolGolem/随身携带摄像头.md",
