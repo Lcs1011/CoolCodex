@@ -233,9 +233,10 @@ pub fn show_ctool_scope_help() -> String {
         "  /cs p C:\\Trusted",
         "  /cs p f ro C:\\Trusted\\note.txt",
     ]
-    .join(\"\\n\")
-}
     .join("\n")
+}
+
+pub fn show_ctool_scope(ctx: &CToolScopeContext) -> String {
     let mut output = String::new();
 
     let _ = writeln!(output, "CToolScopeBase: {}", ctx.base_scope);
