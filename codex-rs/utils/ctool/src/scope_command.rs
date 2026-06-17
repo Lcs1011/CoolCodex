@@ -15,6 +15,7 @@ use crate::scope_context::resolve_user_path;
 pub enum CToolScopeCommand {
     Show,
     UpdateRule {
+        layer: CToolScopeLayer,
         target: CToolScopeTarget,
         rule: CToolScopeRule,
         action: CToolScopeAction,
@@ -27,6 +28,12 @@ pub enum CToolScopeCommand {
 pub enum CToolScopeTarget {
     File,
     Folder,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CToolScopeLayer {
+    Normal,
+    Privileged,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -80,6 +87,17 @@ pub fn parse_ctool_scope_command(input: &str) -> CToolResult<CToolScopeCommand> 
 
 fn parse_scope_rule_command(tokens: &[&str]) -> CToolResult<CToolScopeCommand> {
     let mut index = 1;
+    let layer = if tokens.get(index).is_some_and(|token| {
+        token.eq_ignore_ascii_case("p")
+            || token.eq_ignore_ascii_case("priv")
+            || token.eq_ignore_ascii_case("privileged")
+    }) {
+        index += 1;
+        CToolScopeLayer::Privileged
+    } else {
+        CToolScopeLayer::Normal
+    };
+
     let target = if tokens
         .get(index)
         .is_some_and(|token| token.eq_ignore_ascii_case("f"))
@@ -112,6 +130,7 @@ fn parse_scope_rule_command(tokens: &[&str]) -> CToolResult<CToolScopeCommand> {
     let path = parse_path_from_tokens(tokens, index)?;
 
     Ok(CToolScopeCommand::UpdateRule {
+        layer,
         target,
         rule,
         action,
@@ -134,6 +153,7 @@ pub fn handle_ctool_scope_command(
             ))
         }
         CToolScopeCommand::UpdateRule {
+            layer,
             target,
             rule,
             action,
@@ -141,11 +161,19 @@ pub fn handle_ctool_scope_command(
         } => {
             let path = resolve_user_path(ctx, path);
             update_user_config(ctx, |config| {
-                update_scope_rule(config, target, rule, action, path.clone())
+                match layer {
+                    CToolScopeLayer::Normal => {
+                        update_scope_rule(config, target, rule, action, path.clone())
+                    }
+                    CToolScopeLayer::Privileged => {
+                        update_privileged_scope_rule(config, target, rule, action, path.clone())
+                    }
+                }
             })?;
             Ok(format!(
-                "{} {} {} path: {}",
+                "{} {} {} {} path: {}",
                 action.past_tense(),
+                layer.label(),
                 target.label(),
                 rule.label(),
                 path.display()
@@ -288,6 +316,15 @@ impl CToolScopeTarget {
     }
 }
 
+impl CToolScopeLayer {
+    fn label(self) -> &'static str {
+        match self {
+            CToolScopeLayer::Normal => "normal",
+            CToolScopeLayer::Privileged => "privileged",
+        }
+    }
+}
+
 impl CToolScopeRule {
     fn label(self) -> &'static str {
         match self {
@@ -381,6 +418,40 @@ fn update_scope_rule(
         (CToolScopeTarget::Folder, CToolScopeRule::Readwrite) => &mut config.folders.readwrite,
         (CToolScopeTarget::Folder, CToolScopeRule::Readonly) => &mut config.folders.readonly,
         (CToolScopeTarget::Folder, CToolScopeRule::Hidden) => &mut config.folders.hidden,
+    };
+
+    match action {
+        CToolScopeAction::Add => add_unique_path(paths, path),
+        CToolScopeAction::Remove => remove_path(paths, &path),
+    }
+}
+
+fn update_privileged_scope_rule(
+    config: &mut CToolScopeConfig,
+    target: CToolScopeTarget,
+    rule: CToolScopeRule,
+    action: CToolScopeAction,
+    path: PathBuf,
+) -> bool {
+    let paths = match (target, rule) {
+        (CToolScopeTarget::File, CToolScopeRule::Readwrite) => {
+            &mut config.privileged_files.readwrite
+        }
+        (CToolScopeTarget::File, CToolScopeRule::Readonly) => {
+            &mut config.privileged_files.readonly
+        }
+        (CToolScopeTarget::File, CToolScopeRule::Hidden) => {
+            &mut config.privileged_files.hidden
+        }
+        (CToolScopeTarget::Folder, CToolScopeRule::Readwrite) => {
+            &mut config.privileged_folders.readwrite
+        }
+        (CToolScopeTarget::Folder, CToolScopeRule::Readonly) => {
+            &mut config.privileged_folders.readonly
+        }
+        (CToolScopeTarget::Folder, CToolScopeRule::Hidden) => {
+            &mut config.privileged_folders.hidden
+        }
     };
 
     match action {
