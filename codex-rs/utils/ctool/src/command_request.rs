@@ -29,6 +29,24 @@ pub enum CToolCommandPolicy {
     BlockAll,
 }
 
+impl CToolCommandPolicy {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            CToolCommandPolicy::Green => "green",
+            CToolCommandPolicy::Yellow => "yellow",
+            CToolCommandPolicy::Red => "red",
+            CToolCommandPolicy::Blocked => "block",
+            CToolCommandPolicy::BlockAll => "block-all",
+        }
+    }
+}
+
+impl Default for CToolCommandPolicy {
+    fn default() -> Self {
+        CToolCommandPolicy::BlockAll
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum CToolCommandRisk {
@@ -77,6 +95,8 @@ pub enum CToolCommandApproval {
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 pub struct CToolCommandConfig {
+    #[serde(default)]
+    pub policy: CToolCommandPolicy,
     #[serde(default = "default_true")]
     pub enabled: bool,
     #[serde(default)]
@@ -98,6 +118,7 @@ pub struct CToolCommandConfig {
 impl Default for CToolCommandConfig {
     fn default() -> Self {
         Self {
+            policy: CToolCommandPolicy::BlockAll,
             enabled: true,
             green_exact_commands: Vec::new(),
             green_prefixes: Vec::new(),
@@ -297,6 +318,7 @@ pub fn merge_command_configs(
     system_config: CToolCommandConfig,
 ) -> CToolCommandConfig {
     let mut merged = CToolCommandConfig {
+        policy: std::cmp::max(system_config.policy, character_config.policy),
         enabled: character_config.enabled && system_config.enabled,
         green_exact_commands: Vec::new(),
         green_prefixes: Vec::new(),
@@ -351,6 +373,14 @@ pub fn classify_command(
             command: raw_command,
             risk: CToolCommandRisk::Red,
             reason: "empty command".to_string(),
+        };
+    }
+
+    if config.policy == CToolCommandPolicy::BlockAll {
+        return CToolCommandClassification {
+            command: raw_command,
+            risk: CToolCommandRisk::Blocked,
+            reason: "policy is block-all, all commands are blocked".to_string(),
         };
     }
 
@@ -445,8 +475,17 @@ fn classify_command_segment(
 
     CToolCommandClassification {
         command: raw_command,
-        risk: CToolCommandRisk::Red,
-        reason: "unknown command defaults to red".to_string(),
+        risk: risk_from_command_policy(&config.policy),
+        reason: format!("unknown command, defaulting to policy {:?}", config.policy),
+    }
+}
+
+/// Determine a default risk level from a [`CToolCommandPolicy`].
+fn risk_from_command_policy(policy: &CToolCommandPolicy) -> CToolCommandRisk {
+    match policy {
+        CToolCommandPolicy::Green | CToolCommandPolicy::Blocked => CToolCommandRisk::Green,
+        CToolCommandPolicy::Yellow => CToolCommandRisk::Yellow,
+        CToolCommandPolicy::Red | CToolCommandPolicy::BlockAll => CToolCommandRisk::Red,
     }
 }
 
