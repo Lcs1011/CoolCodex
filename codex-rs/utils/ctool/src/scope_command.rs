@@ -14,6 +14,7 @@ use crate::scope_context::resolve_user_path;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CToolScopeCommand {
     Show,
+    Help,
     UpdateRule {
         layer: CToolScopeLayer,
         target: CToolScopeTarget,
@@ -75,6 +76,10 @@ pub fn parse_ctool_scope_command(input: &str) -> CToolResult<CToolScopeCommand> 
         "show" => {
             ensure_token_len(&tokens, 2)?;
             Ok(CToolScopeCommand::Show)
+        }
+        "help" | "h" | "?" => {
+            ensure_token_len(&tokens, 2)?;
+            Ok(CToolScopeCommand::Help)
         }
         "base" => {
             ensure_token_len(&tokens, 3)?;
@@ -144,6 +149,7 @@ pub fn handle_ctool_scope_command(
 ) -> CToolResult<String> {
     match command {
         CToolScopeCommand::Show => Ok(show_ctool_scope(ctx)),
+        CToolScopeCommand::Help => Ok(show_ctool_scope_help()),
         CToolScopeCommand::SetBaseScope(base_scope) => {
             ctx.base_scope = base_scope;
             save_character_base_scope(ctx, base_scope)?;
@@ -182,6 +188,53 @@ pub fn handle_ctool_scope_command(
     }
 }
 
+pub fn show_ctool_scope_help() -> String {
+    [
+        "CToolScope commands:",
+        "",
+        "  /cs",
+        "  /cs show",
+        "      Show current CToolScope configuration.",
+        "",
+        "  /cs help",
+        "      Show this help message.",
+        "",
+        "  /cs base none",
+        "  /cs base selected-only",
+        "  /cs base cool-workspace",
+        "      Set CToolScopeBase for current Character.",
+        "",
+        "  /cs <rule> <path>",
+        "  /cs f <rule> <path>",
+        "      Add normal folder/file rule.",
+        "",
+        "  /cs - <path>",
+        "  /cs f - <path>",
+        "      Remove normal folder/file readwrite rule.",
+        "",
+        "  /cs p <rule> <path>",
+        "  /cs p f <rule> <path>",
+        "      Add privileged folder/file rule.",
+        "",
+        "  /cs p - <path>",
+        "  /cs p f - <path>",
+        "      Remove privileged folder/file readwrite rule.",
+        "",
+        "Rules:",
+        "  <empty>  readwrite",
+        "  ro       readonly",
+        "  hidden   hidden",
+        "",
+        "Examples:",
+        "  /cs C:\\Work",
+        "  /cs ro C:\\Work",
+        "  /cs hidden C:\\Secret",
+        "  /cs f ro C:\\Work\\note.txt",
+        "  /cs p C:\\Trusted",
+        "  /cs p f ro C:\\Trusted\\note.txt",
+    ]
+    .join(\"\\n\")
+}
 pub fn show_ctool_scope(ctx: &CToolScopeContext) -> String {
     let mut output = String::new();
 
