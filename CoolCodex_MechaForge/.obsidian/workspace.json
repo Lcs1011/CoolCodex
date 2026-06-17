@@ -366,12 +366,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "0000 CoolCodex 产品大纲.md",
+                "file": "CoolBot/00 CoolOperation.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "0000 CoolCodex 产品大纲"
+              "title": "00 CoolOperation"
             }
           }
         ],
@@ -448,13 +448,13 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "0000 CoolCodex 产品大纲.md",
+                "file": "CoolBot/00 CoolOperation.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "0000 CoolCodex 产品大纲 的大纲"
+              "title": "00 CoolOperation 的大纲"
             }
           },
           {
@@ -538,8 +538,9 @@
   },
   "active": "38c06028f7191147",
   "lastOpenFiles": [
-    "compact.md",
+    "0000 CoolCodex 产品大纲.md",
     "Task.md",
+    "compact.md",
     "CoolCLI 设置 设计哲学.md",
     "error.md",
     "TaskLog.md",
@@ -558,7 +559,6 @@
     "0201 CoolChat.md",
     "0002 网络门禁.md",
     "0001 SafeMode.md",
-    "0000 CoolCodex 产品大纲.md",
     "CoolBot/00 CoolOperation.md",
     "CoolBot/01 CoolBot 脚本制作规划.md",
     "CoolBot/02CoolBot开发日志.md",

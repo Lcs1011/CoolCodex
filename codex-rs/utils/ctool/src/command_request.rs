@@ -483,9 +483,10 @@ fn classify_command_segment(
 /// Determine a default risk level from a [`CToolCommandPolicy`].
 fn risk_from_command_policy(policy: &CToolCommandPolicy) -> CToolCommandRisk {
     match policy {
-        CToolCommandPolicy::Green | CToolCommandPolicy::Blocked => CToolCommandRisk::Green,
+        CToolCommandPolicy::Blocked | CToolCommandPolicy::BlockAll => CToolCommandRisk::Blocked,
+        CToolCommandPolicy::Green => CToolCommandRisk::Green,
         CToolCommandPolicy::Yellow => CToolCommandRisk::Yellow,
-        CToolCommandPolicy::Red | CToolCommandPolicy::BlockAll => CToolCommandRisk::Red,
+        CToolCommandPolicy::Red => CToolCommandRisk::Red,
     }
 }
 

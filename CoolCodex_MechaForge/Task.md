@@ -1,10 +1,12 @@
-Task 0001-Fix-C：接入 CToolCommandPolicy 到 command_request.rs
+Task 0002-A：修正 CommandPolicy 映射，并接入 Scope privileged 基础规则
 
 根目录：  
 C:\Arsenal\CoolAI\CoolCodex
 
-只允许修改 1 个文件：  
-codex-rs\utils\ctool\src\command_request.rs
+只允许修改 3 个文件：  
+codex-rs\utils\ctool\src\command_request.rs  
+codex-rs\utils\ctool\src\scope_config.rs  
+codex-rs\utils\ctool\src\scope_context.rs
 
 禁止修改其他文件。  
 禁止运行 cargo、just、git、npm、pnpm、powershell、cmd、bat、sh。  
@@ -14,187 +16,22 @@ codex-rs\utils\ctool\src\command_request.rs
 禁止读取 Task.md 多次。  
 禁止全量读取源码文件。
 
-目标：  
-把 CToolCommandPolicy 真正接入 CToolCommandConfig 和命令分类逻辑。
+注意：  
+当前 GitHub 上这些 Rust 文件几乎是单行，所以不要依赖真实行号。  
+按下面给出的搜索词定位，定位后直接替换指定代码块。
+
+# ============================================================  
+修改 1：修正 CommandPolicy 到 Risk 的映射
 
 目标文件：  
 codex-rs\utils\ctool\src\command_request.rs
 
-文件当前大约 1028 行。  
-本任务修改 4 个位置。
-
-# ============================================================  
-修改 1：补齐 CToolCommandPolicy impl
-
-位置：  
-command_request.rs 文件开头附近，大约第 17 行。  
 搜索词：  
-pub enum CToolCommandPolicy
+fn risk_from_command_policy
 
-找到这个 enum 块后，把从：
+定位到这个函数后，把整个函数替换为：
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]  
-pub enum CToolCommandPolicy {
-
-一直到它后面的第一个单独的：
-
-}
-
-替换为下面完整代码：
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]  
-pub enum CToolCommandPolicy {  
-#[serde(rename = "green")]  
-Green,  
-#[serde(rename = "yellow")]  
-Yellow,  
-#[serde(rename = "red")]  
-Red,  
-#[serde(rename = "block", alias = "blocked")]  
-Blocked,  
-#[serde(rename = "block-all", alias = "block_all", alias = "blockall")]  
-BlockAll,  
-}
-
-impl CToolCommandPolicy {  
-pub fn as_str(self) -> &'static str {  
-match self {  
-CToolCommandPolicy::Green => "green",  
-CToolCommandPolicy::Yellow => "yellow",  
-CToolCommandPolicy::Red => "red",  
-CToolCommandPolicy::Blocked => "block",  
-CToolCommandPolicy::BlockAll => "block-all",  
-}  
-}  
-}
-
-impl Default for CToolCommandPolicy {  
-fn default() -> Self {  
-CToolCommandPolicy::BlockAll  
-}  
-}
-
-# ============================================================  
-修改 2：给 CToolCommandConfig 增加 policy 字段
-
-位置：  
-大约第 70 行附近。  
-搜索词：  
-pub struct CToolCommandConfig
-
-在结构体里这一段：
-
-pub struct CToolCommandConfig {  
-#[serde(default = "default_true")]  
-pub enabled: bool,
-
-替换为：
-
-pub struct CToolCommandConfig {  
-#[serde(default)]  
-pub policy: CToolCommandPolicy,
-
-```
-#[serde(default = "default_true")]
-pub enabled: bool,
-```
-
-# ============================================================  
-修改 3：给 Default 初始化 policy
-
-位置：  
-大约第 105 行附近。  
-搜索词：  
-impl Default for CToolCommandConfig
-
-在 Default 里面这一段：
-
-Self {  
-enabled: true,
-
-替换为：
-
-Self {  
-policy: CToolCommandPolicy::BlockAll,  
-enabled: true,
-
-# ============================================================  
-修改 4：merge_command_configs 合并 policy
-
-位置：  
-大约第 280 行附近。  
-搜索词：  
-pub fn merge_command_configs
-
-在 merge_command_configs 里面这一段：
-
-let mut merged = CToolCommandConfig {  
-enabled: character_config.enabled && system_config.enabled,  
-green_exact_commands: Vec::new(),
-
-替换为：
-
-let mut merged = CToolCommandConfig {  
-policy: std::cmp::max(system_config.policy, character_config.policy),  
-enabled: character_config.enabled && system_config.enabled,  
-green_exact_commands: Vec::new(),
-
-# ============================================================  
-修改 5：CommandPolicy::BlockAll 阻断全部命令
-
-位置：  
-大约第 360 行附近。  
-搜索词：  
-pub fn classify_command
-
-在 classify_command 里面这一段：
-
-let raw_command = command.as_ref().trim().to_string();
-
-if raw_command.is_empty() {
-
-替换为：
-
-let raw_command = command.as_ref().trim().to_string();
-
-if config.policy == CToolCommandPolicy::BlockAll {  
-return CToolCommandClassification {  
-command: raw_command,  
-risk: CToolCommandRisk::Blocked,  
-reason: "CToolCommandPolicy is block-all".to_string(),  
-};  
-}
-
-if raw_command.is_empty() {
-
-# ============================================================  
-修改 6：未知命令按 policy 兜底
-
-位置：  
-大约第 440 行附近。  
-搜索词：  
-unknown command defaults to red
-
-把 classify_command_segment 末尾这一段：
-
-CToolCommandClassification {  
-command: raw_command,  
-risk: CToolCommandRisk::Red,  
-reason: "unknown command defaults to red".to_string(),  
-}
-
-替换为：
-
-let policy_risk = risk_from_command_policy(config.policy);  
-CToolCommandClassification {  
-command: raw_command,  
-risk: policy_risk,  
-reason: format!("unknown command defaults to policy: {}", config.policy.as_str()),  
-}
-
-然后在 classify_command_segment 函数结束后、build_command_request_preview 函数之前，插入下面这个新函数：
-
-fn risk_from_command_policy(policy: CToolCommandPolicy) -> CToolCommandRisk {  
+fn risk_from_command_policy(policy: &CToolCommandPolicy) -> CToolCommandRisk {  
 match policy {  
 CToolCommandPolicy::Green => CToolCommandRisk::Green,  
 CToolCommandPolicy::Yellow => CToolCommandRisk::Yellow,  
@@ -205,32 +42,211 @@ CToolCommandRisk::Blocked
 }  
 }
 
+只替换这个函数。  
+不要修改 command_request.rs 的其他位置。
+
+# ============================================================  
+修改 2：给 CToolScopeConfig 增加 privileged_files / privileged_folders
+
+目标文件：  
+codex-rs\utils\ctool\src\scope_config.rs
+
+搜索词：  
+pub struct CToolScopeConfig
+
+找到这个结构体后，把整个结构体替换为：
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, Default)]  
+pub struct CToolScopeConfig {  
+#[serde(default)]  
+pub privileged_files: CToolScopeRuleSet,
+
+```
+#[serde(default)]
+pub privileged_folders: CToolScopeRuleSet,
+
+#[serde(default)]
+pub files: CToolScopeRuleSet,
+
+#[serde(default)]
+pub folders: CToolScopeRuleSet,
+```
+
+}
+
+不要修改 CToolScopeRuleSet。  
+不要修改 parse_scope_base。  
+不要修改 command 配置解析。
+
+# ============================================================  
+修改 3：normalize_scope_config 同步 privileged 字段
+
+目标文件：  
+codex-rs\utils\ctool\src\scope_context.rs
+
+搜索词：  
+pub fn normalize_scope_config
+
+找到这个函数后，把整个函数替换为：
+
+pub fn normalize_scope_config(config: CToolScopeConfig, root: &Path) -> CToolScopeConfig {  
+CToolScopeConfig {  
+privileged_files: normalize_rule_set(config.privileged_files, root),  
+privileged_folders: normalize_rule_set(config.privileged_folders, root),  
+files: normalize_rule_set(config.files, root),  
+folders: normalize_rule_set(config.folders, root),  
+}  
+}
+
+只替换这个函数。  
+不要修改 normalize_rule_set。  
+不要修改 normalize_scope_paths。
+
+# ============================================================  
+修改 4：替换 path_access，实现 None 绝对无视野 + privileged 优先级
+
+目标文件：  
+codex-rs\utils\ctool\src\scope_context.rs
+
+搜索词：  
+fn path_access
+
+把从：
+
+fn path_access(ctx: &CToolScopeContext, path: impl AsRef) -> PathAccess {
+
+开始，到：
+
+pub fn ensure_read_allowed_by_scope
+
+之前的全部内容替换为下面这段：
+
+fn path_access(ctx: &CToolScopeContext, path: impl AsRef) -> PathAccess {  
+let path = lexical_normalize_path(path.as_ref());
+
+```
+if ctx.base_scope == CToolScopeBase::None {
+    return PathAccess::Unspecified;
+}
+
+if is_web_search_cache_path(ctx, &path) {
+    return PathAccess::Readonly;
+}
+
+if is_hard_protected_config_path(ctx, &path) {
+    return PathAccess::Hidden;
+}
+
+if let Some(access) = path_access_from_rule_sets(
+    &path,
+    &ctx.system_config.privileged_files,
+    &ctx.system_config.privileged_folders,
+) {
+    return access;
+}
+
+if let Some(access) = path_access_from_rule_sets(
+    &path,
+    &ctx.user_config.privileged_files,
+    &ctx.user_config.privileged_folders,
+) {
+    return access;
+}
+
+if let Some(access) =
+    path_access_from_rule_sets(&path, &ctx.system_config.files, &ctx.system_config.folders)
+{
+    return access;
+}
+
+if let Some(access) =
+    path_access_from_rule_sets(&path, &ctx.user_config.files, &ctx.user_config.folders)
+{
+    return access;
+}
+
+if is_visible_by_base_scope(ctx, &path) {
+    return PathAccess::Readwrite;
+}
+
+PathAccess::Unspecified
+```
+
+}
+
+fn path_access_from_rule_sets(  
+path: &Path,  
+file_rules: &CToolScopeRuleSet,  
+folder_rules: &CToolScopeRuleSet,  
+) -> Option {  
+if matches_any_exact_path(path, &file_rules.hidden) {  
+return Some(PathAccess::Hidden);  
+}
+
+```
+if matches_any_exact_path(path, &file_rules.readonly) {
+    return Some(PathAccess::Readonly);
+}
+
+if matches_any_exact_path(path, &file_rules.readwrite) {
+    return Some(PathAccess::Readwrite);
+}
+
+if matches_any_path(path, &folder_rules.hidden) {
+    return Some(PathAccess::Hidden);
+}
+
+if matches_any_path(path, &folder_rules.readonly) {
+    return Some(PathAccess::Readonly);
+}
+
+if matches_any_path(path, &folder_rules.readwrite) {
+    return Some(PathAccess::Readwrite);
+}
+
+None
+```
+
+}
+
+pub fn ensure_read_allowed_by_scope
+
+注意：  
+替换时必须保留最后这一行：  
+pub fn ensure_read_allowed_by_scope
+
+也就是说，新内容最后一行就是函数声明开头，不要删掉它后面的函数体。
+
 # ============================================================  
 完成记录
 
 完成后，把下面内容写入：  
 C:\Arsenal\CoolAI\CoolCodex\CoolCodex_MechaForge\TaskLog.md
 
-# Task 0001-Fix-C Result
+# Task 0002-A Result
 
 Changed:
 
 - codex-rs\utils\ctool\src\command_request.rs
     
+- codex-rs\utils\ctool\src\scope_config.rs
+    
+- codex-rs\utils\ctool\src\scope_context.rs
+    
 
 Changed points:
 
-- CToolCommandPolicy impl Default/as_str
+- 修正 risk_from_command_policy：Blocked / BlockAll 都映射为 Blocked
     
-- CToolCommandConfig.policy
+- CToolScopeConfig 增加 privileged_files
     
-- CToolCommandConfig Default policy
+- CToolScopeConfig 增加 privileged_folders
     
-- merge_command_configs policy merge
+- normalize_scope_config 同步 privileged 字段
     
-- classify_command BlockAll hard block
+- path_access 实现 CToolScopeBase::None 绝对无视野
     
-- unknown command fallback uses policy
+- path_access 实现 privileged 优先于普通 System / Character 规则
     
 
 Notes:

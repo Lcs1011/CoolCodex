@@ -109,6 +109,8 @@ pub fn build_ctool_scope_context_with_launcher(
 
 pub fn normalize_scope_config(config: CToolScopeConfig, root: &Path) -> CToolScopeConfig {
     CToolScopeConfig {
+        privileged_files: normalize_rule_set(config.privileged_files, root),
+        privileged_folders: normalize_rule_set(config.privileged_folders, root),
         files: normalize_rule_set(config.files, root),
         folders: normalize_rule_set(config.folders, root),
     }
