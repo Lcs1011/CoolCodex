@@ -311,6 +311,19 @@ fn path_access(ctx: &CToolScopeContext, path: impl AsRef<Path>) -> PathAccess {
     if is_hard_protected_config_path(ctx, &path) {
         return PathAccess::Hidden;
     }
+    // Privileged paths override normal rules
+    if matches_any_exact_path(&path, &ctx.system_config.privileged_files) {
+        return PathAccess::Readwrite;
+    }
+    if matches_any_path(&path, &ctx.system_config.privileged_folders) {
+        return PathAccess::Readwrite;
+    }
+    if matches_any_exact_path(&path, &ctx.user_config.privileged_files) {
+        return PathAccess::Readwrite;
+    }
+    if matches_any_path(&path, &ctx.user_config.privileged_folders) {
+        return PathAccess::Readwrite;
+    }
     if matches_any_exact_path(&path, &ctx.system_config.files.hidden) {
         return PathAccess::Hidden;
     }

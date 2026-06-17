@@ -31,13 +31,13 @@ pub type CToolSessionConfig = CToolCharacterConfig;
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, Default)]
 pub struct CToolScopeConfig {
     #[serde(default)]
+    pub privileged_files: CToolScopeRuleSet,
+    #[serde(default)]
+    pub privileged_folders: CToolScopeRuleSet,
+    #[serde(default)]
     pub files: CToolScopeRuleSet,
     #[serde(default)]
     pub folders: CToolScopeRuleSet,
-    #[serde(default)]
-    pub privileged_files: Vec<String>,
-    #[serde(default)]
-    pub privileged_folders: Vec<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, Default)]

@@ -366,12 +366,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "CoolBot/00 CoolOperation.md",
+                "file": "TaskLog.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "00 CoolOperation"
+              "title": "TaskLog"
             }
           }
         ],
@@ -448,13 +448,13 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "CoolBot/00 CoolOperation.md",
+                "file": "TaskLog.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "00 CoolOperation 的大纲"
+              "title": "TaskLog 的大纲"
             }
           },
           {
@@ -538,6 +538,7 @@
   },
   "active": "38c06028f7191147",
   "lastOpenFiles": [
+    "CoolBot/00 CoolOperation.md",
     "0000 CoolCodex 产品大纲.md",
     "Task.md",
     "compact.md",
@@ -559,7 +560,6 @@
     "0201 CoolChat.md",
     "0002 网络门禁.md",
     "0001 SafeMode.md",
-    "CoolBot/00 CoolOperation.md",
     "CoolBot/01 CoolBot 脚本制作规划.md",
     "CoolBot/02CoolBot开发日志.md",
     "CoolBot/随身携带摄像头.md",
