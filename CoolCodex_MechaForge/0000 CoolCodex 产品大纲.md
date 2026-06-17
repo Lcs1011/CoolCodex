@@ -1,4 +1,9 @@
 
+原版Codex开源仓库
+https://github.com/openai/codex
+
+我自己的CoolCodex仓库
+https://github.com/Lcs1011/Coolcode
 
 产品诉求
 

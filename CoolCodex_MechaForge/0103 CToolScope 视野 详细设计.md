@@ -34,11 +34,11 @@ CTool 即没有任何视野 既不能看到  CoolWorkspace 更不能看到 Chara
 
 仅位于  CharacterRoot   的 .cool 中 config.toml
 
-### CoolWorkspace 为 
-使用 CoolWorkspace 文件夹为基础视野
-
 ### SelectedOnly
 不开放基础视野，只依赖显式文件/文件夹规则。
+
+### CoolWorkspace 为 
+使用 CoolWorkspace 文件夹为基础视野
 
 ### TheEyeOfProvidence
 
@@ -131,12 +131,14 @@ hidden = [
 #### 原则概述 （上面的原则 大于  下面的原则）
 
 
-1/ CoolSystem 大于 Character级别
-2/ 文件大于文件夹 
+1/ 禁止大于开放  （hidden > readonly > readwrite）
+
+2/ CoolSystem级 大于 CoolCharacter 级
+
+3/ 文件大于文件夹 
 这意味着可以通过文件级规则对隐藏文件夹里的单个文件做例外放行
 但是 Character 级别 无法越过 CoolSystem 级别
 
-3/ 禁止大于开放  （hidden > readonly > readwrite）
 
 4/ 都大于 CToolScopeBase
 
@@ -145,6 +147,27 @@ hidden = [
 System 和 Character 表示两个权限级别
 
 System.filehidden>System.fileReadOnly>System.filereadwrite >
+System.folderhidden>System.folderReadOnly>System.folderreadwrite >
+Character.filehidden>Character.fileReadOnly>Character.filereadwrite >
+Character.folderhidden>Character.folderReadOnly>Character.folderreadwrite >
+CToolScopeBase
+
+
+character file级要不要大于 系统 folder
+对于cool肯定不要
+
+那么存不存在系统级限制的？然后单独给character级别开后门的情况
+暂时没有
+有的话再加个特殊曾即可 现在先不用
+
+
+
+System.file.hidden + Character.file.hidden >
+System.file.ReadOnly + Character.file.ReadOnly >
+System.file.hidden + System.file.hidden >
+
+
+System.fileReadOnly>System.filereadwrite >
 System.folderhidden>System.folderReadOnly>System.folderreadwrite >
 Character.filehidden>Character.fileReadOnly>Character.filereadwrite >
 Character.folderhidden>Character.folderReadOnly>Character.folderreadwrite >

@@ -6,7 +6,7 @@
       {
         "id": "c0898ba17616e193",
         "type": "tabs",
-        "dimension": 38.442673206621706,
+        "dimension": 46.525479814692254,
         "children": [
           {
             "id": "e5c41b3ebd991023",
@@ -28,12 +28,68 @@
             "state": {
               "type": "markdown",
               "state": {
+                "file": "CoolCLI 设置 设计哲学.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "CoolCLI 设置 设计哲学"
+            }
+          },
+          {
+            "id": "3f1b182773581780",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "CoolCLI 设置.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "CoolCLI 设置"
+            }
+          },
+          {
+            "id": "0e982b99a3acbd78",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
                 "file": "CoolBot/01 CoolBot 脚本制作规划.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
               "title": "01 CoolBot 脚本制作规划"
+            }
+          },
+          {
+            "id": "b5ee004d00e929ff",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "CoolCLI 设置 设计哲学.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "CoolCLI 设置 设计哲学"
+            }
+          },
+          {
+            "id": "dce9b7dbee8663ed",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "CoolGolem/一个简洁的欺骗手段.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "一个简洁的欺骗手段"
             }
           },
           {
@@ -51,12 +107,12 @@
             }
           }
         ],
-        "currentTab": 1
+        "currentTab": 2
       },
       {
         "id": "e3d2ba2ac03d6c7f",
         "type": "tabs",
-        "dimension": 19.129368485591662,
+        "dimension": 25.6783587028458,
         "children": [
           {
             "id": "9f2ede547f90274b",
@@ -134,12 +190,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "0107 CToolCommandRequest.md",
+                "file": "CoolBot/01 CoolBot 脚本制作规划.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "0107 CToolCommandRequest"
+              "title": "01 CoolBot 脚本制作规划"
             }
           }
         ],
@@ -148,7 +204,7 @@
       {
         "id": "5e101feea4917d47",
         "type": "tabs",
-        "dimension": 42.42795830778663,
+        "dimension": 27.796161482461944,
         "children": [
           {
             "id": "c42ba0c1091b0de4",
@@ -282,12 +338,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "CoolCLI 设置.md",
+                "file": "0103 CToolScope 视野 详细设计.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "CoolCLI 设置"
+              "title": "0103 CToolScope 视野 详细设计"
             }
           }
         ],
@@ -348,7 +404,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 365.5
+    "width": 306.5
   },
   "right": {
     "id": "24ca147ed959cc7d",
@@ -452,36 +508,36 @@
       "bases:新建数据库": false
     }
   },
-  "active": "38c06028f7191147",
+  "active": "3f1b182773581780",
   "lastOpenFiles": [
-    "CoolBot/01 CoolBot 脚本制作规划.md",
-    "CoolBot/02CoolBot开发日志.md",
+    "0002 网络门禁.md",
+    "0001 SafeMode.md",
+    "0000 CoolCodex 产品大纲.md",
     "CoolCLI 设置.md",
+    "0103 CToolScope 视野 详细设计.md",
+    "CoolBot/01 CoolBot 脚本制作规划.md",
+    "CoolCLI 设置 设计哲学.md",
+    "0108 CToolTavilySearchRequest.md",
+    "CoolGolem/一个简洁的欺骗手段.md",
+    "审批功能.md",
+    "0107 CToolCommandRequest.md",
+    "compact.md",
+    "CoolBot/02CoolBot开发日志.md",
     "CoolBot/02 CoolBot 脚本制作流程.md",
     "CoolBot/随身携弹主板硬件.md",
     "CoolBot/随身携带摄像头.md",
     "0109 CToolTavilySearchRequest.md",
-    "0107 CToolCommandRequest.md",
     "CoolBot/00 CoolOperation.md",
     "CoolGolem/大小脑体系.md",
     "`ctool_tavily_search_request` 产品大纲 (重构版).md",
-    "0108 CToolTavilySearchRequest.md",
     "未命名 2.md",
     "通用制作规划.md",
-    "0001 SafeMode.md",
     "未命名 1.md",
     "0104 视野相关工具函数.md",
-    "0000 CoolCodex 产品大纲.md",
     "读取 修改 创建 删除 门禁卡.md",
     "CoolGolem/鼠标系统制作.md",
-    "CoolGolem/键盘模拟.md",
-    "CoolGolem/眼睛制作.md",
     "CoolGolem",
     "CoolBot",
-    "未命名 4.md",
-    "提示词.md",
-    "你好，现在我正在制作一个项目。.md",
-    "傻瓜指令执行反馈.md",
     "未命名 1",
     "assets/0101 CoolCLI 一些定义和基本设定",
     "未命名",
