@@ -520,4 +520,59 @@ policy = "green"
         assert!(result_text.contains("Status: Rejected"));
         assert!(result_text.contains("keep editing first"));
     }
+
+    #[test]
+    fn blocked_tool_output_returns_result_paths_without_execution() {
+        let ctx = test_context(
+            "blocked_output",
+            r#"
+[ctool_command]
+policy = "green"
+"#,
+            r#"
+[ctool_command]
+policy = "green"
+"#,
+        );
+
+        let output = preview_command_request(
+            &ctx,
+            CToolCommandRequestInput {
+                commands: vec!["python -m venv .venv".to_string()],
+                ai_risk_upgrade: None,
+                reason: Some("test blocked output".to_string()),
+                yellow_confirmation: Some("Y".to_string()),
+                red_first_confirmation: Some("Y".to_string()),
+                red_second_confirmation: Some("Y".to_string()),
+            },
+        )
+        .unwrap();
+
+        assert!(!output.will_execute);
+        assert!(!output.executed);
+        assert!(output.blocked);
+        assert!(!output.rejected);
+        assert_eq!(output.all_success, Some(false));
+        assert!(output.result_file.is_some());
+        assert!(output.log_file.is_some());
+        assert_eq!(output.current_dir, ctx.scope_context.cool_workspace.display().to_string());
+        assert_eq!(output.command_count, 1);
+        assert_eq!(output.system_risk, "BLOCKED");
+        assert_eq!(output.final_risk, "BLOCKED");
+        assert_eq!(output.approval_required, "blocked");
+        assert_eq!(output.request_reason, Some("test blocked output".to_string()));
+        assert_eq!(output.user_feedback, None);
+        assert_eq!(output.commands.len(), 1);
+        assert_eq!(output.commands[0].command, "python -m venv .venv");
+        assert_eq!(output.commands[0].risk, "BLOCKED");
+        assert!(output.display_text.contains("executed: false"));
+        assert!(output.display_text.contains("blocked: true"));
+        assert!(output.display_text.contains("result_file:"));
+        assert!(output.display_text.contains("log_file:"));
+
+        let result_text = std::fs::read_to_string(output.result_file.unwrap()).unwrap();
+        assert!(result_text.contains("Approved: No"));
+        assert!(result_text.contains("Status: Blocked"));
+        assert!(result_text.contains("python -m venv .venv"));
+    }
 }
