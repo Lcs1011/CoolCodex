@@ -270,7 +270,7 @@ fn policy_green_cannot_downgrade_download_url() {
         CToolCommandClassification {
             command: "custom-tool https://example.com/file.zip".to_string(),
             risk: CToolCommandRisk::Red,
-            reason: "custom-tool https://example.com/file.zip: shell, interpreter, download, website, deletion, process, registry, or network configuration command is at least red".to_string(),
+            reason: "custom-tool https://example.com/file.zip: matched red contains rule: https://".to_string(),
         }
     );
 }
