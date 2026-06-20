@@ -417,10 +417,18 @@ fn classify_command_segment(
     }
 
     if let Some(rule_match) = explicit_command_rule_match(&normalized_command, config) {
+        let mut risk = rule_match.risk;
+        let mut reason = rule_match.reason();
+
+        if is_directory_switch_command(&normalized_command) && risk < CToolCommandRisk::Red {
+            risk = CToolCommandRisk::Red;
+            reason.push_str("; cd/pushd directory switch is at least red");
+        }
+
         return CToolCommandClassification {
             command: raw_command,
-            risk: rule_match.risk,
-            reason: rule_match.reason(),
+            risk,
+            reason,
         };
     }
 

@@ -98,6 +98,22 @@ fn directory_switch_is_red() {
     );
 }
 #[test]
+fn green_rule_cannot_downgrade_directory_switch() {
+    let mut config = rule_matching_test_config();
+    config.green_prefixes.push("cd".to_string());
+
+    let classification = classify_command("cd ..", &config);
+
+    assert_eq!(
+        classification,
+        CToolCommandClassification {
+            command: "cd ..".to_string(),
+            risk: CToolCommandRisk::Red,
+            reason: "cd ..: matched green prefix rule: cd; cd/pushd directory switch is at least red".to_string(),
+        }
+    );
+}
+#[test]
 fn yellow_rule_overrides_green_rule() {
     let mut config = rule_matching_test_config();
     config.green_exact_commands.push("cargo check".to_string());
