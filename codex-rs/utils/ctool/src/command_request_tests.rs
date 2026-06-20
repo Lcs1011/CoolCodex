@@ -18,10 +18,29 @@ fn red_second_confirmation_accepts_y_prefix() {
         CToolCommandUserDecision::Approved
     );
 }
+fn rule_matching_test_config() -> CToolCommandConfig {
+    let mut config = default_command_config();
+    config.policy = CToolCommandPolicy::Yellow;
+    config
+}
+
+#[test]
+fn default_command_config_blocks_all_commands() {
+    let classification = classify_command("git status", &default_command_config());
+
+    assert_eq!(
+        classification,
+        CToolCommandClassification {
+            command: "git status".to_string(),
+            risk: CToolCommandRisk::Blocked,
+            reason: "policy is block-all, all commands are blocked".to_string(),
+        }
+    );
+}
 
 #[test]
 fn python_environment_creation_is_blocked() {
-    let classification = classify_command("python -m venv .venv", &default_command_config());
+    let classification = classify_command("python -m venv .venv", &rule_matching_test_config());
 
     assert_eq!(
         classification,
@@ -35,7 +54,7 @@ fn python_environment_creation_is_blocked() {
 
 #[test]
 fn ctool_scope_commands_are_blocked() {
-    let classification = classify_command("/cs hidden .cool", &default_command_config());
+    let classification = classify_command("/cs hidden .cool", &rule_matching_test_config());
 
     assert_eq!(
         classification,
@@ -50,7 +69,7 @@ fn ctool_scope_commands_are_blocked() {
 #[test]
 fn ctool_scope_segment_in_mixed_command_is_blocked() {
     let classification =
-        classify_command("git status && /cs hidden .cool", &default_command_config());
+        classify_command("git status && /cs hidden .cool", &rule_matching_test_config());
 
     assert_eq!(classification.risk, CToolCommandRisk::Blocked);
     assert!(
@@ -67,7 +86,7 @@ fn ctool_scope_segment_in_mixed_command_is_blocked() {
 
 #[test]
 fn directory_switch_is_red() {
-    let classification = classify_command("cd ..", &default_command_config());
+    let classification = classify_command("cd ..", &rule_matching_test_config());
 
     assert_eq!(
         classification,
@@ -84,7 +103,7 @@ fn yellow_banner_uses_confirmation_prompt() {
     let preview = build_command_request_preview(
         "C:\\CodexLab\\codex",
         vec!["cargo check -p ctool".to_string()],
-        &default_command_config(),
+        &rule_matching_test_config(),
         /*ai_risk_upgrade*/ None,
     )
     .unwrap();
