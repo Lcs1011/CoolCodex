@@ -102,16 +102,17 @@ fn character_file_readwrite_beats_character_folder_hidden() {
     assert!(can_write_path(&ctx, &file));
 }
 #[test]
-fn base_none_still_allows_explicit_character_rules() {
+fn base_none_blocks_even_explicit_character_rules() {
     let mut ctx = test_context();
     ctx.base_scope = CToolScopeBase::None;
     let file = ctx.character_root.join("selected").join("open.txt");
     let other_file = ctx.character_root.join("other").join("closed.txt");
 
     ctx.user_config.files.readwrite = vec![file.clone()];
+    ctx.user_config.files.readonly = vec![other_file.clone()];
 
-    assert!(can_read_path(&ctx, &file));
-    assert!(can_write_path(&ctx, &file));
+    assert!(!can_read_path(&ctx, &file));
+    assert!(!can_write_path(&ctx, &file));
     assert!(!can_read_path(&ctx, &other_file));
     assert!(!can_write_path(&ctx, &other_file));
 }
