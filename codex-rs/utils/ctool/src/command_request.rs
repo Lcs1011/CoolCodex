@@ -99,6 +99,7 @@ pub struct CToolCommandConfig {
     pub policy: CToolCommandPolicy,
     #[serde(default = "default_true")]
     pub enabled: bool,
+
     #[serde(default)]
     pub green_exact_commands: Vec<String>,
     #[serde(default)]
@@ -113,6 +114,21 @@ pub struct CToolCommandConfig {
     pub blocked_prefixes: Vec<String>,
     #[serde(default)]
     pub blocked_contains: Vec<String>,
+
+    #[serde(default)]
+    pub privileged_green_exact_commands: Vec<String>,
+    #[serde(default)]
+    pub privileged_green_prefixes: Vec<String>,
+    #[serde(default)]
+    pub privileged_yellow_prefixes: Vec<String>,
+    #[serde(default)]
+    pub privileged_red_prefixes: Vec<String>,
+    #[serde(default)]
+    pub privileged_red_contains: Vec<String>,
+    #[serde(default)]
+    pub privileged_blocked_prefixes: Vec<String>,
+    #[serde(default)]
+    pub privileged_blocked_contains: Vec<String>,
 }
 
 impl Default for CToolCommandConfig {
@@ -248,6 +264,14 @@ impl Default for CToolCommandConfig {
                 "/cs".to_string(),
                 "/ctoolscope".to_string(),
             ],
+
+            privileged_green_exact_commands: Vec::new(),
+            privileged_green_prefixes: Vec::new(),
+            privileged_yellow_prefixes: Vec::new(),
+            privileged_red_prefixes: Vec::new(),
+            privileged_red_contains: Vec::new(),
+            privileged_blocked_prefixes: Vec::new(),
+            privileged_blocked_contains: Vec::new(),
         }
     }
 }
@@ -327,6 +351,13 @@ pub fn merge_command_configs(
         red_contains: Vec::new(),
         blocked_prefixes: Vec::new(),
         blocked_contains: Vec::new(),
+        privileged_green_exact_commands: Vec::new(),
+        privileged_green_prefixes: Vec::new(),
+        privileged_yellow_prefixes: Vec::new(),
+        privileged_red_prefixes: Vec::new(),
+        privileged_red_contains: Vec::new(),
+        privileged_blocked_prefixes: Vec::new(),
+        privileged_blocked_contains: Vec::new(),
     };
 
     append_unique_strings(
@@ -357,6 +388,62 @@ pub fn merge_command_configs(
     append_unique_strings(
         &mut merged.blocked_contains,
         character_config.blocked_contains,
+    );
+    append_unique_strings(
+        &mut merged.privileged_green_exact_commands,
+        system_config.privileged_green_exact_commands,
+    );
+    append_unique_strings(
+        &mut merged.privileged_green_exact_commands,
+        character_config.privileged_green_exact_commands,
+    );
+    append_unique_strings(
+        &mut merged.privileged_green_prefixes,
+        system_config.privileged_green_prefixes,
+    );
+    append_unique_strings(
+        &mut merged.privileged_green_prefixes,
+        character_config.privileged_green_prefixes,
+    );
+    append_unique_strings(
+        &mut merged.privileged_yellow_prefixes,
+        system_config.privileged_yellow_prefixes,
+    );
+    append_unique_strings(
+        &mut merged.privileged_yellow_prefixes,
+        character_config.privileged_yellow_prefixes,
+    );
+    append_unique_strings(
+        &mut merged.privileged_red_prefixes,
+        system_config.privileged_red_prefixes,
+    );
+    append_unique_strings(
+        &mut merged.privileged_red_prefixes,
+        character_config.privileged_red_prefixes,
+    );
+    append_unique_strings(
+        &mut merged.privileged_red_contains,
+        system_config.privileged_red_contains,
+    );
+    append_unique_strings(
+        &mut merged.privileged_red_contains,
+        character_config.privileged_red_contains,
+    );
+    append_unique_strings(
+        &mut merged.privileged_blocked_prefixes,
+        system_config.privileged_blocked_prefixes,
+    );
+    append_unique_strings(
+        &mut merged.privileged_blocked_prefixes,
+        character_config.privileged_blocked_prefixes,
+    );
+    append_unique_strings(
+        &mut merged.privileged_blocked_contains,
+        system_config.privileged_blocked_contains,
+    );
+    append_unique_strings(
+        &mut merged.privileged_blocked_contains,
+        character_config.privileged_blocked_contains,
     );
 
     merged
@@ -591,6 +678,64 @@ fn explicit_command_rule_match<'a>(
     normalized_command: &str,
     config: &'a CToolCommandConfig,
 ) -> Option<CToolCommandRuleMatch<'a>> {
+    if let Some(rule) = first_contains_match(normalized_command, &config.privileged_blocked_contains)
+    {
+        return Some(CToolCommandRuleMatch {
+            risk: CToolCommandRisk::Blocked,
+            rule_kind: "privileged blocked contains",
+            rule,
+        });
+    }
+
+    if let Some(rule) = first_prefix_match(normalized_command, &config.privileged_blocked_prefixes)
+    {
+        return Some(CToolCommandRuleMatch {
+            risk: CToolCommandRisk::Blocked,
+            rule_kind: "privileged blocked prefix",
+            rule,
+        });
+    }
+
+    if let Some(rule) = first_contains_match(normalized_command, &config.privileged_red_contains) {
+        return Some(CToolCommandRuleMatch {
+            risk: CToolCommandRisk::Red,
+            rule_kind: "privileged red contains",
+            rule,
+        });
+    }
+
+    if let Some(rule) = first_prefix_match(normalized_command, &config.privileged_red_prefixes) {
+        return Some(CToolCommandRuleMatch {
+            risk: CToolCommandRisk::Red,
+            rule_kind: "privileged red prefix",
+            rule,
+        });
+    }
+
+    if let Some(rule) = first_prefix_match(normalized_command, &config.privileged_yellow_prefixes) {
+        return Some(CToolCommandRuleMatch {
+            risk: CToolCommandRisk::Yellow,
+            rule_kind: "privileged yellow prefix",
+            rule,
+        });
+    }
+
+    if let Some(rule) = first_exact_match(normalized_command, &config.privileged_green_exact_commands)
+    {
+        return Some(CToolCommandRuleMatch {
+            risk: CToolCommandRisk::Green,
+            rule_kind: "privileged green exact",
+            rule,
+        });
+    }
+
+    if let Some(rule) = first_prefix_match(normalized_command, &config.privileged_green_prefixes) {
+        return Some(CToolCommandRuleMatch {
+            risk: CToolCommandRisk::Green,
+            rule_kind: "privileged green prefix",
+            rule,
+        });
+    }
     if let Some(rule) = first_contains_match(normalized_command, &config.blocked_contains) {
         return Some(CToolCommandRuleMatch {
             risk: CToolCommandRisk::Blocked,

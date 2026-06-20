@@ -60,13 +60,46 @@ struct CoolCharacterConfigToml {
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 struct CoolCommandConfigToml {
+    #[serde(default)]
+    ctool_command_privileged: CoolCommandPrivilegedConfig,
     #[serde(default = "default_command_config")]
     ctool_command: CToolCommandConfig,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, Default)]
+struct CoolCommandPrivilegedConfig {
+    #[serde(default)]
+    green_exact_commands: Vec<String>,
+    #[serde(default)]
+    green_prefixes: Vec<String>,
+    #[serde(default)]
+    yellow_prefixes: Vec<String>,
+    #[serde(default)]
+    red_prefixes: Vec<String>,
+    #[serde(default)]
+    red_contains: Vec<String>,
+    #[serde(default)]
+    blocked_prefixes: Vec<String>,
+    #[serde(default)]
+    blocked_contains: Vec<String>,
+}
+
+impl CoolCommandPrivilegedConfig {
+    fn apply_to(self, config: &mut CToolCommandConfig) {
+        config.privileged_green_exact_commands = self.green_exact_commands;
+        config.privileged_green_prefixes = self.green_prefixes;
+        config.privileged_yellow_prefixes = self.yellow_prefixes;
+        config.privileged_red_prefixes = self.red_prefixes;
+        config.privileged_red_contains = self.red_contains;
+        config.privileged_blocked_prefixes = self.blocked_prefixes;
+        config.privileged_blocked_contains = self.blocked_contains;
+    }
 }
 
 impl Default for CoolCommandConfigToml {
     fn default() -> Self {
         Self {
+            ctool_command_privileged: CoolCommandPrivilegedConfig::default(),
             ctool_command: default_command_config(),
         }
     }
@@ -262,7 +295,9 @@ pub fn parse_cool_command_config_toml(text: &str) -> CToolResult<CToolCommandCon
         CToolError::InvalidInput(format!("invalid Cool command TOML config: {error}"))
     })?;
 
-    Ok(file.ctool_command)
+    let mut config = file.ctool_command;
+    file.ctool_command_privileged.apply_to(&mut config);
+    Ok(config)
 }
 
 pub fn load_merged_cool_command_config(

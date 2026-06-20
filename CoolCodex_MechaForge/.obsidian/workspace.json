@@ -250,13 +250,13 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "CoolBot/CoolBotUsageManual.md",
+                "file": "0101 CoolCLI 一些定义和基本设定.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "CoolBotUsageManual 的大纲"
+              "title": "0101 CoolCLI 一些定义和基本设定 的大纲"
             }
           },
           {
@@ -338,8 +338,9 @@
       "bases:新建数据库": false
     }
   },
-  "active": "aabb8d715d0af5bd",
+  "active": "0f50bc0dd4a1f219",
   "lastOpenFiles": [
+    "CoolBot/CoolBotUsageManual.md",
     "0101 CoolCLI 一些定义和基本设定.md",
     "CoolCLI 设置.md",
     "0106 CTool Markdown相关工具.md",
@@ -358,7 +359,6 @@
     "CoolBot/未命名 1.md",
     "CoolBot/01 CoolOperationDollarSyntax.md",
     "CoolBot/CoolBot 脚本行为.md",
-    "CoolBot/CoolBotUsageManual.md",
     "CoolBot/CoolBotDevelopmentSummary.md",
     "CoolBot/CoolOperationSyntax.md",
     "CoolBot/CoolOperation 新标准.md",

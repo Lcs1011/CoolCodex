@@ -112,6 +112,13 @@ fn clean_command_config(policy: CToolCommandPolicy) -> CToolCommandConfig {
     config.red_contains.clear();
     config.blocked_prefixes.clear();
     config.blocked_contains.clear();
+    config.privileged_green_exact_commands.clear();
+    config.privileged_green_prefixes.clear();
+    config.privileged_yellow_prefixes.clear();
+    config.privileged_red_prefixes.clear();
+    config.privileged_red_contains.clear();
+    config.privileged_blocked_prefixes.clear();
+    config.privileged_blocked_contains.clear();
     config
 }
 fn test_cache_root(name: &str) -> std::path::PathBuf {
@@ -401,6 +408,51 @@ fn explicit_green_rule_overrides_policy_fallback() {
             command: "demo command".to_string(),
             risk: CToolCommandRisk::Green,
             reason: "demo command: matched green exact rule: demo command".to_string(),
+        }
+    );
+}
+#[test]
+fn privileged_green_rule_overrides_normal_blocked_rule() {
+    let mut config = clean_command_config(CToolCommandPolicy::Red);
+    config.blocked_prefixes.push("demo".to_string());
+    config
+        .privileged_green_exact_commands
+        .push("demo command".to_string());
+
+    let classification = classify_command("demo command", &config);
+
+    assert_eq!(
+        classification,
+        CToolCommandClassification {
+            command: "demo command".to_string(),
+            risk: CToolCommandRisk::Green,
+            reason: "demo command: matched privileged green exact rule: demo command".to_string(),
+        }
+    );
+}
+
+#[test]
+fn privileged_toml_section_is_loaded_and_ranked_above_normal_rules() {
+    let config = crate::scope_config::parse_cool_command_config_toml(
+        r#"
+[ctool_command_privileged]
+green_exact_commands = ["demo command"]
+
+[ctool_command]
+policy = "red"
+blocked_prefixes = ["demo"]
+"#,
+    )
+    .unwrap();
+
+    let classification = classify_command("demo command", &config);
+
+    assert_eq!(
+        classification,
+        CToolCommandClassification {
+            command: "demo command".to_string(),
+            risk: CToolCommandRisk::Green,
+            reason: "demo command: matched privileged green exact rule: demo command".to_string(),
         }
     );
 }
