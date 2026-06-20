@@ -420,9 +420,12 @@ fn classify_command_segment(
         let mut risk = rule_match.risk;
         let mut reason = rule_match.reason();
 
-        if is_directory_switch_command(&normalized_command) && risk < CToolCommandRisk::Red {
-            risk = CToolCommandRisk::Red;
-            reason.push_str("; cd/pushd directory switch is at least red");
+        if let Some(hard_risk) = hard_command_risk(&normalized_command) {
+            if risk < hard_risk.risk {
+                risk = hard_risk.risk;
+                reason.push_str("; ");
+                reason.push_str(hard_risk.reason);
+            }
         }
 
         return CToolCommandClassification {
@@ -432,11 +435,11 @@ fn classify_command_segment(
         };
     }
 
-    if is_directory_switch_command(&normalized_command) {
+    if let Some(hard_risk) = hard_command_risk(&normalized_command) {
         return CToolCommandClassification {
             command: raw_command,
-            risk: CToolCommandRisk::Red,
-            reason: "cd/pushd directory switch is at least red".to_string(),
+            risk: hard_risk.risk,
+            reason: hard_risk.reason.to_string(),
         };
     }
 
@@ -447,6 +450,130 @@ fn classify_command_segment(
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct CToolCommandHardRisk {
+    risk: CToolCommandRisk,
+    reason: &'static str,
+}
+
+fn hard_command_risk(normalized_command: &str) -> Option<CToolCommandHardRisk> {
+    if is_hard_blocked_python_environment_command(normalized_command) {
+        return Some(CToolCommandHardRisk {
+            risk: CToolCommandRisk::Blocked,
+            reason: "python environment creation, package installation, PATH mutation, or environment activation is blocked",
+        });
+    }
+
+    if is_directory_switch_command(normalized_command) {
+        return Some(CToolCommandHardRisk {
+            risk: CToolCommandRisk::Red,
+            reason: "cd/pushd directory switch is at least red",
+        });
+    }
+
+    if is_hard_red_command(normalized_command) {
+        return Some(CToolCommandHardRisk {
+            risk: CToolCommandRisk::Red,
+            reason: "shell, interpreter, download, website, deletion, process, registry, or network configuration command is at least red",
+        });
+    }
+
+    None
+}
+
+fn is_hard_blocked_python_environment_command(normalized_command: &str) -> bool {
+    normalized_command.starts_with("python -m venv")
+        || normalized_command.starts_with("py -m venv")
+        || normalized_command.starts_with("python3 -m venv")
+        || normalized_command.starts_with("virtualenv")
+        || normalized_command.starts_with("python -m virtualenv")
+        || normalized_command.starts_with("py -m virtualenv")
+        || normalized_command.starts_with("pip install")
+        || normalized_command.starts_with("pip3 install")
+        || normalized_command.starts_with("python -m pip install")
+        || normalized_command.starts_with("py -m pip install")
+        || normalized_command.starts_with("python3 -m pip install")
+        || normalized_command.starts_with("pipx install")
+        || normalized_command.starts_with("uv venv")
+        || normalized_command.starts_with("uv python install")
+        || normalized_command.starts_with("uv tool install")
+        || normalized_command.starts_with("conda create")
+        || normalized_command.starts_with("conda install")
+        || normalized_command.starts_with("mamba create")
+        || normalized_command.starts_with("mamba install")
+        || normalized_command.starts_with("micromamba create")
+        || normalized_command.starts_with("micromamba install")
+        || normalized_command.starts_with("pyenv install")
+        || normalized_command.starts_with("python -m ensurepip")
+        || normalized_command.starts_with("py -m ensurepip")
+        || normalized_command.contains("python.org")
+        || normalized_command.contains("install python")
+        || normalized_command.contains("python installer")
+        || normalized_command.contains("python-3.")
+        || normalized_command.contains("python3.")
+        || normalized_command.contains("venv")
+        || normalized_command.contains("virtualenv")
+        || normalized_command.contains("ensurepip")
+        || normalized_command.contains("pip install")
+        || normalized_command.contains("conda create")
+        || normalized_command.contains("conda install")
+        || normalized_command.contains("pyenv")
+        || normalized_command.contains("pyenv-win")
+        || normalized_command.contains("appdata\\local\\programs\\python")
+        || normalized_command.contains("c:\\python")
+        || normalized_command.contains("program files\\python")
+        || normalized_command.contains("windowsapps\\python")
+        || normalized_command.contains("setx path")
+        || normalized_command.contains("set path")
+        || normalized_command.contains("$env:path")
+        || normalized_command.contains("path=")
+        || normalized_command.contains("scripts\\activate")
+        || normalized_command.contains("activate.bat")
+        || normalized_command.contains("activate.ps1")
+}
+
+fn is_hard_red_command(normalized_command: &str) -> bool {
+    normalized_command.starts_with("del")
+        || normalized_command.starts_with("erase")
+        || normalized_command.starts_with("rmdir")
+        || normalized_command.starts_with("rd")
+        || normalized_command.starts_with("remove-item")
+        || normalized_command.starts_with("git reset --hard")
+        || normalized_command.starts_with("git clean -fd")
+        || normalized_command.starts_with("git clone")
+        || normalized_command.starts_with("powershell")
+        || normalized_command.starts_with("pwsh")
+        || normalized_command.starts_with("cmd")
+        || normalized_command.starts_with("python")
+        || normalized_command.starts_with("node")
+        || normalized_command.starts_with("curl")
+        || normalized_command.starts_with("wget")
+        || normalized_command.starts_with("invoke-webrequest")
+        || normalized_command.starts_with("invoke-restmethod")
+        || normalized_command.starts_with("shutdown")
+        || normalized_command.starts_with("taskkill")
+        || normalized_command.starts_with("reg")
+        || normalized_command.starts_with("netsh")
+        || normalized_command.starts_with("start")
+        || normalized_command.starts_with("start-process")
+        || normalized_command.starts_with("explorer")
+        || normalized_command.contains("http://")
+        || normalized_command.contains("https://")
+        || normalized_command.contains("ftp://")
+        || normalized_command.contains("download")
+        || normalized_command.contains(".exe")
+        || normalized_command.contains(".msi")
+        || normalized_command.contains(".dll")
+        || normalized_command.contains(".bat")
+        || normalized_command.contains(".cmd")
+        || normalized_command.contains(".ps1")
+        || normalized_command.contains(".sh")
+        || normalized_command.contains(".zip")
+        || normalized_command.contains(".rar")
+        || normalized_command.contains(".7z")
+        || normalized_command.contains(".tar")
+        || normalized_command.contains(".gz")
+}
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct CToolCommandRuleMatch<'a> {
     risk: CToolCommandRisk,

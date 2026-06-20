@@ -114,6 +114,56 @@ fn green_rule_cannot_downgrade_directory_switch() {
     );
 }
 #[test]
+fn green_rule_cannot_downgrade_python_environment_creation() {
+    let mut config = rule_matching_test_config();
+    config.green_prefixes.push("python -m venv".to_string());
+
+    let classification = classify_command("python -m venv .venv", &config);
+
+    assert_eq!(
+        classification,
+        CToolCommandClassification {
+            command: "python -m venv .venv".to_string(),
+            risk: CToolCommandRisk::Blocked,
+            reason: "python -m venv .venv: matched blocked contains rule: venv".to_string(),
+        }
+    );
+}
+
+#[test]
+fn green_rule_cannot_downgrade_shell_command() {
+    let mut config = rule_matching_test_config();
+    config.green_prefixes.push("powershell".to_string());
+
+    let classification = classify_command("powershell -Command echo hi", &config);
+
+    assert_eq!(
+        classification,
+        CToolCommandClassification {
+            command: "powershell -Command echo hi".to_string(),
+            risk: CToolCommandRisk::Red,
+            reason: "powershell -Command echo hi: matched red prefix rule: powershell".to_string(),
+        }
+    );
+}
+
+#[test]
+fn policy_green_cannot_downgrade_download_url() {
+    let mut config = CToolCommandConfig::default();
+    config.policy = CToolCommandPolicy::Green;
+
+    let classification = classify_command("custom-tool https://example.com/file.zip", &config);
+
+    assert_eq!(
+        classification,
+        CToolCommandClassification {
+            command: "custom-tool https://example.com/file.zip".to_string(),
+            risk: CToolCommandRisk::Red,
+            reason: "custom-tool https://example.com/file.zip: shell, interpreter, download, website, deletion, process, registry, or network configuration command is at least red".to_string(),
+        }
+    );
+}
+#[test]
 fn yellow_rule_overrides_green_rule() {
     let mut config = rule_matching_test_config();
     config.green_exact_commands.push("cargo check".to_string());
