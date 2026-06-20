@@ -114,6 +114,19 @@ fn clean_command_config(policy: CToolCommandPolicy) -> CToolCommandConfig {
     config.blocked_contains.clear();
     config
 }
+fn test_cache_root(name: &str) -> std::path::PathBuf {
+    let path = std::env::temp_dir().join(format!(
+        "ctool_command_request_{name}_{}",
+        std::process::id()
+    ));
+
+    if path.exists() {
+        std::fs::remove_dir_all(&path).unwrap();
+    }
+
+    std::fs::create_dir_all(&path).unwrap();
+    path
+}
 
 #[test]
 fn default_command_config_blocks_all_commands() {
@@ -407,6 +420,86 @@ fn yellow_banner_uses_confirmation_prompt() {
     );
 }
 
+#[test]
+fn blocked_request_record_writes_result_and_log() {
+    let cache_root = test_cache_root("blocked_record");
+    let current_dir = "C:\\CodexLab\\codex";
+    let preview = build_command_request_preview(
+        current_dir,
+        vec!["python -m venv .venv".to_string()],
+        &default_command_config(),
+        /*ai_risk_upgrade*/ None,
+    )
+    .unwrap();
+
+    let report = record_unexecuted_command_request(
+        current_dir,
+        &cache_root,
+        &preview,
+        CToolCommandRequestRecordStatus::Blocked,
+        "Blocked by command policy.",
+        None,
+    )
+    .unwrap();
+
+    assert!(!report.executed);
+    assert!(!report.all_success);
+    assert!(report.commands.is_empty());
+
+    let result_text = std::fs::read_to_string(&report.result_file).unwrap();
+    let log_text = std::fs::read_to_string(&report.log_file).unwrap();
+
+    assert!(result_text.contains("Approved: No"));
+    assert!(result_text.contains("Status: Blocked"));
+    assert!(result_text.contains("Blocked by command policy."));
+    assert!(result_text.contains("python -m venv .venv"));
+
+    assert!(log_text.contains("Approved: No"));
+    assert!(log_text.contains("Status: Blocked"));
+    assert!(log_text.contains("Output:"));
+    assert!(log_text.contains(&report.result_file));
+}
+
+#[test]
+fn rejected_request_record_writes_user_feedback() {
+    let cache_root = test_cache_root("rejected_record");
+    let current_dir = "C:\\CodexLab\\codex";
+    let preview = build_command_request_preview(
+        current_dir,
+        vec!["cargo check -p ctool".to_string()],
+        &rule_matching_test_config(),
+        /*ai_risk_upgrade*/ None,
+    )
+    .unwrap();
+
+    let report = record_unexecuted_command_request(
+        current_dir,
+        &cache_root,
+        &preview,
+        CToolCommandRequestRecordStatus::Rejected,
+        "Rejected by user.",
+        Some("只修改文件，暂时不要跑测试"),
+    )
+    .unwrap();
+
+    assert!(!report.executed);
+    assert!(!report.all_success);
+    assert!(report.commands.is_empty());
+
+    let result_text = std::fs::read_to_string(&report.result_file).unwrap();
+    let log_text = std::fs::read_to_string(&report.log_file).unwrap();
+
+    assert!(result_text.contains("Approved: No"));
+    assert!(result_text.contains("Status: Rejected"));
+    assert!(result_text.contains("Rejected by user."));
+    assert!(result_text.contains("## User Feedback"));
+    assert!(result_text.contains("只修改文件，暂时不要跑测试"));
+
+    assert!(log_text.contains("Approved: No"));
+    assert!(log_text.contains("Status: Rejected"));
+    assert!(log_text.contains("User Feedback:"));
+    assert!(log_text.contains("只修改文件，暂时不要跑测试"));
+}
 #[test]
 fn blocked_banner_is_visible() {
     let preview = build_command_request_preview(
