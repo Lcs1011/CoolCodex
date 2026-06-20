@@ -46,6 +46,23 @@ fn parses_file_readonly_command() {
     assert_eq!(
         command,
         CToolScopeCommand::UpdateRule {
+            layer: CToolScopeLayer::Normal,
+            target: CToolScopeTarget::File,
+            rule: CToolScopeRule::Readonly,
+            action: CToolScopeAction::Add,
+            path: PathBuf::from("src/lib.rs"),
+        }
+    );
+}
+
+#[test]
+fn parses_privileged_file_readonly_command() {
+    let command = parse_ctool_scope_command("/cs p f ro src/lib.rs").expect("parse command");
+
+    assert_eq!(
+        command,
+        CToolScopeCommand::UpdateRule {
+            layer: CToolScopeLayer::Privileged,
             target: CToolScopeTarget::File,
             rule: CToolScopeRule::Readonly,
             action: CToolScopeAction::Add,

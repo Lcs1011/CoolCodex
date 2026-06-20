@@ -305,9 +305,6 @@ enum PathAccess {
 fn path_access(ctx: &CToolScopeContext, path: impl AsRef<Path>) -> PathAccess {
     let path = lexical_normalize_path(path.as_ref());
 
-    if ctx.base_scope == CToolScopeBase::None {
-        return PathAccess::Unspecified;
-    }
 
     if is_web_search_cache_path(ctx, &path) {
         return PathAccess::Readonly;
