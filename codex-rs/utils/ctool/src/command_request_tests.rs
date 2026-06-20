@@ -501,6 +501,54 @@ fn rejected_request_record_writes_user_feedback() {
     assert!(log_text.contains("只修改文件，暂时不要跑测试"));
 }
 #[test]
+fn approved_green_request_executes_and_writes_result_and_log() {
+    let current_dir = test_cache_root("green_execute_workspace");
+    let cache_root = test_cache_root("green_execute_cache");
+    let mut config = clean_command_config(CToolCommandPolicy::Red);
+    config
+        .green_exact_commands
+        .push("echo ctool-green-execute".to_string());
+
+    let preview = build_command_request_preview(
+        &current_dir,
+        vec!["echo ctool-green-execute".to_string()],
+        &config,
+        /*ai_risk_upgrade*/ None,
+    )
+    .unwrap();
+
+    assert_eq!(preview.final_risk, CToolCommandRisk::Green);
+    assert_eq!(preview.approval, CToolCommandApproval::AutoApprovedGreen);
+
+    let report = execute_approved_command_request(&current_dir, &cache_root, &preview).unwrap();
+
+    assert!(report.executed);
+    assert!(report.all_success);
+    assert_eq!(report.commands.len(), 1);
+    assert!(report.commands[0].success);
+    assert_eq!(report.commands[0].exit_code, Some(0));
+    assert!(
+        report.commands[0]
+            .stdout_preview
+            .contains("ctool-green-execute")
+    );
+
+    let result_text = std::fs::read_to_string(&report.result_file).unwrap();
+    let log_text = std::fs::read_to_string(&report.log_file).unwrap();
+
+    assert!(result_text.contains("Approved: Yes"));
+    assert!(result_text.contains("Risk: GREEN"));
+    assert!(result_text.contains("echo ctool-green-execute"));
+    assert!(result_text.contains("Success: true"));
+    assert!(result_text.contains("ctool-green-execute"));
+
+    assert!(log_text.contains("Approved: Yes"));
+    assert!(log_text.contains("AllSuccess: true"));
+    assert!(log_text.contains("echo ctool-green-execute"));
+    assert!(log_text.contains("Output:"));
+    assert!(log_text.contains(&report.result_file));
+}
+#[test]
 fn blocked_banner_is_visible() {
     let preview = build_command_request_preview(
         "C:\\CodexLab\\codex",

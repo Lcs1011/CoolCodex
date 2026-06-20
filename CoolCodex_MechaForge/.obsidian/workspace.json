@@ -250,13 +250,13 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "0101 CoolCLI 一些定义和基本设定.md",
+                "file": "CoolBot/CoolBotUsageManual.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "0101 CoolCLI 一些定义和基本设定 的大纲"
+              "title": "CoolBotUsageManual 的大纲"
             }
           },
           {
@@ -338,13 +338,13 @@
       "bases:新建数据库": false
     }
   },
-  "active": "d1a0c3e6b9baf7da",
+  "active": "aabb8d715d0af5bd",
   "lastOpenFiles": [
+    "0101 CoolCLI 一些定义和基本设定.md",
     "CoolCLI 设置.md",
     "0106 CTool Markdown相关工具.md",
     "0005 对于Skill 和Plugin的安全策略.md",
     "0104 视野相关工具函数.md",
-    "0101 CoolCLI 一些定义和基本设定.md",
     "0107 CToolCommandRequest.md",
     "CoolCLI 设置 设计哲学.md",
     "CoolBot/02 CoolBot 的指令反馈显示.md",
