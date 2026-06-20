@@ -9,8 +9,6 @@ use crate::context::CToolContext;
 use crate::error::CToolError;
 use crate::error::CToolResult;
 use crate::gate;
-use crate::scope_context::can_write_path;
-use crate::scope_context::is_protected_path;
 use crate::tool::CTool;
 use crate::tool::CToolSpec;
 
@@ -106,14 +104,7 @@ pub fn annotate_markdown(
     let path = gate::ensure_read_allowed(ctx, &input.path)?;
     ensure_markdown_file(&path)?;
 
-    let can_write = can_write_path(&ctx.scope_context, &path);
-    let readonly_exception_used = !can_write && is_protected_path(&ctx.scope_context, &path);
-    if !can_write && !(readonly_exception_used && input.allow_readonly) {
-        return Err(CToolError::OutOfScope {
-            path: path.display().to_string(),
-            operation: "markdown annotation write",
-        });
-    }
+    let readonly_exception_used = false;
 
     let text = std::fs::read_to_string(&path).map_err(|error| {
         CToolError::InvalidInput(format!(
@@ -171,20 +162,17 @@ pub fn annotate_markdown(
     annotated.push_str(&text[end..]);
 
     if !input.dry_run {
+        gate::ensure_write_allowed(ctx, &path)?;
         std::fs::write(&path, &annotated)?;
     }
 
     let line_number = line_number_at_byte(&text, start);
     let before_preview = preview_around_line(&text, line_number, PREVIEW_CONTEXT_LINES);
     let after_preview = preview_around_line(&annotated, line_number, PREVIEW_CONTEXT_LINES);
-    let note = match (readonly_exception_used, input.dry_run) {
-        (true, true) => "Dry run only; ReadOnly scope exception would be used.".to_string(),
-        (true, false) => {
-            "ReadOnly scope exception used: only Markdown <mark> annotation was applied."
-                .to_string()
-        }
-        (false, true) => "Dry run only; file was not modified.".to_string(),
-        (false, false) => "Markdown annotation applied.".to_string(),
+    let note = if input.dry_run {
+        "Dry run only; file was not modified.".to_string()
+    } else {
+        "Markdown annotation applied.".to_string()
     };
 
     Ok(CToolAnnotateMarkdownOutput {
