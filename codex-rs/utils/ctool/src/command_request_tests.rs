@@ -18,6 +18,85 @@ fn red_second_confirmation_accepts_y_prefix() {
         CToolCommandUserDecision::Approved
     );
 }
+#[test]
+fn yellow_confirmation_accepts_y_prefix() {
+    assert_eq!(
+        parse_yellow_confirmation_input("Y"),
+        CToolCommandUserDecision::Approved
+    );
+    assert_eq!(
+        parse_yellow_confirmation_input("yes run it"),
+        CToolCommandUserDecision::Approved
+    );
+}
+
+#[test]
+fn yellow_confirmation_rejects_empty_input() {
+    assert_eq!(
+        parse_yellow_confirmation_input(""),
+        CToolCommandUserDecision::Rejected { feedback: None }
+    );
+}
+
+#[test]
+fn yellow_confirmation_rejects_n_with_feedback() {
+    assert_eq!(
+        parse_yellow_confirmation_input("N only modify files first"),
+        CToolCommandUserDecision::Rejected {
+            feedback: Some("only modify files first".to_string()),
+        }
+    );
+}
+
+#[test]
+fn yellow_confirmation_rejects_unknown_input_as_feedback() {
+    assert_eq!(
+        parse_yellow_confirmation_input("wait, use cargo check -p ctool instead"),
+        CToolCommandUserDecision::Rejected {
+            feedback: Some("wait, use cargo check -p ctool instead".to_string()),
+        }
+    );
+}
+
+#[test]
+fn red_first_confirmation_requires_y_prefix() {
+    assert_eq!(
+        parse_red_first_confirmation_input("Y"),
+        CToolCommandUserDecision::NeedsSecondRedConfirmation
+    );
+    assert_eq!(
+        parse_red_first_confirmation_input("yes continue"),
+        CToolCommandUserDecision::NeedsSecondRedConfirmation
+    );
+}
+
+#[test]
+fn red_first_confirmation_rejects_n_with_feedback() {
+    assert_eq!(
+        parse_red_first_confirmation_input("N do not run powershell"),
+        CToolCommandUserDecision::Rejected {
+            feedback: Some("do not run powershell".to_string()),
+        }
+    );
+}
+
+#[test]
+fn red_second_confirmation_rejects_n_with_feedback() {
+    assert_eq!(
+        parse_red_second_confirmation_input("N too risky"),
+        CToolCommandUserDecision::Rejected {
+            feedback: Some("too risky".to_string()),
+        }
+    );
+}
+
+#[test]
+fn red_second_confirmation_rejects_empty_input() {
+    assert_eq!(
+        parse_red_second_confirmation_input(""),
+        CToolCommandUserDecision::Rejected { feedback: None }
+    );
+}
 fn rule_matching_test_config() -> CToolCommandConfig {
     let mut config = default_command_config();
     config.policy = CToolCommandPolicy::Yellow;
