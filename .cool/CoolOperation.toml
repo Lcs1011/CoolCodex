@@ -1,0 +1,38 @@
+format = "CoolOperation"
+operation_id = "0012 阶段一收尾启动显示Cool状态"
+workspace = 'C:\Arsenal\CoolAI\CoolCodex'
+
+[[operations]]
+type = "ModifyFile"
+path = 'codex-rs\tui\src\lib.rs'
+
+[[operations.commands]]
+type = "InsertContent"
+after_line = 1742
+content = '''
+    let permission_profile = config
+        .permissions
+        .active_permission_profile()
+        .map(|profile| format!("{profile:?}"))
+        .unwrap_or_else(|| format!("{:?}", config.permissions.permission_profile()));
+    let ctool_scope_base = ctool::CToolScopeBase::default();
+
+    config.startup_warnings.push(format!(
+        "CoolStatus: SafeMode={}, CToolScopeBase={}, PermissionProfile={}",
+        if config.safe_mode { "on" } else { "off" },
+        ctool_scope_base,
+        permission_profile
+    ));
+
+'''
+
+[[operations]]
+type = "RunCmd"
+work_dir = 'codex-rs'
+log_mode = "ErrorOnly"
+command = '''
+cargo check
+'''
+
+[[operations]]
+type = "End"

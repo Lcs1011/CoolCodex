@@ -60,13 +60,13 @@ CoolOperation 默认放在 Workspace 下方的 `.coolbot` 文件夹中。
 默认指令文件：
 
 ```
-<Workspace>\.coolbot\CoolOperation.md
+<Workspace>\.cool\CoolOperation.toml
 ```
 
 默认报告文件：
 
 ```
-<Workspace>\.coolbot\CoolOperationReport.md
+<Workspace>\.cool\CoolOperationReport.md
 ```
 
 例如：

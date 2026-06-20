@@ -1,14 +1,7 @@
 # CoolBot Report
 
-Source: clipboard
+Source: C:\Arsenal\CoolAI\CoolCodex\.coolbot\CoolOperation.md
 
-OperationID: 0011 删除CToolScopeBase重复Display尾巴
+Status: Failed
 
-## ModifyFile Path: C:\Arsenal\CoolAI\CoolCodex\codex-rs\utils\ctool\src\scope.rs
-Succeed
-
-## End
-Succeed
-
-
-Status: Succeed
+Reason: input is not a valid CoolOperation: first non-empty line must be CoolOperation fence or OperationID.
