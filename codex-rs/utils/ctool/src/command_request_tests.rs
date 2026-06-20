@@ -23,6 +23,18 @@ fn rule_matching_test_config() -> CToolCommandConfig {
     config.policy = CToolCommandPolicy::Yellow;
     config
 }
+fn clean_command_config(policy: CToolCommandPolicy) -> CToolCommandConfig {
+    let mut config = CToolCommandConfig::default();
+    config.policy = policy;
+    config.green_exact_commands.clear();
+    config.green_prefixes.clear();
+    config.yellow_prefixes.clear();
+    config.red_prefixes.clear();
+    config.red_contains.clear();
+    config.blocked_prefixes.clear();
+    config.blocked_contains.clear();
+    config
+}
 
 #[test]
 fn default_command_config_blocks_all_commands() {
@@ -197,6 +209,109 @@ fn unknown_command_uses_policy_fallback() {
     );
 }
 
+#[test]
+fn merged_policy_uses_more_restrictive_fallback() {
+    let character_config = clean_command_config(CToolCommandPolicy::Green);
+    let system_config = clean_command_config(CToolCommandPolicy::Red);
+
+    let merged = merge_command_configs(character_config, system_config);
+    let classification = classify_command("unknown-tool --version", &merged);
+
+    assert_eq!(
+        classification,
+        CToolCommandClassification {
+            command: "unknown-tool --version".to_string(),
+            risk: CToolCommandRisk::Red,
+            reason: "unknown-tool --version: unknown command, defaulting to policy Red".to_string(),
+        }
+    );
+}
+
+#[test]
+fn merged_blocked_rule_overrides_red_yellow_green_rules() {
+    let mut character_config = clean_command_config(CToolCommandPolicy::Green);
+    let mut system_config = clean_command_config(CToolCommandPolicy::Green);
+
+    character_config.green_exact_commands.push("demo command".to_string());
+    character_config.yellow_prefixes.push("demo".to_string());
+    system_config.red_prefixes.push("demo".to_string());
+    character_config.blocked_prefixes.push("demo".to_string());
+
+    let merged = merge_command_configs(character_config, system_config);
+    let classification = classify_command("demo command", &merged);
+
+    assert_eq!(
+        classification,
+        CToolCommandClassification {
+            command: "demo command".to_string(),
+            risk: CToolCommandRisk::Blocked,
+            reason: "demo command: matched blocked prefix rule: demo".to_string(),
+        }
+    );
+}
+
+#[test]
+fn merged_red_rule_overrides_yellow_and_green_rules() {
+    let mut character_config = clean_command_config(CToolCommandPolicy::Green);
+    let mut system_config = clean_command_config(CToolCommandPolicy::Green);
+
+    character_config.green_exact_commands.push("demo command".to_string());
+    character_config.yellow_prefixes.push("demo".to_string());
+    system_config.red_prefixes.push("demo".to_string());
+
+    let merged = merge_command_configs(character_config, system_config);
+    let classification = classify_command("demo command", &merged);
+
+    assert_eq!(
+        classification,
+        CToolCommandClassification {
+            command: "demo command".to_string(),
+            risk: CToolCommandRisk::Red,
+            reason: "demo command: matched red prefix rule: demo".to_string(),
+        }
+    );
+}
+
+#[test]
+fn merged_yellow_rule_overrides_green_rule() {
+    let mut character_config = clean_command_config(CToolCommandPolicy::Green);
+    let mut system_config = clean_command_config(CToolCommandPolicy::Green);
+
+    character_config.green_exact_commands.push("demo command".to_string());
+    system_config.yellow_prefixes.push("demo".to_string());
+
+    let merged = merge_command_configs(character_config, system_config);
+    let classification = classify_command("demo command", &merged);
+
+    assert_eq!(
+        classification,
+        CToolCommandClassification {
+            command: "demo command".to_string(),
+            risk: CToolCommandRisk::Yellow,
+            reason: "demo command: matched yellow prefix rule: demo".to_string(),
+        }
+    );
+}
+
+#[test]
+fn explicit_green_rule_overrides_policy_fallback() {
+    let mut character_config = clean_command_config(CToolCommandPolicy::Red);
+    let system_config = clean_command_config(CToolCommandPolicy::Green);
+
+    character_config.green_exact_commands.push("demo command".to_string());
+
+    let merged = merge_command_configs(character_config, system_config);
+    let classification = classify_command("demo command", &merged);
+
+    assert_eq!(
+        classification,
+        CToolCommandClassification {
+            command: "demo command".to_string(),
+            risk: CToolCommandRisk::Green,
+            reason: "demo command: matched green exact rule: demo command".to_string(),
+        }
+    );
+}
 #[test]
 fn yellow_banner_uses_confirmation_prompt() {
     let preview = build_command_request_preview(
