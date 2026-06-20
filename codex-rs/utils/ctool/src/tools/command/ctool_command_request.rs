@@ -340,3 +340,184 @@ fn render_command_request_display_text(
     text.push_str("==============================");
     text
 }
+
+#[cfg(test)]
+mod tests {
+    use std::path::Path;
+    use std::path::PathBuf;
+
+    use super::*;
+    use crate::context::CToolContext;
+    use crate::scope::CToolScopeBase;
+    use crate::scope_config::COOL_DIR_NAME;
+    use crate::scope_config::COOL_SYSTEM_DIR_NAME;
+    use crate::scope_config::empty_scope_config;
+    use crate::scope_context::CToolScopeContext;
+
+    fn test_root(name: &str) -> PathBuf {
+        let path = std::env::temp_dir().join(format!(
+            "ctool_command_request_tool_{name}_{}",
+            std::process::id()
+        ));
+
+        if path.exists() {
+            std::fs::remove_dir_all(&path).unwrap();
+        }
+
+        std::fs::create_dir_all(&path).unwrap();
+        path
+    }
+
+    fn write_text(path: &Path, text: &str) {
+        if let Some(parent) = path.parent() {
+            std::fs::create_dir_all(parent).unwrap();
+        }
+        std::fs::write(path, text).unwrap();
+    }
+
+    fn test_context(
+        name: &str,
+        character_command_toml: &str,
+        system_command_toml: &str,
+    ) -> CToolContext {
+        let root = test_root(name);
+        let launcher_dir = root.join("launcher");
+        let character_root = root.join("character");
+        let cool_workspace = root.join("workspace");
+        let character_cool_dir = character_root.join(COOL_DIR_NAME);
+        let system_dir = launcher_dir.join(COOL_SYSTEM_DIR_NAME);
+
+        std::fs::create_dir_all(&launcher_dir).unwrap();
+        std::fs::create_dir_all(&character_cool_dir).unwrap();
+        std::fs::create_dir_all(&system_dir).unwrap();
+        std::fs::create_dir_all(&cool_workspace).unwrap();
+
+        let character_command_path = character_cool_dir.join("command.toml");
+        let system_command_path = system_dir.join("command.toml");
+
+        write_text(&character_command_path, character_command_toml);
+        write_text(&system_command_path, system_command_toml);
+
+        CToolContext::new(CToolScopeContext {
+            current_dir: character_root.clone(),
+            character_root: character_root.clone(),
+            cool_workspace: cool_workspace.clone(),
+            base_scope: CToolScopeBase::CoolWorkspace,
+            user_config_path: character_cool_dir.join("scope.toml"),
+            character_config_path: character_cool_dir.join("config.toml"),
+            system_config_path: Some(system_dir.join("config.toml")),
+            character_command_path,
+            system_command_path: Some(system_command_path),
+            cool_system_dir: Some(system_dir),
+            user_config: empty_scope_config(),
+            system_config: empty_scope_config(),
+        })
+    }
+
+    #[test]
+    fn green_tool_output_executes_and_returns_result_paths() {
+        let ctx = test_context(
+            "green_output",
+            r#"
+[ctool_command]
+policy = "red"
+green_exact_commands = ["echo ctool-tool-output"]
+"#,
+            r#"
+[ctool_command]
+policy = "green"
+"#,
+        );
+
+        let output = preview_command_request(
+            &ctx,
+            CToolCommandRequestInput {
+                commands: vec!["echo ctool-tool-output".to_string()],
+                ai_risk_upgrade: None,
+                reason: Some("test green output".to_string()),
+                yellow_confirmation: None,
+                red_first_confirmation: None,
+                red_second_confirmation: None,
+            },
+        )
+        .unwrap();
+
+        assert!(output.will_execute);
+        assert!(output.executed);
+        assert!(!output.blocked);
+        assert!(!output.rejected);
+        assert_eq!(output.all_success, Some(true));
+        assert!(output.result_file.is_some());
+        assert!(output.log_file.is_some());
+        assert_eq!(output.current_dir, ctx.scope_context.cool_workspace.display().to_string());
+        assert_eq!(output.command_count, 1);
+        assert_eq!(output.system_risk, "GREEN");
+        assert_eq!(output.final_risk, "GREEN");
+        assert_eq!(output.approval_required, "none_green_auto_approved");
+        assert_eq!(output.request_reason, Some("test green output".to_string()));
+        assert_eq!(output.user_feedback, None);
+        assert_eq!(output.commands.len(), 1);
+        assert_eq!(output.commands[0].command, "echo ctool-tool-output");
+        assert_eq!(output.commands[0].risk, "GREEN");
+        assert!(output.display_text.contains("executed: true"));
+        assert!(output.display_text.contains("result_file:"));
+        assert!(output.display_text.contains("log_file:"));
+
+        let result_text = std::fs::read_to_string(output.result_file.unwrap()).unwrap();
+        assert!(result_text.contains("ctool-tool-output"));
+    }
+
+    #[test]
+    fn yellow_tool_output_rejected_with_feedback_returns_result_paths() {
+        let ctx = test_context(
+            "yellow_rejected_output",
+            r#"
+[ctool_command]
+policy = "red"
+yellow_prefixes = ["demo-yellow"]
+"#,
+            r#"
+[ctool_command]
+policy = "green"
+"#,
+        );
+
+        let output = preview_command_request(
+            &ctx,
+            CToolCommandRequestInput {
+                commands: vec!["demo-yellow do something".to_string()],
+                ai_risk_upgrade: None,
+                reason: Some("test yellow rejection".to_string()),
+                yellow_confirmation: Some("N keep editing first".to_string()),
+                red_first_confirmation: None,
+                red_second_confirmation: None,
+            },
+        )
+        .unwrap();
+
+        assert!(!output.will_execute);
+        assert!(!output.executed);
+        assert!(!output.blocked);
+        assert!(output.rejected);
+        assert_eq!(output.all_success, Some(false));
+        assert!(output.result_file.is_some());
+        assert!(output.log_file.is_some());
+        assert_eq!(output.current_dir, ctx.scope_context.cool_workspace.display().to_string());
+        assert_eq!(output.command_count, 1);
+        assert_eq!(output.system_risk, "YELLOW");
+        assert_eq!(output.final_risk, "YELLOW");
+        assert_eq!(output.approval_required, "confirm_once");
+        assert_eq!(output.request_reason, Some("test yellow rejection".to_string()));
+        assert_eq!(output.user_feedback, Some("keep editing first".to_string()));
+        assert_eq!(output.commands.len(), 1);
+        assert_eq!(output.commands[0].command, "demo-yellow do something");
+        assert_eq!(output.commands[0].risk, "YELLOW");
+        assert!(output.display_text.contains("executed: false"));
+        assert!(output.display_text.contains("rejected: true"));
+        assert!(output.display_text.contains("user_feedback: keep editing first"));
+
+        let result_text = std::fs::read_to_string(output.result_file.unwrap()).unwrap();
+        assert!(result_text.contains("Status: Rejected"));
+        assert!(result_text.contains("keep editing first"));
+    }
+}
