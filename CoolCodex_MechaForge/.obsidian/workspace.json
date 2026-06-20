@@ -28,12 +28,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "0101 CoolCLI 一些定义和基本设定.md",
+                "file": "0109 CToolTavilySearchRequest.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "0101 CoolCLI 一些定义和基本设定"
+              "title": "0109 CToolTavilySearchRequest"
             }
           },
           {
@@ -250,13 +250,13 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "0101 CoolCLI 一些定义和基本设定.md",
+                "file": "0109 CToolTavilySearchRequest.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "0101 CoolCLI 一些定义和基本设定 的大纲"
+              "title": "0109 CToolTavilySearchRequest 的大纲"
             }
           },
           {
@@ -338,15 +338,17 @@
       "bases:新建数据库": false
     }
   },
-  "active": "0f50bc0dd4a1f219",
+  "active": "d1a0c3e6b9baf7da",
   "lastOpenFiles": [
-    "CoolBot/CoolBotUsageManual.md",
+    "0108 CToolTavilySearchRequest.md",
+    "0109 CToolTavilySearchRequest.md",
+    "0107 CToolCommandRequest.md",
     "0101 CoolCLI 一些定义和基本设定.md",
+    "CoolBot/CoolBotUsageManual.md",
     "CoolCLI 设置.md",
     "0106 CTool Markdown相关工具.md",
     "0005 对于Skill 和Plugin的安全策略.md",
     "0104 视野相关工具函数.md",
-    "0107 CToolCommandRequest.md",
     "CoolCLI 设置 设计哲学.md",
     "CoolBot/02 CoolBot 的指令反馈显示.md",
     "CoolBot/开发版本.md",
@@ -364,8 +366,6 @@
     "CoolBot/CoolOperation 新标准.md",
     "未命名 5.md",
     "CoolBot/s.md",
-    "CoolBot/02CoolBot开发日志.md",
-    "CoolBot/CoolOperation Toml语法.md",
     "CoolGolem",
     "CoolBot",
     "未命名 1",
