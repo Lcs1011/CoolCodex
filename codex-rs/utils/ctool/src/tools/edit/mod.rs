@@ -1,4 +1,5 @@
 pub mod ctool_edit_batch;
+pub mod ctool_edit_exact;
 pub mod ctool_edit_insert;
 pub mod ctool_edit_replace;
 pub mod ctool_preview_diff;
@@ -29,6 +30,23 @@ pub(crate) fn ensure_editable_text_file_size(path: &Path, operation: &str) -> CT
     Ok(())
 }
 
+pub use ctool_edit_exact::CTOOL_EDIT_INSERT_AFTER_EXACT_TOOL_NAME;
+pub use ctool_edit_exact::CTOOL_EDIT_INSERT_BEFORE_EXACT_TOOL_NAME;
+pub use ctool_edit_exact::CTOOL_EDIT_REMOVE_EXACT_TOOL_NAME;
+pub use ctool_edit_exact::CTOOL_EDIT_REPLACE_EXACT_TOOL_NAME;
+pub use ctool_edit_exact::CToolEditExactOutput;
+pub use ctool_edit_exact::CToolEditInsertAfterExact;
+pub use ctool_edit_exact::CToolEditInsertAfterExactInput;
+pub use ctool_edit_exact::CToolEditInsertBeforeExact;
+pub use ctool_edit_exact::CToolEditInsertBeforeExactInput;
+pub use ctool_edit_exact::CToolEditRemoveExact;
+pub use ctool_edit_exact::CToolEditRemoveExactInput;
+pub use ctool_edit_exact::CToolEditReplaceExact;
+pub use ctool_edit_exact::CToolEditReplaceExactInput;
+pub use ctool_edit_exact::apply_insert_after_exact_to_text;
+pub use ctool_edit_exact::apply_insert_before_exact_to_text;
+pub use ctool_edit_exact::apply_remove_exact_to_text;
+pub use ctool_edit_exact::apply_replace_exact_to_text;
 pub use ctool_edit_replace::CTOOL_EDIT_REPLACE_TOOL_NAME;
 pub use ctool_edit_replace::CToolEditReplace;
 pub use ctool_edit_replace::CToolEditReplaceInput;

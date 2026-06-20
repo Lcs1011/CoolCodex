@@ -8,10 +8,18 @@ use crate::tool::CToolSpec;
 use crate::tools::command::CTOOL_COMMAND_REQUEST_TOOL_NAME;
 use crate::tools::command::CToolCommandRequest;
 use crate::tools::edit::CTOOL_EDIT_BATCH_TOOL_NAME;
+use crate::tools::edit::CTOOL_EDIT_INSERT_AFTER_EXACT_TOOL_NAME;
+use crate::tools::edit::CTOOL_EDIT_INSERT_BEFORE_EXACT_TOOL_NAME;
+use crate::tools::edit::CTOOL_EDIT_REMOVE_EXACT_TOOL_NAME;
+use crate::tools::edit::CTOOL_EDIT_REPLACE_EXACT_TOOL_NAME;
 use crate::tools::edit::CTOOL_EDIT_INSERT_TOOL_NAME;
 use crate::tools::edit::CTOOL_EDIT_REPLACE_TOOL_NAME;
 use crate::tools::edit::CTOOL_PREVIEW_DIFF_TOOL_NAME;
 use crate::tools::edit::CToolEditBatch;
+use crate::tools::edit::CToolEditInsertAfterExact;
+use crate::tools::edit::CToolEditInsertBeforeExact;
+use crate::tools::edit::CToolEditRemoveExact;
+use crate::tools::edit::CToolEditReplaceExact;
 use crate::tools::edit::CToolEditInsert;
 use crate::tools::edit::CToolEditReplace;
 use crate::tools::edit::CToolPreviewDiff;
@@ -67,6 +75,10 @@ pub fn available_specs() -> Vec<CToolSpec> {
     let edit_insert = CToolEditInsert;
     let preview_diff = CToolPreviewDiff;
     let edit_batch = CToolEditBatch;
+    let edit_replace_exact = CToolEditReplaceExact;
+    let edit_insert_before_exact = CToolEditInsertBeforeExact;
+    let edit_insert_after_exact = CToolEditInsertAfterExact;
+    let edit_remove_exact = CToolEditRemoveExact;
 
     let create_file = CToolCreateFile;
     let delete_file = CToolDeleteFile;
@@ -92,6 +104,10 @@ pub fn available_specs() -> Vec<CToolSpec> {
         edit_insert.spec(),
         preview_diff.spec(),
         edit_batch.spec(),
+        edit_replace_exact.spec(),
+        edit_insert_before_exact.spec(),
+        edit_insert_after_exact.spec(),
+        edit_remove_exact.spec(),
         annotate_markdown.spec(),
         create_file.spec(),
         tavily_search_request.spec(),
@@ -159,6 +175,22 @@ pub fn run_tool(name: &str, ctx: &CToolContext, input: Value) -> CToolResult<Val
         }
         CTOOL_EDIT_BATCH_TOOL_NAME => {
             let tool = CToolEditBatch;
+            tool.run_json(ctx, input)
+        }
+        CTOOL_EDIT_REPLACE_EXACT_TOOL_NAME => {
+            let tool = CToolEditReplaceExact;
+            tool.run_json(ctx, input)
+        }
+        CTOOL_EDIT_INSERT_BEFORE_EXACT_TOOL_NAME => {
+            let tool = CToolEditInsertBeforeExact;
+            tool.run_json(ctx, input)
+        }
+        CTOOL_EDIT_INSERT_AFTER_EXACT_TOOL_NAME => {
+            let tool = CToolEditInsertAfterExact;
+            tool.run_json(ctx, input)
+        }
+        CTOOL_EDIT_REMOVE_EXACT_TOOL_NAME => {
+            let tool = CToolEditRemoveExact;
             tool.run_json(ctx, input)
         }
         CTOOL_ANNOTATE_MARKDOWN_TOOL_NAME => {
