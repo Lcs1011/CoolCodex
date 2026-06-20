@@ -416,60 +416,19 @@ fn classify_command_segment(
         };
     }
 
-    if let Some(rule) = first_contains_match(&normalized_command, &config.blocked_contains) {
+    if let Some(rule_match) = explicit_command_rule_match(&normalized_command, config) {
         return CToolCommandClassification {
             command: raw_command,
-            risk: CToolCommandRisk::Blocked,
-            reason: format!("matched blocked contains rule: {rule}"),
+            risk: rule_match.risk,
+            reason: rule_match.reason(),
         };
     }
-    if let Some(rule) = first_prefix_match(&normalized_command, &config.blocked_prefixes) {
-        return CToolCommandClassification {
-            command: raw_command,
-            risk: CToolCommandRisk::Blocked,
-            reason: format!("matched blocked prefix rule: {rule}"),
-        };
-    }
+
     if is_directory_switch_command(&normalized_command) {
         return CToolCommandClassification {
             command: raw_command,
             risk: CToolCommandRisk::Red,
             reason: "cd/pushd directory switch is at least red".to_string(),
-        };
-    }
-    if let Some(rule) = first_contains_match(&normalized_command, &config.red_contains) {
-        return CToolCommandClassification {
-            command: raw_command,
-            risk: CToolCommandRisk::Red,
-            reason: format!("matched red contains rule: {rule}"),
-        };
-    }
-    if let Some(rule) = first_prefix_match(&normalized_command, &config.red_prefixes) {
-        return CToolCommandClassification {
-            command: raw_command,
-            risk: CToolCommandRisk::Red,
-            reason: format!("matched red prefix rule: {rule}"),
-        };
-    }
-    if let Some(rule) = first_exact_match(&normalized_command, &config.green_exact_commands) {
-        return CToolCommandClassification {
-            command: raw_command,
-            risk: CToolCommandRisk::Green,
-            reason: format!("matched green exact rule: {rule}"),
-        };
-    }
-    if let Some(rule) = first_prefix_match(&normalized_command, &config.green_prefixes) {
-        return CToolCommandClassification {
-            command: raw_command,
-            risk: CToolCommandRisk::Green,
-            reason: format!("matched green prefix rule: {rule}"),
-        };
-    }
-    if let Some(rule) = first_prefix_match(&normalized_command, &config.yellow_prefixes) {
-        return CToolCommandClassification {
-            command: raw_command,
-            risk: CToolCommandRisk::Yellow,
-            reason: format!("matched yellow prefix rule: {rule}"),
         };
     }
 
@@ -478,6 +437,82 @@ fn classify_command_segment(
         risk: risk_from_command_policy(&config.policy),
         reason: format!("unknown command, defaulting to policy {:?}", config.policy),
     }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct CToolCommandRuleMatch<'a> {
+    risk: CToolCommandRisk,
+    rule_kind: &'static str,
+    rule: &'a str,
+}
+
+impl CToolCommandRuleMatch<'_> {
+    fn reason(self) -> String {
+        format!("matched {} rule: {}", self.rule_kind, self.rule)
+    }
+}
+
+fn explicit_command_rule_match<'a>(
+    normalized_command: &str,
+    config: &'a CToolCommandConfig,
+) -> Option<CToolCommandRuleMatch<'a>> {
+    if let Some(rule) = first_contains_match(normalized_command, &config.blocked_contains) {
+        return Some(CToolCommandRuleMatch {
+            risk: CToolCommandRisk::Blocked,
+            rule_kind: "blocked contains",
+            rule,
+        });
+    }
+
+    if let Some(rule) = first_prefix_match(normalized_command, &config.blocked_prefixes) {
+        return Some(CToolCommandRuleMatch {
+            risk: CToolCommandRisk::Blocked,
+            rule_kind: "blocked prefix",
+            rule,
+        });
+    }
+
+    if let Some(rule) = first_contains_match(normalized_command, &config.red_contains) {
+        return Some(CToolCommandRuleMatch {
+            risk: CToolCommandRisk::Red,
+            rule_kind: "red contains",
+            rule,
+        });
+    }
+
+    if let Some(rule) = first_prefix_match(normalized_command, &config.red_prefixes) {
+        return Some(CToolCommandRuleMatch {
+            risk: CToolCommandRisk::Red,
+            rule_kind: "red prefix",
+            rule,
+        });
+    }
+
+    if let Some(rule) = first_prefix_match(normalized_command, &config.yellow_prefixes) {
+        return Some(CToolCommandRuleMatch {
+            risk: CToolCommandRisk::Yellow,
+            rule_kind: "yellow prefix",
+            rule,
+        });
+    }
+
+    if let Some(rule) = first_exact_match(normalized_command, &config.green_exact_commands) {
+        return Some(CToolCommandRuleMatch {
+            risk: CToolCommandRisk::Green,
+            rule_kind: "green exact",
+            rule,
+        });
+    }
+
+    if let Some(rule) = first_prefix_match(normalized_command, &config.green_prefixes) {
+        return Some(CToolCommandRuleMatch {
+            risk: CToolCommandRisk::Green,
+            rule_kind: "green prefix",
+            rule,
+        });
+    }
+
+    None
 }
 
 /// Determine a default risk level from a [`CToolCommandPolicy`].

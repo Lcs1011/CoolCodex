@@ -97,6 +97,39 @@ fn directory_switch_is_red() {
         }
     );
 }
+#[test]
+fn yellow_rule_overrides_green_rule() {
+    let mut config = rule_matching_test_config();
+    config.green_exact_commands.push("cargo check".to_string());
+
+    let classification = classify_command("cargo check", &config);
+
+    assert_eq!(
+        classification,
+        CToolCommandClassification {
+            command: "cargo check".to_string(),
+            risk: CToolCommandRisk::Yellow,
+            reason: "cargo check: matched yellow prefix rule: cargo check".to_string(),
+        }
+    );
+}
+
+#[test]
+fn unknown_command_uses_policy_fallback() {
+    let mut config = CToolCommandConfig::default();
+    config.policy = CToolCommandPolicy::Green;
+
+    let classification = classify_command("custom-tool --version", &config);
+
+    assert_eq!(
+        classification,
+        CToolCommandClassification {
+            command: "custom-tool --version".to_string(),
+            risk: CToolCommandRisk::Green,
+            reason: "custom-tool --version: unknown command, defaulting to policy Green".to_string(),
+        }
+    );
+}
 
 #[test]
 fn yellow_banner_uses_confirmation_prompt() {
