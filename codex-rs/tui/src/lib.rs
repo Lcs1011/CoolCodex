@@ -1740,20 +1740,29 @@ async fn run_ratatui_app(
         config.startup_warnings.push(w);
     }
 
-    let permission_profile = config
-        .permissions
-        .active_permission_profile()
+    let active_permission_profile = config.permissions.active_permission_profile();
+    let permission_profile = active_permission_profile
+        .as_ref()
         .map(|profile| format!("{profile:?}"))
         .unwrap_or_else(|| format!("{:?}", config.permissions.permission_profile()));
     let ctool_scope_base = ctool::CToolScopeBase::default();
+    let tool_route = if active_permission_profile.as_ref().is_some_and(|profile| {
+        profile.id.as_str() == codex_protocol::models::BUILT_IN_PERMISSION_PROFILE_COOL_READ_WRITE
+    }) {
+        "cool-tools"
+    } else if config.safe_mode {
+        "empty-tools"
+    } else {
+        "native-tools"
+    };
 
     config.startup_warnings.push(format!(
-        "CoolStatus: SafeMode={}, CToolScopeBase={}, PermissionProfile={}",
+        "CoolStatus: SafeMode={}, CToolScopeBase={}, PermissionProfile={}, ToolRoute={}",
         if config.safe_mode { "on" } else { "off" },
         ctool_scope_base,
-        permission_profile
+        permission_profile,
+        tool_route
     ));
-
 
 
     set_default_client_residency_requirement(config.enforce_residency.value());
