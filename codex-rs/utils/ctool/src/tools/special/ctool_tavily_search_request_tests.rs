@@ -116,6 +116,45 @@ enabled = true
     );
 }
 #[test]
+fn token_use_report_records_fallback_chain_without_api_keys() {
+    let attempted = vec![
+        "main".to_string(),
+        "backup_1".to_string(),
+        "backup_2".to_string(),
+    ];
+
+    let report = token_use_report(&attempted);
+
+    assert_eq!(report.token_name, "backup_2");
+    assert_eq!(
+        report.token_fallback,
+        Some("main -> backup_1 -> backup_2".to_string())
+    );
+}
+
+#[test]
+fn tavily_body_with_api_key_does_not_mutate_original_body() {
+    let body = json!({
+        "query": "rust cargo workspace",
+        "max_results": 3
+    });
+
+    let with_key = body_with_tavily_api_key(&body, "tvly-secret").unwrap();
+
+    assert_eq!(body.get("api_key"), None);
+    assert_eq!(with_key.get("api_key").and_then(Value::as_str), Some("tvly-secret"));
+    assert_eq!(with_key.get("query").and_then(Value::as_str), Some("rust cargo workspace"));
+}
+
+#[test]
+fn token_fallback_statuses_are_retryable() {
+    assert!(should_try_next_tavily_token(reqwest::StatusCode::UNAUTHORIZED));
+    assert!(should_try_next_tavily_token(reqwest::StatusCode::FORBIDDEN));
+    assert!(should_try_next_tavily_token(reqwest::StatusCode::TOO_MANY_REQUESTS));
+    assert!(should_try_next_tavily_token(reqwest::StatusCode::BAD_GATEWAY));
+    assert!(!should_try_next_tavily_token(reqwest::StatusCode::BAD_REQUEST));
+}
+#[test]
 fn image_search_is_red_when_enabled() {
     let config = TavilySearchConfig {
         allow_image_search: true,

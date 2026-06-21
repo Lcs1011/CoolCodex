@@ -139,6 +139,11 @@ struct TavilyEnabledToken<'a> {
     name: &'a str,
     api_key: &'a str,
 }
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct TavilyTokenUseReport {
+    token_name: String,
+    token_fallback: Option<String>,
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 struct TavilySearchConfig {
@@ -321,10 +326,10 @@ pub fn run_tavily_search_request(
 
     let blocked = plan.risk == CToolCommandRisk::Blocked;
     let summary = if approved {
-        let api_key = if input.action.requires_tavily() {
-            Some(require_first_tavily_token(&config)?.api_key)
+        let tokens = if input.action.requires_tavily() {
+            enabled_tavily_tokens(&config)
         } else {
-            None
+            Vec::new()
         };
         let approved_label = if plan.risk == CToolCommandRisk::Green {
             "Auto"
@@ -334,7 +339,7 @@ pub fn run_tavily_search_request(
         let markdown = execute_tavily_action(
             &input,
             &config,
-            api_key.as_deref(),
+            &tokens,
             ctx,
             &plan,
             approved_label,
@@ -632,39 +637,20 @@ fn action_disabled(action: CToolTavilyAction, config: &TavilySearchConfig) -> bo
 fn execute_tavily_action(
     input: &CToolTavilySearchRequestInput,
     config: &TavilySearchConfig,
-    api_key: Option<&str>,
+    tokens: &[TavilyEnabledToken<'_>],
     ctx: &CToolContext,
     plan: &TavilyRequestPlan,
     approved: &str,
 ) -> CToolResult<String> {
     match input.action {
-        CToolTavilyAction::Search | CToolTavilyAction::SearchWithImages => tavily_search_markdown(
-            input,
-            config,
-            api_key.unwrap_or_default(),
-            ctx,
-            plan,
-            approved,
-            false,
-        ),
-        CToolTavilyAction::Research => tavily_search_markdown(
-            input,
-            config,
-            api_key.unwrap_or_default(),
-            ctx,
-            plan,
-            approved,
-            true,
-        ),
+        CToolTavilyAction::Search | CToolTavilyAction::SearchWithImages => {
+            tavily_search_markdown(input, config, tokens, ctx, plan, approved, false)
+        }
+        CToolTavilyAction::Research => {
+            tavily_search_markdown(input, config, tokens, ctx, plan, approved, true)
+        }
         CToolTavilyAction::Extract | CToolTavilyAction::ExtractWithImages => {
-            tavily_extract_markdown(
-                input,
-                config,
-                api_key.unwrap_or_default(),
-                ctx,
-                plan,
-                approved,
-            )
+            tavily_extract_markdown(input, config, tokens, ctx, plan, approved)
         }
         CToolTavilyAction::Zoom => zoom_markdown(input, config, ctx, plan, approved),
     }
@@ -673,7 +659,7 @@ fn execute_tavily_action(
 fn tavily_search_markdown(
     input: &CToolTavilySearchRequestInput,
     config: &TavilySearchConfig,
-    api_key: &str,
+    tokens: &[TavilyEnabledToken<'_>],
     ctx: &CToolContext,
     plan: &TavilyRequestPlan,
     approved: &str,
@@ -682,14 +668,14 @@ fn tavily_search_markdown(
     let query = required_field(input.query.as_deref(), "query")?;
     let include_images = input.action == CToolTavilyAction::SearchWithImages;
     let body = json!({
-        "api_key": api_key,
         "query": query,
         "max_results": config.max_search_results,
         "include_answer": true,
         "include_images": include_images,
         "search_depth": if advanced { "advanced" } else { "basic" },
     });
-    let response = post_tavily_json(TAVILY_SEARCH_URL, &body, TavilyNetworkPurpose::Search)?;
+    let (response, token_use) =
+        post_tavily_json_with_tokens(TAVILY_SEARCH_URL, &body, tokens, TavilyNetworkPurpose::Search)?;
     let answer = response
         .get("answer")
         .and_then(Value::as_str)
@@ -705,6 +691,10 @@ fn tavily_search_markdown(
     markdown.push_str(&format!("Time: {}\n", timestamp()));
     markdown.push_str(&format!("Risk: {}\n", plan.risk.label()));
     markdown.push_str(&format!("Approved: {approved}\n"));
+    markdown.push_str(&format!("Token: {}\n", token_use.token_name));
+    if let Some(token_fallback) = token_use.token_fallback.as_deref() {
+        markdown.push_str(&format!("TokenFallback: {token_fallback}\n"));
+    }
     markdown.push_str(&format!(
         "CurrentDir: {}\n\n",
         ctx.scope_context.cool_workspace.display()
@@ -739,7 +729,7 @@ fn tavily_search_markdown(
 fn tavily_extract_markdown(
     input: &CToolTavilySearchRequestInput,
     config: &TavilySearchConfig,
-    api_key: &str,
+    tokens: &[TavilyEnabledToken<'_>],
     ctx: &CToolContext,
     plan: &TavilyRequestPlan,
     approved: &str,
@@ -748,12 +738,12 @@ fn tavily_extract_markdown(
     ensure_http_url(url)?;
     let include_images = input.action == CToolTavilyAction::ExtractWithImages;
     let body = json!({
-        "api_key": api_key,
         "urls": [url],
         "extract_depth": "basic",
         "include_images": include_images,
     });
-    let response = post_tavily_json(TAVILY_EXTRACT_URL, &body, TavilyNetworkPurpose::Extract)?;
+    let (response, token_use) =
+        post_tavily_json_with_tokens(TAVILY_EXTRACT_URL, &body, tokens, TavilyNetworkPurpose::Extract)?;
     let content = extract_tavily_content(&response);
     let content = truncate_chars(&content, config.max_extract_chars);
 
@@ -764,6 +754,10 @@ fn tavily_extract_markdown(
     markdown.push_str(&format!("Time: {}\n", timestamp()));
     markdown.push_str(&format!("Risk: {}\n", plan.risk.label()));
     markdown.push_str(&format!("Approved: {approved}\n"));
+    markdown.push_str(&format!("Token: {}\n", token_use.token_name));
+    if let Some(token_fallback) = token_use.token_fallback.as_deref() {
+        markdown.push_str(&format!("TokenFallback: {token_fallback}\n"));
+    }
     markdown.push_str(&format!(
         "CurrentDir: {}\n\n",
         ctx.scope_context.cool_workspace.display()
@@ -813,33 +807,125 @@ fn zoom_markdown(
     Ok(markdown)
 }
 
-fn post_tavily_json(url: &str, body: &Value, purpose: TavilyNetworkPurpose) -> CToolResult<Value> {
+fn post_tavily_json_with_tokens(
+    url: &str,
+    body_without_api_key: &Value,
+    tokens: &[TavilyEnabledToken<'_>],
+    purpose: TavilyNetworkPurpose,
+) -> CToolResult<(Value, TavilyTokenUseReport)> {
+    ensure_tavily_destination(url, purpose)?;
+    if tokens.is_empty() {
+        return Err(CToolError::InvalidInput(
+            "missing enabled Tavily token in CoolSystemDir\\tavily.toml".to_string(),
+        ));
+    }
+
     let client = reqwest::blocking::Client::builder()
         .timeout(std::time::Duration::from_secs(30))
         .build()
         .map_err(|error| {
             CToolError::InvalidInput(format!("failed to build Tavily HTTP client: {error}"))
         })?;
-    let response = send_controlled_tavily_request(&client, url, body, purpose)?;
+
+    let mut attempted = Vec::new();
+    let mut failures = Vec::new();
+
+    for token in tokens {
+        attempted.push(token.name.to_string());
+
+        let body = body_with_tavily_api_key(body_without_api_key, token.api_key)?;
+        match send_controlled_tavily_request(&client, url, &body) {
+            Ok(response) => match read_tavily_json_response(response)? {
+                Ok(value) => return Ok((value, token_use_report(&attempted))),
+                Err(status) if should_try_next_tavily_token(status) => {
+                    failures.push(format!("{}: HTTP {}", token.name, status.as_u16()));
+                    continue;
+                }
+                Err(status) => return Err(tavily_http_error(status)),
+            },
+            Err(first_error) => {
+                let retry_body = body_with_tavily_api_key(body_without_api_key, token.api_key)?;
+                match send_controlled_tavily_request(&client, url, &retry_body) {
+                    Ok(response) => match read_tavily_json_response(response)? {
+                        Ok(value) => return Ok((value, token_use_report(&attempted))),
+                        Err(status) if should_try_next_tavily_token(status) => {
+                            failures.push(format!("{}: HTTP {}", token.name, status.as_u16()));
+                            continue;
+                        }
+                        Err(status) => return Err(tavily_http_error(status)),
+                    },
+                    Err(second_error) => {
+                        failures.push(format!(
+                            "{}: network error after retry: {}; first error: {}",
+                            token.name, second_error, first_error
+                        ));
+                        continue;
+                    }
+                }
+            }
+        }
+    }
+
+    Err(CToolError::InvalidInput(format!(
+        "all enabled Tavily tokens failed; attempted token names: {}; failures: {}",
+        attempted.join(" -> "),
+        failures.join(" | ")
+    )))
+}
+
+fn body_with_tavily_api_key(body_without_api_key: &Value, api_key: &str) -> CToolResult<Value> {
+    let mut body = body_without_api_key.clone();
+    let Value::Object(map) = &mut body else {
+        return Err(CToolError::InvalidInput(
+            "Tavily request body must be a JSON object".to_string(),
+        ));
+    };
+    map.insert("api_key".to_string(), Value::String(api_key.to_string()));
+    Ok(body)
+}
+
+fn read_tavily_json_response(
+    response: reqwest::blocking::Response,
+) -> CToolResult<Result<Value, reqwest::StatusCode>> {
     let status = response.status();
     let text = response.text().map_err(|error| {
         CToolError::InvalidInput(format!("failed to read Tavily response: {error}"))
     })?;
     if !status.is_success() {
-        return Err(CToolError::InvalidInput(format!(
-            "Tavily request returned HTTP {status}; response body is not echoed to avoid leaking secrets"
-        )));
+        return Ok(Err(status));
     }
-    serde_json::from_str(&text)
-        .map_err(|error| CToolError::InvalidInput(format!("invalid Tavily JSON response: {error}")))
+    let value = serde_json::from_str(&text)
+        .map_err(|error| CToolError::InvalidInput(format!("invalid Tavily JSON response: {error}")))?;
+    Ok(Ok(value))
 }
 
-fn send_controlled_tavily_request(
-    client: &reqwest::blocking::Client,
-    url: &str,
-    body: &Value,
-    purpose: TavilyNetworkPurpose,
-) -> CToolResult<reqwest::blocking::Response> {
+fn should_try_next_tavily_token(status: reqwest::StatusCode) -> bool {
+    status == reqwest::StatusCode::UNAUTHORIZED
+        || status == reqwest::StatusCode::FORBIDDEN
+        || status == reqwest::StatusCode::TOO_MANY_REQUESTS
+        || status.is_server_error()
+}
+
+fn tavily_http_error(status: reqwest::StatusCode) -> CToolError {
+    CToolError::InvalidInput(format!(
+        "Tavily request returned HTTP {status}; response body is not echoed to avoid leaking secrets"
+    ))
+}
+
+fn token_use_report(attempted: &[String]) -> TavilyTokenUseReport {
+    let token_name = attempted.last().cloned().unwrap_or_default();
+    let token_fallback = if attempted.len() > 1 {
+        Some(attempted.join(" -> "))
+    } else {
+        None
+    };
+    TavilyTokenUseReport {
+        token_name,
+        token_fallback,
+    }
+}
+
+fn ensure_tavily_destination(url: &str, purpose: TavilyNetworkPurpose) -> CToolResult<()> {
     let expected_url = match purpose {
         TavilyNetworkPurpose::Search => TAVILY_SEARCH_URL,
         TavilyNetworkPurpose::Extract => TAVILY_EXTRACT_URL,
@@ -850,12 +936,15 @@ fn send_controlled_tavily_request(
             purpose.label()
         )));
     }
+    Ok(())
+}
 
-    client
-        .post(url)
-        .json(body)
-        .send()
-        .map_err(|error| CToolError::InvalidInput(format!("Tavily request failed: {error}")))
+fn send_controlled_tavily_request(
+    client: &reqwest::blocking::Client,
+    url: &str,
+    body: &Value,
+) -> Result<reqwest::blocking::Response, reqwest::Error> {
+    client.post(url).json(body).send()
 }
 
 fn append_tavily_images_section(markdown: &mut String, response: &Value) {
