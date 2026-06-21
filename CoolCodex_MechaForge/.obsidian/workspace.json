@@ -101,6 +101,20 @@
             }
           },
           {
+            "id": "63cdcdb10fc7ba4a",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "Schema（模式  规范）.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "Schema（模式  规范）"
+            }
+          },
+          {
             "id": "25fa37e02f00a49b",
             "type": "leaf",
             "state": {
@@ -114,7 +128,8 @@
               "title": "旧 CoolBot 脚本制作规划"
             }
           }
-        ]
+        ],
+        "currentTab": 1
       },
       {
         "id": "5e101feea4917d47",
@@ -250,13 +265,13 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "0109 CToolTavilySearchRequest.md",
+                "file": "Schema（模式  规范）.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "0109 CToolTavilySearchRequest 的大纲"
+              "title": "Schema（模式  规范） 的大纲"
             }
           },
           {
@@ -338,13 +353,14 @@
       "bases:新建数据库": false
     }
   },
-  "active": "d1a0c3e6b9baf7da",
+  "active": "63cdcdb10fc7ba4a",
   "lastOpenFiles": [
-    "0108 CToolTavilySearchRequest.md",
+    "CoolBot/CoolBotUsageManual.md",
+    "Schema（模式  规范）.md",
     "0109 CToolTavilySearchRequest.md",
+    "0108 CToolTavilySearchRequest.md",
     "0107 CToolCommandRequest.md",
     "0101 CoolCLI 一些定义和基本设定.md",
-    "CoolBot/CoolBotUsageManual.md",
     "CoolCLI 设置.md",
     "0106 CTool Markdown相关工具.md",
     "0005 对于Skill 和Plugin的安全策略.md",
@@ -365,7 +381,6 @@
     "CoolBot/CoolOperationSyntax.md",
     "CoolBot/CoolOperation 新标准.md",
     "未命名 5.md",
-    "CoolBot/s.md",
     "CoolGolem",
     "CoolBot",
     "未命名 1",
