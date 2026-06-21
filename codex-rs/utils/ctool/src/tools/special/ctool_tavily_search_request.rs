@@ -336,14 +336,7 @@ pub fn run_tavily_search_request(
         } else {
             "UserConfirmed"
         };
-        let markdown = execute_tavily_action(
-            &input,
-            &config,
-            &tokens,
-            ctx,
-            &plan,
-            approved_label,
-        )?;
+        let markdown = execute_tavily_action(&input, &config, &tokens, ctx, &plan, approved_label)?;
         std::fs::create_dir_all(&target.cache_dir)?;
         std::fs::write(&target.output_path, &markdown)?;
         append_tavily_log(
@@ -518,11 +511,14 @@ fn find_character_tavily_token_path(ctx: &CToolContext) -> CToolResult<Option<Pa
 }
 
 fn require_first_tavily_token(config: &TavilySearchConfig) -> CToolResult<TavilyEnabledToken<'_>> {
-    enabled_tavily_tokens(config).into_iter().next().ok_or_else(|| {
-        CToolError::InvalidInput(
-            "missing enabled Tavily token in CoolSystemDir\\tavily.toml".to_string(),
-        )
-    })
+    enabled_tavily_tokens(config)
+        .into_iter()
+        .next()
+        .ok_or_else(|| {
+            CToolError::InvalidInput(
+                "missing enabled Tavily token in CoolSystemDir\\tavily.toml".to_string(),
+            )
+        })
 }
 
 fn classify_tavily_request(
@@ -680,8 +676,12 @@ fn tavily_search_markdown(
         "include_images": include_images,
         "search_depth": if advanced { "advanced" } else { "basic" },
     });
-    let (response, token_use) =
-        post_tavily_json_with_tokens(TAVILY_SEARCH_URL, &body, tokens, TavilyNetworkPurpose::Search)?;
+    let (response, token_use) = post_tavily_json_with_tokens(
+        TAVILY_SEARCH_URL,
+        &body,
+        tokens,
+        TavilyNetworkPurpose::Search,
+    )?;
     let answer = response
         .get("answer")
         .and_then(Value::as_str)
@@ -748,8 +748,12 @@ fn tavily_extract_markdown(
         "extract_depth": "basic",
         "include_images": include_images,
     });
-    let (response, token_use) =
-        post_tavily_json_with_tokens(TAVILY_EXTRACT_URL, &body, tokens, TavilyNetworkPurpose::Extract)?;
+    let (response, token_use) = post_tavily_json_with_tokens(
+        TAVILY_EXTRACT_URL,
+        &body,
+        tokens,
+        TavilyNetworkPurpose::Extract,
+    )?;
     let content = extract_tavily_content(&response);
     let content = truncate_chars(&content, config.max_extract_chars);
 
@@ -900,8 +904,9 @@ fn read_tavily_json_response(
     if !status.is_success() {
         return Ok(Err(status));
     }
-    let value = serde_json::from_str(&text)
-        .map_err(|error| CToolError::InvalidInput(format!("invalid Tavily JSON response: {error}")))?;
+    let value = serde_json::from_str(&text).map_err(|error| {
+        CToolError::InvalidInput(format!("invalid Tavily JSON response: {error}"))
+    })?;
     Ok(Ok(value))
 }
 

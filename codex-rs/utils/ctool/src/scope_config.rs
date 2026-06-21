@@ -248,17 +248,15 @@ fn parse_scope_base(value: &str) -> CToolResult<CToolScopeBase> {
     match value.to_ascii_lowercase().as_str() {
         "none" => Ok(CToolScopeBase::None),
 
-        "selected-only" | "selectedonly" | "selected_only" => {
-            Ok(CToolScopeBase::SelectedOnly)
-        }
+        "selected-only" | "selectedonly" | "selected_only" => Ok(CToolScopeBase::SelectedOnly),
 
         "cool-workspace" | "coolworkspace" | "cool_workspace" | "workspace" => {
             Ok(CToolScopeBase::CoolWorkspace)
         }
 
-        "the-eye-of-providence"
-        | "theeyeofprovidence"
-        | "the_eye_of_providence" => Ok(CToolScopeBase::TheEyeOfProvidence),
+        "the-eye-of-providence" | "theeyeofprovidence" | "the_eye_of_providence" => {
+            Ok(CToolScopeBase::TheEyeOfProvidence)
+        }
 
         _ => Err(CToolError::InvalidInput(format!(
             "unsupported CToolScopeBase: {value}"

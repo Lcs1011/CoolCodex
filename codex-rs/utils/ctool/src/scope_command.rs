@@ -166,14 +166,12 @@ pub fn handle_ctool_scope_command(
             path,
         } => {
             let path = resolve_user_path(ctx, path);
-            update_user_config(ctx, |config| {
-                match layer {
-                    CToolScopeLayer::Normal => {
-                        update_scope_rule(config, target, rule, action, path.clone())
-                    }
-                    CToolScopeLayer::Privileged => {
-                        update_privileged_scope_rule(config, target, rule, action, path.clone())
-                    }
+            update_user_config(ctx, |config| match layer {
+                CToolScopeLayer::Normal => {
+                    update_scope_rule(config, target, rule, action, path.clone())
+                }
+                CToolScopeLayer::Privileged => {
+                    update_privileged_scope_rule(config, target, rule, action, path.clone())
                 }
             })?;
             Ok(format!(
@@ -491,21 +489,15 @@ fn update_privileged_scope_rule(
         (CToolScopeTarget::File, CToolScopeRule::Readwrite) => {
             &mut config.privileged_files.readwrite
         }
-        (CToolScopeTarget::File, CToolScopeRule::Readonly) => {
-            &mut config.privileged_files.readonly
-        }
-        (CToolScopeTarget::File, CToolScopeRule::Hidden) => {
-            &mut config.privileged_files.hidden
-        }
+        (CToolScopeTarget::File, CToolScopeRule::Readonly) => &mut config.privileged_files.readonly,
+        (CToolScopeTarget::File, CToolScopeRule::Hidden) => &mut config.privileged_files.hidden,
         (CToolScopeTarget::Folder, CToolScopeRule::Readwrite) => {
             &mut config.privileged_folders.readwrite
         }
         (CToolScopeTarget::Folder, CToolScopeRule::Readonly) => {
             &mut config.privileged_folders.readonly
         }
-        (CToolScopeTarget::Folder, CToolScopeRule::Hidden) => {
-            &mut config.privileged_folders.hidden
-        }
+        (CToolScopeTarget::Folder, CToolScopeRule::Hidden) => &mut config.privileged_folders.hidden,
     };
 
     match action {
@@ -611,17 +603,15 @@ fn parse_base_scope(value: &str) -> CToolResult<CToolScopeBase> {
     match value.to_ascii_lowercase().as_str() {
         "none" => Ok(CToolScopeBase::None),
 
-        "selected-only" | "selectedonly" | "selected_only" => {
-            Ok(CToolScopeBase::SelectedOnly)
-        }
+        "selected-only" | "selectedonly" | "selected_only" => Ok(CToolScopeBase::SelectedOnly),
 
         "cool-workspace" | "coolworkspace" | "cool_workspace" | "workspace" => {
             Ok(CToolScopeBase::CoolWorkspace)
         }
 
-        "the-eye-of-providence"
-        | "theeyeofprovidence"
-        | "the_eye_of_providence" => Ok(CToolScopeBase::TheEyeOfProvidence),
+        "the-eye-of-providence" | "theeyeofprovidence" | "the_eye_of_providence" => {
+            Ok(CToolScopeBase::TheEyeOfProvidence)
+        }
 
         _ => Err(CToolError::InvalidInput(format!(
             "unsupported CToolScopeBase: {value}"

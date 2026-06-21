@@ -449,7 +449,10 @@ policy = "green"
         assert_eq!(output.all_success, Some(true));
         assert!(output.result_file.is_some());
         assert!(output.log_file.is_some());
-        assert_eq!(output.current_dir, ctx.scope_context.cool_workspace.display().to_string());
+        assert_eq!(
+            output.current_dir,
+            ctx.scope_context.cool_workspace.display().to_string()
+        );
         assert_eq!(output.command_count, 1);
         assert_eq!(output.system_risk, "GREEN");
         assert_eq!(output.final_risk, "GREEN");
@@ -502,19 +505,29 @@ policy = "green"
         assert_eq!(output.all_success, Some(false));
         assert!(output.result_file.is_some());
         assert!(output.log_file.is_some());
-        assert_eq!(output.current_dir, ctx.scope_context.cool_workspace.display().to_string());
+        assert_eq!(
+            output.current_dir,
+            ctx.scope_context.cool_workspace.display().to_string()
+        );
         assert_eq!(output.command_count, 1);
         assert_eq!(output.system_risk, "YELLOW");
         assert_eq!(output.final_risk, "YELLOW");
         assert_eq!(output.approval_required, "confirm_once");
-        assert_eq!(output.request_reason, Some("test yellow rejection".to_string()));
+        assert_eq!(
+            output.request_reason,
+            Some("test yellow rejection".to_string())
+        );
         assert_eq!(output.user_feedback, Some("keep editing first".to_string()));
         assert_eq!(output.commands.len(), 1);
         assert_eq!(output.commands[0].command, "demo-yellow do something");
         assert_eq!(output.commands[0].risk, "YELLOW");
         assert!(output.display_text.contains("executed: false"));
         assert!(output.display_text.contains("rejected: true"));
-        assert!(output.display_text.contains("user_feedback: keep editing first"));
+        assert!(
+            output
+                .display_text
+                .contains("user_feedback: keep editing first")
+        );
 
         let result_text = std::fs::read_to_string(output.result_file.unwrap()).unwrap();
         assert!(result_text.contains("Status: Rejected"));
@@ -555,12 +568,18 @@ policy = "green"
         assert_eq!(output.all_success, Some(false));
         assert!(output.result_file.is_some());
         assert!(output.log_file.is_some());
-        assert_eq!(output.current_dir, ctx.scope_context.cool_workspace.display().to_string());
+        assert_eq!(
+            output.current_dir,
+            ctx.scope_context.cool_workspace.display().to_string()
+        );
         assert_eq!(output.command_count, 1);
         assert_eq!(output.system_risk, "BLOCKED");
         assert_eq!(output.final_risk, "BLOCKED");
         assert_eq!(output.approval_required, "blocked");
-        assert_eq!(output.request_reason, Some("test blocked output".to_string()));
+        assert_eq!(
+            output.request_reason,
+            Some("test blocked output".to_string())
+        );
         assert_eq!(output.user_feedback, None);
         assert_eq!(output.commands.len(), 1);
         assert_eq!(output.commands[0].command, "python -m venv .venv");

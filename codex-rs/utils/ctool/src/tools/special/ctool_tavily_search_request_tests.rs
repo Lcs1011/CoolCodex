@@ -168,17 +168,31 @@ fn tavily_body_with_api_key_does_not_mutate_original_body() {
     let with_key = body_with_tavily_api_key(&body, "tvly-secret").unwrap();
 
     assert_eq!(body.get("api_key"), None);
-    assert_eq!(with_key.get("api_key").and_then(Value::as_str), Some("tvly-secret"));
-    assert_eq!(with_key.get("query").and_then(Value::as_str), Some("rust cargo workspace"));
+    assert_eq!(
+        with_key.get("api_key").and_then(Value::as_str),
+        Some("tvly-secret")
+    );
+    assert_eq!(
+        with_key.get("query").and_then(Value::as_str),
+        Some("rust cargo workspace")
+    );
 }
 
 #[test]
 fn token_fallback_statuses_are_retryable() {
-    assert!(should_try_next_tavily_token(reqwest::StatusCode::UNAUTHORIZED));
+    assert!(should_try_next_tavily_token(
+        reqwest::StatusCode::UNAUTHORIZED
+    ));
     assert!(should_try_next_tavily_token(reqwest::StatusCode::FORBIDDEN));
-    assert!(should_try_next_tavily_token(reqwest::StatusCode::TOO_MANY_REQUESTS));
-    assert!(should_try_next_tavily_token(reqwest::StatusCode::BAD_GATEWAY));
-    assert!(!should_try_next_tavily_token(reqwest::StatusCode::BAD_REQUEST));
+    assert!(should_try_next_tavily_token(
+        reqwest::StatusCode::TOO_MANY_REQUESTS
+    ));
+    assert!(should_try_next_tavily_token(
+        reqwest::StatusCode::BAD_GATEWAY
+    ));
+    assert!(!should_try_next_tavily_token(
+        reqwest::StatusCode::BAD_REQUEST
+    ));
 }
 #[test]
 fn image_search_is_blocked_in_v1_even_when_config_enabled() {
@@ -303,10 +317,17 @@ fn search_without_token_tool_output_is_blocked_and_writes_audit_files() {
     assert!(!output.executed);
     assert!(output.blocked);
     assert!(!output.rejected);
-    assert_eq!(output.current_dir, ctx.scope_context.cool_workspace.display().to_string());
+    assert_eq!(
+        output.current_dir,
+        ctx.scope_context.cool_workspace.display().to_string()
+    );
     assert_eq!(output.action, "search");
     assert_eq!(output.final_risk, "BLOCKED");
-    assert!(output.output_file.ends_with("00000_search_rust_cargo_workspace.md"));
+    assert!(
+        output
+            .output_file
+            .ends_with("00000_search_rust_cargo_workspace.md")
+    );
     assert!(output.log_file.ends_with("request_log.md"));
     assert_eq!(output.user_feedback, None);
     assert!(output.note.contains("Blocked Tavily request"));

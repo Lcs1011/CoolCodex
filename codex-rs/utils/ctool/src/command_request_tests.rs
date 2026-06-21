@@ -179,8 +179,10 @@ fn ctool_scope_commands_are_blocked() {
 
 #[test]
 fn ctool_scope_segment_in_mixed_command_is_blocked() {
-    let classification =
-        classify_command("git status && /cs hidden .cool", &rule_matching_test_config());
+    let classification = classify_command(
+        "git status && /cs hidden .cool",
+        &rule_matching_test_config(),
+    );
 
     assert_eq!(classification.risk, CToolCommandRisk::Blocked);
     assert!(
@@ -220,7 +222,9 @@ fn green_rule_cannot_downgrade_directory_switch() {
         CToolCommandClassification {
             command: "cd ..".to_string(),
             risk: CToolCommandRisk::Red,
-            reason: "cd ..: matched green prefix rule: cd; cd/pushd directory switch is at least red".to_string(),
+            reason:
+                "cd ..: matched green prefix rule: cd; cd/pushd directory switch is at least red"
+                    .to_string(),
         }
     );
 }
@@ -270,7 +274,8 @@ fn policy_green_cannot_downgrade_download_url() {
         CToolCommandClassification {
             command: "custom-tool https://example.com/file.zip".to_string(),
             risk: CToolCommandRisk::Red,
-            reason: "custom-tool https://example.com/file.zip: matched red contains rule: https://".to_string(),
+            reason: "custom-tool https://example.com/file.zip: matched red contains rule: https://"
+                .to_string(),
         }
     );
 }
@@ -303,7 +308,8 @@ fn unknown_command_uses_policy_fallback() {
         CToolCommandClassification {
             command: "custom-tool --version".to_string(),
             risk: CToolCommandRisk::Green,
-            reason: "custom-tool --version: unknown command, defaulting to policy Green".to_string(),
+            reason: "custom-tool --version: unknown command, defaulting to policy Green"
+                .to_string(),
         }
     );
 }
@@ -331,7 +337,9 @@ fn merged_blocked_rule_overrides_red_yellow_green_rules() {
     let mut character_config = clean_command_config(CToolCommandPolicy::Green);
     let mut system_config = clean_command_config(CToolCommandPolicy::Green);
 
-    character_config.green_exact_commands.push("demo command".to_string());
+    character_config
+        .green_exact_commands
+        .push("demo command".to_string());
     character_config.yellow_prefixes.push("demo".to_string());
     system_config.red_prefixes.push("demo".to_string());
     character_config.blocked_prefixes.push("demo".to_string());
@@ -354,7 +362,9 @@ fn merged_red_rule_overrides_yellow_and_green_rules() {
     let mut character_config = clean_command_config(CToolCommandPolicy::Green);
     let mut system_config = clean_command_config(CToolCommandPolicy::Green);
 
-    character_config.green_exact_commands.push("demo command".to_string());
+    character_config
+        .green_exact_commands
+        .push("demo command".to_string());
     character_config.yellow_prefixes.push("demo".to_string());
     system_config.red_prefixes.push("demo".to_string());
 
@@ -376,7 +386,9 @@ fn merged_yellow_rule_overrides_green_rule() {
     let mut character_config = clean_command_config(CToolCommandPolicy::Green);
     let mut system_config = clean_command_config(CToolCommandPolicy::Green);
 
-    character_config.green_exact_commands.push("demo command".to_string());
+    character_config
+        .green_exact_commands
+        .push("demo command".to_string());
     system_config.yellow_prefixes.push("demo".to_string());
 
     let merged = merge_command_configs(character_config, system_config);
@@ -397,7 +409,9 @@ fn explicit_green_rule_overrides_policy_fallback() {
     let mut character_config = clean_command_config(CToolCommandPolicy::Red);
     let system_config = clean_command_config(CToolCommandPolicy::Green);
 
-    character_config.green_exact_commands.push("demo command".to_string());
+    character_config
+        .green_exact_commands
+        .push("demo command".to_string());
 
     let merged = merge_command_configs(character_config, system_config);
     let classification = classify_command("demo command", &merged);

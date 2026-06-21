@@ -324,9 +324,13 @@ mod tests {
     fn replace_exact_replaces_target_inside_unique_anchor() {
         let text = "fn a() {\n    let value = 1;\n}\n\nfn b() {\n    let value = 1;\n}\n";
         let anchor = "fn b() {\n    let value = 1;\n}\n";
-        let after =
-            apply_replace_exact_to_text(text, anchor, "    let value = 1;\n", "    let value = 2;\n")
-                .unwrap();
+        let after = apply_replace_exact_to_text(
+            text,
+            anchor,
+            "    let value = 1;\n",
+            "    let value = 2;\n",
+        )
+        .unwrap();
 
         assert_eq!(
             after,
@@ -373,8 +377,7 @@ mod tests {
     #[test]
     fn remove_exact_removes_target_inside_anchor() {
         let text = "fn demo() {\n    println!(\"start\");\n    println!(\"debug\");\n    println!(\"end\");\n}\n";
-        let anchor =
-            "fn demo() {\n    println!(\"start\");\n    println!(\"debug\");\n    println!(\"end\");\n}\n";
+        let anchor = "fn demo() {\n    println!(\"start\");\n    println!(\"debug\");\n    println!(\"end\");\n}\n";
         let after = apply_remove_exact_to_text(text, anchor, "    println!(\"debug\");\n").unwrap();
 
         assert_eq!(
@@ -387,27 +390,35 @@ mod tests {
     fn exact_edit_rejects_missing_anchor() {
         let error = apply_remove_exact_to_text("alpha", "missing", "alpha").unwrap_err();
 
-        assert!(matches!(error, CToolError::InvalidInput(message) if message.contains("anchor was not found")));
+        assert!(
+            matches!(error, CToolError::InvalidInput(message) if message.contains("anchor was not found"))
+        );
     }
 
     #[test]
     fn exact_edit_rejects_duplicate_anchor() {
         let error = apply_remove_exact_to_text("alpha\nalpha\n", "alpha", "alpha").unwrap_err();
 
-        assert!(matches!(error, CToolError::InvalidInput(message) if message.contains("anchor matched 2 times")));
+        assert!(
+            matches!(error, CToolError::InvalidInput(message) if message.contains("anchor matched 2 times"))
+        );
     }
 
     #[test]
     fn exact_edit_rejects_missing_target_inside_anchor() {
         let error = apply_remove_exact_to_text("alpha beta", "alpha beta", "missing").unwrap_err();
 
-        assert!(matches!(error, CToolError::InvalidInput(message) if message.contains("target was not found inside anchor")));
+        assert!(
+            matches!(error, CToolError::InvalidInput(message) if message.contains("target was not found inside anchor"))
+        );
     }
 
     #[test]
     fn exact_edit_rejects_duplicate_target_inside_anchor() {
         let error = apply_remove_exact_to_text("alpha alpha", "alpha alpha", "alpha").unwrap_err();
 
-        assert!(matches!(error, CToolError::InvalidInput(message) if message.contains("target matched 2 times inside anchor")));
+        assert!(
+            matches!(error, CToolError::InvalidInput(message) if message.contains("target matched 2 times inside anchor"))
+        );
     }
 }

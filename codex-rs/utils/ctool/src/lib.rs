@@ -8,6 +8,7 @@ pub mod scope_command;
 pub mod scope_config;
 pub mod scope_context;
 pub mod tool;
+pub mod tool_schema;
 pub mod tools;
 
 pub use command_request::CToolCommandApproval;
@@ -103,6 +104,8 @@ pub use scope_context::path_matches_rule;
 pub use scope_context::resolve_user_path;
 pub use tool::CTool;
 pub use tool::CToolSpec;
+pub use tool_schema::ctool_input_schema;
+pub use tool_schema::ctool_output_schema;
 pub use tools::special::CTOOL_TAVILY_SEARCH_REQUEST_TOOL_NAME;
 pub use tools::special::CToolTavilyAction;
 pub use tools::special::CToolTavilySearchRequest;

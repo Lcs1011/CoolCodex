@@ -678,7 +678,8 @@ fn explicit_command_rule_match<'a>(
     normalized_command: &str,
     config: &'a CToolCommandConfig,
 ) -> Option<CToolCommandRuleMatch<'a>> {
-    if let Some(rule) = first_contains_match(normalized_command, &config.privileged_blocked_contains)
+    if let Some(rule) =
+        first_contains_match(normalized_command, &config.privileged_blocked_contains)
     {
         return Some(CToolCommandRuleMatch {
             risk: CToolCommandRisk::Blocked,
@@ -720,7 +721,8 @@ fn explicit_command_rule_match<'a>(
         });
     }
 
-    if let Some(rule) = first_exact_match(normalized_command, &config.privileged_green_exact_commands)
+    if let Some(rule) =
+        first_exact_match(normalized_command, &config.privileged_green_exact_commands)
     {
         return Some(CToolCommandRuleMatch {
             risk: CToolCommandRisk::Green,
