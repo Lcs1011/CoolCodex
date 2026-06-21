@@ -332,10 +332,21 @@ pub fn ctool_output_schema(name: &str) -> Value {
                 ("executed", boolean_schema("Whether commands executed.")),
                 ("blocked", boolean_schema("Whether the request was blocked.")),
                 ("rejected", boolean_schema("Whether the user rejected confirmation.")),
-                ("final_risk", string_schema("Final risk label.")),
-                ("result_file", string_schema("Optional result file path.")),
+                ("all_success", boolean_schema("Whether all executed commands exited successfully. Null when not executed.")),
+                ("result_file", string_schema("Optional Markdown result file path.")),
                 ("log_file", string_schema("Optional audit log file path.")),
+                ("current_dir", string_schema("Command execution current directory.")),
+                ("command_count", integer_schema("Number of requested commands.")),
+                ("system_risk", enum_schema(&["GREEN", "YELLOW", "RED", "BLOCKED"], "Risk before AI-side upgrade.")),
+                ("ai_risk_upgrade", enum_schema(&["GREEN", "YELLOW", "RED", "BLOCKED"], "Optional AI-side risk upgrade.")),
+                ("final_risk", enum_schema(&["GREEN", "YELLOW", "RED", "BLOCKED"], "Final risk after all rules.")),
+                ("approval_required", string_schema("Approval mode: auto, once, twice, or blocked.")),
+                ("request_reason", string_schema("Optional user/AI reason for the request.")),
+                ("user_feedback", string_schema("Optional rejection feedback from user confirmation input.")),
+                ("commands", array_schema(object_open_schema("Command preview item with command, risk, and reason."), "Per-command risk preview list.")),
                 ("display_text", string_schema("Human-readable preview text.")),
+                ("banner", string_schema("Human-readable risk banner.")),
+                ("note", string_schema("Human-readable execution/block/rejection note.")),
             ],
         ),
 
@@ -346,11 +357,15 @@ pub fn ctool_output_schema(name: &str) -> Value {
                 ("executed", boolean_schema("Whether Tavily was called.")),
                 ("blocked", boolean_schema("Whether the request was blocked.")),
                 ("rejected", boolean_schema("Whether the user rejected confirmation.")),
-                ("action", string_schema("Action label.")),
-                ("final_risk", string_schema("Final risk label.")),
+                ("current_dir", string_schema("Current CoolWorkspace path.")),
+                ("action", enum_schema(&["search"], "V1 action label. Only search is executable.")),
+                ("final_risk", enum_schema(&["GREEN", "YELLOW", "RED", "BLOCKED"], "Final risk label.")),
                 ("output_file", string_schema("Cached Markdown result path.")),
                 ("log_file", string_schema("Audit log path.")),
                 ("summary", string_schema("Short summary from cached Markdown.")),
+                ("suggested_next_step", string_schema("Suggested next action for the AI/user.")),
+                ("user_feedback", string_schema("Optional rejection feedback from user confirmation input.")),
+                ("note", string_schema("Human-readable execution/block/rejection note.")),
             ],
         ),
 
@@ -802,5 +817,27 @@ mod tests {
 
         let delete_dir_input = ctool_input_schema("ctool_delete_directory");
         assert!(delete_dir_input["properties"].get("recursive").is_none());
+    }
+    #[test]
+    fn special_tool_output_schemas_match_public_field_names() {
+        let command_output = ctool_output_schema("ctool_command_request");
+        assert!(command_output["properties"].get("all_success").is_some());
+        assert!(command_output["properties"].get("current_dir").is_some());
+        assert!(command_output["properties"].get("command_count").is_some());
+        assert!(command_output["properties"].get("system_risk").is_some());
+        assert!(command_output["properties"].get("approval_required").is_some());
+        assert!(command_output["properties"].get("commands").is_some());
+        assert!(command_output["properties"].get("banner").is_some());
+        assert!(command_output["properties"].get("note").is_some());
+
+        let tavily_output = ctool_output_schema("ctool_tavily_search_request");
+        assert!(tavily_output["properties"].get("current_dir").is_some());
+        assert!(tavily_output["properties"].get("suggested_next_step").is_some());
+        assert!(tavily_output["properties"].get("user_feedback").is_some());
+        assert!(tavily_output["properties"].get("note").is_some());
+        assert_eq!(
+            tavily_output["properties"]["action"]["enum"][0],
+            "search"
+        );
     }
 }
