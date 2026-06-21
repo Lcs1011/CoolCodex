@@ -204,30 +204,33 @@ pub fn ctool_input_schema(name: &str) -> Value {
         ),
 
         "ctool_edit_replace" => object_schema(
-            &["path", "old", "new"],
+            &["path", "old_string", "new_string"],
             vec![
                 ("path", path_schema("Editable UTF-8 text file inside current CToolScopeBase.")),
-                ("old", string_schema("Exact old text to replace. Must match uniquely according to tool rules.")),
-                ("new", string_schema("Replacement text.")),
+                ("old_string", string_schema("Exact old text to replace. Must match exactly once.")),
+                ("new_string", string_schema("Replacement text.")),
             ],
         ),
 
         "ctool_edit_insert" => object_schema(
-            &["path", "line", "content"],
+            &["path", "insert_after_line", "content"],
             vec![
                 ("path", path_schema("Editable UTF-8 text file inside current CToolScopeBase.")),
-                ("line", integer_schema("1-based insertion line.")),
-                ("content", string_schema("Text to insert.")),
+                ("insert_after_line", integer_schema("0 inserts at file beginning; N inserts after line N.")),
+                ("content", string_schema("Text to insert. A final newline is added when missing.")),
             ],
         ),
 
         "ctool_preview_diff" => object_schema(
-            &["path", "operation"],
+            &["path", "operations"],
             vec![
                 ("path", path_schema("Editable UTF-8 text file inside current CToolScopeBase.")),
                 (
-                    "operation",
-                    object_open_schema("Diff preview operation. Uses the same payload style as edit tools."),
+                    "operations",
+                    array_schema(
+                        object_open_schema("Preview operation: { operation: replace, old_string, new_string } or { operation: insert, insert_after_line, content }."),
+                        "Ordered preview operations. Nothing is written.",
+                    ),
                 ),
             ],
         ),
@@ -268,7 +271,10 @@ pub fn ctool_input_schema(name: &str) -> Value {
 
         "ctool_delete_file" => object_schema(
             &["path"],
-            vec![("path", path_schema("File path inside current CToolScopeBase to delete."))],
+            vec![
+                ("path", path_schema("File path inside current CToolScopeBase to delete.")),
+                ("expected_content", string_schema("Optional exact file content guard. Delete is refused if content differs.")),
+            ],
         ),
 
         "ctool_move_file" => object_schema(
@@ -276,6 +282,7 @@ pub fn ctool_input_schema(name: &str) -> Value {
             vec![
                 ("from", path_schema("Source file path inside current CToolScopeBase.")),
                 ("to", path_schema("Destination file path inside current CToolScopeBase.")),
+                ("overwrite", boolean_schema("Whether an existing destination file may be overwritten.")),
             ],
         ),
 
@@ -287,8 +294,7 @@ pub fn ctool_input_schema(name: &str) -> Value {
         "ctool_delete_directory" => object_schema(
             &["path"],
             vec![
-                ("path", path_schema("Directory path inside current CToolScopeBase to delete.")),
-                ("recursive", boolean_schema("Whether recursive deletion is allowed, if supported by tool.")),
+                ("path", path_schema("Empty directory path inside current CToolScopeBase to delete. Recursive deletion is never supported.")),
             ],
         ),
 
@@ -301,11 +307,15 @@ pub fn ctool_input_schema(name: &str) -> Value {
         ),
 
         "ctool_annotate_markdown" => object_schema(
-            &["path"],
+            &["path", "target_text"],
             vec![
                 ("path", path_schema("Markdown file path inside current CToolScopeBase.")),
-                ("title", string_schema("Optional annotation title.")),
-                ("content", string_schema("Annotation content.")),
+                ("target_text", string_schema("Exact Markdown text to wrap with a safe <mark> annotation.")),
+                ("annotation_kind", enum_schema(&["normal", "important"], "Annotation color/intensity.")),
+                ("annotation_direction", enum_schema(&["up", "down"], "Optional arrow prefix inserted inside the mark.")),
+                ("occurrence", integer_schema("1-based occurrence when target_text appears more than once.")),
+                ("allow_readonly", boolean_schema("Reserved compatibility flag. Write scope is still enforced.")),
+                ("dry_run", boolean_schema("Preview annotation without writing the file.")),
             ],
         ),
 
@@ -440,13 +450,23 @@ pub fn ctool_output_schema(name: &str) -> Value {
             ],
         ),
 
-        "ctool_edit_replace" | "ctool_edit_insert" => object_schema(
+        "ctool_edit_replace" => object_schema(
             &[],
             vec![
                 ("path", string_schema("Edited file path.")),
-                ("changed", boolean_schema("Whether file content changed.")),
-                ("old_content", string_schema("Previous file content or affected region when available.")),
-                ("new_content", string_schema("New file content or affected region when available.")),
+                ("replaced", integer_schema("Number of replacements. This tool requires exactly one replacement.")),
+                ("byte_len_before", integer_schema("File byte length before edit.")),
+                ("byte_len_after", integer_schema("File byte length after edit.")),
+            ],
+        ),
+
+        "ctool_edit_insert" => object_schema(
+            &[],
+            vec![
+                ("path", string_schema("Edited file path.")),
+                ("inserted_after_line", integer_schema("Line after which content was inserted. 0 means file beginning.")),
+                ("byte_len_before", integer_schema("File byte length before edit.")),
+                ("byte_len_after", integer_schema("File byte length after edit.")),
             ],
         ),
 
@@ -454,16 +474,17 @@ pub fn ctool_output_schema(name: &str) -> Value {
             &[],
             vec![
                 ("path", string_schema("Target file path.")),
-                ("diff", string_schema("Unified diff preview.")),
+                ("operation_count", integer_schema("Number of preview operations.")),
                 ("changed", boolean_schema("Whether operation would change the file.")),
+                ("diff", string_schema("Simple unified diff preview.")),
             ],
         ),
 
         "ctool_edit_batch" => object_schema(
             &[],
             vec![
-                ("outputs", array_schema(object_open_schema("One edit operation output."), "Batch edit outputs.")),
-                ("changed", boolean_schema("Whether any operation changed content.")),
+                ("operation_count", integer_schema("Number of applied edit operations.")),
+                ("files_touched", array_schema(string_schema("Edited file path."), "Files written by the batch.")),
             ],
         ),
 
@@ -474,18 +495,28 @@ pub fn ctool_output_schema(name: &str) -> Value {
             &[],
             vec![
                 ("path", string_schema("Edited file path.")),
-                ("changed", boolean_schema("Whether file content changed.")),
-                ("anchor_line", integer_schema("1-based line containing the unique anchor, when available.")),
-                ("target_line", integer_schema("1-based line containing the target, when available.")),
+                ("operation", string_schema("Exact edit operation label.")),
+                ("matched_anchor", integer_schema("Number of matched anchors. Successful runs return 1.")),
+                ("matched_target", integer_schema("Number of matched targets inside the anchor. Successful runs return 1.")),
+                ("byte_len_before", integer_schema("File byte length before edit.")),
+                ("byte_len_after", integer_schema("File byte length after edit.")),
             ],
         ),
 
         "ctool_annotate_markdown" => object_schema(
             &[],
             vec![
+                ("success", boolean_schema("Whether annotation planning/execution succeeded.")),
+                ("dry_run", boolean_schema("Whether the file was left unchanged.")),
+                ("readonly_exception_used", boolean_schema("Whether readonly exception was used.")),
+                ("annotation_kind", enum_schema(&["normal", "important"], "Annotation kind used.")),
+                ("annotation_direction", enum_schema(&["up", "down"], "Optional arrow direction used.")),
                 ("path", string_schema("Annotated Markdown file path.")),
-                ("changed", boolean_schema("Whether file content changed.")),
-                ("annotation_count", integer_schema("Number of inserted annotations.")),
+                ("line_number", integer_schema("1-based line number of the annotation target.")),
+                ("occurrence", integer_schema("1-based selected occurrence.")),
+                ("before_preview", string_schema("Preview before annotation.")),
+                ("after_preview", string_schema("Preview after annotation.")),
+                ("note", string_schema("Human-readable result note.")),
             ],
         ),
 
@@ -502,6 +533,7 @@ pub fn ctool_output_schema(name: &str) -> Value {
             &[],
             vec![
                 ("path", string_schema("Deleted file path.")),
+                ("byte_len_before", integer_schema("File byte length before deletion.")),
                 ("deleted", boolean_schema("Whether file was deleted.")),
             ],
         ),
@@ -511,6 +543,7 @@ pub fn ctool_output_schema(name: &str) -> Value {
             vec![
                 ("from", string_schema("Resolved source file path.")),
                 ("to", string_schema("Resolved destination file path.")),
+                ("overwritten", boolean_schema("Whether an existing destination file was overwritten.")),
                 ("moved", boolean_schema("Whether file was moved.")),
             ],
         ),
@@ -718,5 +751,56 @@ mod tests {
         assert!(extract_output["properties"].get("total_returned").is_some());
         assert!(extract_output["properties"].get("lines").is_some());
         assert!(extract_output["properties"].get("line_count").is_none());
+    }
+    #[test]
+    fn edit_and_annotate_schemas_match_public_field_names() {
+        let replace_input = ctool_input_schema("ctool_edit_replace");
+        assert!(replace_input["properties"].get("old_string").is_some());
+        assert!(replace_input["properties"].get("new_string").is_some());
+        assert!(replace_input["properties"].get("old").is_none());
+        assert!(replace_input["properties"].get("new").is_none());
+
+        let insert_input = ctool_input_schema("ctool_edit_insert");
+        assert!(insert_input["properties"].get("insert_after_line").is_some());
+        assert!(insert_input["properties"].get("line").is_none());
+
+        let preview_input = ctool_input_schema("ctool_preview_diff");
+        assert!(preview_input["properties"].get("operations").is_some());
+        assert!(preview_input["properties"].get("operation").is_none());
+
+        let exact_output = ctool_output_schema("ctool_edit_replace_exact");
+        assert!(exact_output["properties"].get("matched_anchor").is_some());
+        assert!(exact_output["properties"].get("matched_target").is_some());
+        assert!(exact_output["properties"].get("byte_len_before").is_some());
+        assert!(exact_output["properties"].get("anchor_line").is_none());
+
+        let annotate_input = ctool_input_schema("ctool_annotate_markdown");
+        assert!(annotate_input["properties"].get("target_text").is_some());
+        assert!(annotate_input["properties"].get("annotation_kind").is_some());
+        assert!(annotate_input["properties"].get("title").is_none());
+
+        let annotate_output = ctool_output_schema("ctool_annotate_markdown");
+        assert!(annotate_output["properties"].get("success").is_some());
+        assert!(annotate_output["properties"].get("line_number").is_some());
+        assert!(annotate_output["properties"].get("before_preview").is_some());
+        assert!(annotate_output["properties"].get("annotation_count").is_none());
+    }
+
+    #[test]
+    fn file_ops_schemas_match_public_field_names() {
+        let delete_file_input = ctool_input_schema("ctool_delete_file");
+        assert!(delete_file_input["properties"].get("expected_content").is_some());
+
+        let delete_file_output = ctool_output_schema("ctool_delete_file");
+        assert!(delete_file_output["properties"].get("byte_len_before").is_some());
+
+        let move_file_input = ctool_input_schema("ctool_move_file");
+        assert!(move_file_input["properties"].get("overwrite").is_some());
+
+        let move_file_output = ctool_output_schema("ctool_move_file");
+        assert!(move_file_output["properties"].get("overwritten").is_some());
+
+        let delete_dir_input = ctool_input_schema("ctool_delete_directory");
+        assert!(delete_dir_input["properties"].get("recursive").is_none());
     }
 }
