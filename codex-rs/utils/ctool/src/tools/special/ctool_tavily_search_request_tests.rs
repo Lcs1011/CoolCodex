@@ -20,7 +20,11 @@ fn input(action: CToolTavilyAction) -> CToolTavilySearchRequestInput {
 
 fn config_with_token() -> TavilySearchConfig {
     TavilySearchConfig {
-        tavily_api_key: Some("tvly-test-token".to_string()),
+        tokens: vec![TavilyTokenConfig {
+            name: "main".to_string(),
+            api_key: "tvly-test-token".to_string(),
+            enabled: true,
+        }],
         ..Default::default()
     }
 }
@@ -33,15 +37,14 @@ fn missing_system_token_blocks_network_actions() {
     );
 
     assert_eq!(plan.risk, CToolCommandRisk::Blocked);
-    assert_eq!(plan.reason, "missing Tavily token in system config");
+    assert_eq!(plan.reason, "missing enabled Tavily token in system config");
 }
 
 #[test]
 fn disabled_provider_is_blocked_request() {
     let config = TavilySearchConfig {
         provider: "other".to_string(),
-        tavily_api_key: Some("tvly-test-token".to_string()),
-        ..Default::default()
+        ..config_with_token()
     };
 
     let plan = classify_tavily_request(&input(CToolTavilyAction::Search), &config);
@@ -50,6 +53,68 @@ fn disabled_provider_is_blocked_request() {
     assert_eq!(plan.reason, "unsupported Tavily search provider: other");
 }
 
+#[test]
+fn enabled_tavily_tokens_keep_config_order_and_skip_disabled_or_empty_tokens() {
+    let config = TavilySearchConfig {
+        tokens: vec![
+            TavilyTokenConfig {
+                name: "main".to_string(),
+                api_key: "tvly-main".to_string(),
+                enabled: true,
+            },
+            TavilyTokenConfig {
+                name: "disabled".to_string(),
+                api_key: "tvly-disabled".to_string(),
+                enabled: false,
+            },
+            TavilyTokenConfig {
+                name: "empty".to_string(),
+                api_key: "   ".to_string(),
+                enabled: true,
+            },
+            TavilyTokenConfig {
+                name: "backup_1".to_string(),
+                api_key: "tvly-backup".to_string(),
+                enabled: true,
+            },
+        ],
+        ..Default::default()
+    };
+
+    assert_eq!(
+        enabled_tavily_token_names(&config),
+        vec!["main".to_string(), "backup_1".to_string()]
+    );
+
+    let first = require_first_tavily_token(&config).unwrap();
+    assert_eq!(first.name, "main");
+    assert_eq!(first.api_key, "tvly-main");
+}
+
+#[test]
+fn system_tavily_toml_loads_root_tokens_into_runtime_config() {
+    let toml = r#"
+enabled = true
+
+[[tokens]]
+name = "main"
+api_key = "tvly-main"
+enabled = true
+
+[[tokens]]
+name = "backup_1"
+api_key = "tvly-backup"
+enabled = true
+"#;
+
+    let mut parsed: TavilyConfigToml = toml::from_str(toml).unwrap();
+    parsed.ctool_tavily_search.tokens = parsed.tokens.clone();
+
+    assert_eq!(
+        enabled_tavily_token_names(&parsed.ctool_tavily_search),
+        vec!["main".to_string(), "backup_1".to_string()]
+    );
+}
 #[test]
 fn image_search_is_red_when_enabled() {
     let config = TavilySearchConfig {

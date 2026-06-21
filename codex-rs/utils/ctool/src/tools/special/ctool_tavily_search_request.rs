@@ -25,6 +25,7 @@ pub const CTOOL_TAVILY_SEARCH_REQUEST_TOOL_NAME: &str = "ctool_tavily_search_req
 
 const TAVILY_SEARCH_URL: &str = "https://api.tavily.com/search";
 const TAVILY_EXTRACT_URL: &str = "https://api.tavily.com/extract";
+const TAVILY_CONFIG_FILE_NAME: &str = "tavily.toml";
 const DEFAULT_MAX_SEARCH_RESULTS: usize = 8;
 const DEFAULT_MAX_EXTRACT_CHARS: usize = 12_000;
 const DEFAULT_MAX_ZOOM_CHARS: usize = 6_000;
@@ -120,7 +121,23 @@ pub struct CToolTavilySearchRequestOutput {
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 struct TavilyConfigToml {
     #[serde(default)]
+    tokens: Vec<TavilyTokenConfig>,
+    #[serde(default)]
     ctool_tavily_search: TavilySearchConfig,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+struct TavilyTokenConfig {
+    name: String,
+    api_key: String,
+    #[serde(default = "default_true")]
+    enabled: bool,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct TavilyEnabledToken<'a> {
+    name: &'a str,
+    api_key: &'a str,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
@@ -151,6 +168,8 @@ struct TavilySearchConfig {
     sensitive_keywords: Vec<String>,
     #[serde(default = "default_blocked_keywords")]
     blocked_keywords: Vec<String>,
+    #[serde(default)]
+    tokens: Vec<TavilyTokenConfig>,
 }
 
 impl Default for TavilySearchConfig {
@@ -169,6 +188,7 @@ impl Default for TavilySearchConfig {
             max_zoom_chars: DEFAULT_MAX_ZOOM_CHARS,
             sensitive_keywords: default_sensitive_keywords(),
             blocked_keywords: default_blocked_keywords(),
+            tokens: Vec::new(),
         }
     }
 }
@@ -302,7 +322,7 @@ pub fn run_tavily_search_request(
     let blocked = plan.risk == CToolCommandRisk::Blocked;
     let summary = if approved {
         let api_key = if input.action.requires_tavily() {
-            Some(require_tavily_api_key(&config)?)
+            Some(require_first_tavily_token(&config)?.api_key)
         } else {
             None
         };
@@ -378,19 +398,22 @@ pub fn run_tavily_search_request(
 }
 
 fn load_system_tavily_config(ctx: &CToolContext) -> CToolResult<TavilyConfigToml> {
-    let Some(path) = ctx.scope_context.system_config_path.as_deref() else {
+    let Some(cool_system_dir) = ctx.scope_context.cool_system_dir.as_deref() else {
         return Ok(default_tavily_config_toml());
     };
+    let path = cool_system_dir.join(TAVILY_CONFIG_FILE_NAME);
     if !path.exists() {
         return Ok(default_tavily_config_toml());
     }
-    let text = std::fs::read_to_string(path)?;
-    toml::from_str(&text).map_err(|error| {
+    let text = std::fs::read_to_string(&path)?;
+    let mut config: TavilyConfigToml = toml::from_str(&text).map_err(|error| {
         CToolError::InvalidInput(format!(
             "failed to parse Tavily system config: {} ({error})",
             path.display()
         ))
-    })
+    })?;
+    config.ctool_tavily_search.tokens = config.tokens.clone();
+    Ok(config)
 }
 
 fn load_character_tavily_config(ctx: &CToolContext) -> CToolResult<TavilyConfigToml> {
@@ -409,6 +432,7 @@ fn load_character_tavily_config(ctx: &CToolContext) -> CToolResult<TavilyConfigT
 
 fn default_tavily_config_toml() -> TavilyConfigToml {
     TavilyConfigToml {
+        tokens: Vec::new(),
         ctool_tavily_search: TavilySearchConfig::default(),
     }
 }
@@ -420,7 +444,7 @@ fn merge_tavily_configs(
     TavilySearchConfig {
         enabled: system.enabled && character.enabled,
         provider: system.provider,
-        tavily_api_key: system.tavily_api_key,
+        tavily_api_key: None,
         allow_text_search: system.allow_text_search && character.allow_text_search,
         allow_extract: system.allow_extract && character.allow_extract,
         allow_zoom: system.allow_zoom && character.allow_zoom,
@@ -431,6 +455,7 @@ fn merge_tavily_configs(
         max_zoom_chars: system.max_zoom_chars.min(character.max_zoom_chars),
         sensitive_keywords: merge_strings(system.sensitive_keywords, character.sensitive_keywords),
         blocked_keywords: merge_strings(system.blocked_keywords, character.blocked_keywords),
+        tokens: system.tokens,
     }
 }
 
@@ -441,6 +466,28 @@ fn merge_strings(mut system: Vec<String>, character: Vec<String>) -> Vec<String>
         }
     }
     system
+}
+fn enabled_tavily_tokens(config: &TavilySearchConfig) -> Vec<TavilyEnabledToken<'_>> {
+    config
+        .tokens
+        .iter()
+        .filter(|token| token.enabled)
+        .filter_map(|token| {
+            let name = token.name.trim();
+            let api_key = token.api_key.trim();
+            if name.is_empty() || api_key.is_empty() {
+                return None;
+            }
+            Some(TavilyEnabledToken { name, api_key })
+        })
+        .collect()
+}
+
+fn enabled_tavily_token_names(config: &TavilySearchConfig) -> Vec<String> {
+    enabled_tavily_tokens(config)
+        .into_iter()
+        .map(|token| token.name.to_string())
+        .collect()
 }
 
 fn find_character_tavily_token_path(ctx: &CToolContext) -> CToolResult<Option<PathBuf>> {
@@ -453,25 +500,24 @@ fn find_character_tavily_token_path(ctx: &CToolContext) -> CToolResult<Option<Pa
             continue;
         }
         let text = std::fs::read_to_string(path)?;
-        if text.to_ascii_lowercase().contains("tavily_api_key") {
+        let lower = text.to_ascii_lowercase();
+        if lower.contains("tavily_api_key")
+            || lower.contains("api_key")
+            || lower.contains("[[tokens]]")
+            || lower.contains("\ntokens")
+        {
             return Ok(Some(path.clone()));
         }
     }
     Ok(None)
 }
 
-fn require_tavily_api_key(config: &TavilySearchConfig) -> CToolResult<&str> {
-    let Some(api_key) = config.tavily_api_key.as_deref() else {
-        return Err(CToolError::InvalidInput(
-            "missing tavily_api_key in CoolSystemDir\\tavily.toml".to_string(),
-        ));
-    };
-    if api_key.trim().is_empty() {
-        return Err(CToolError::InvalidInput(
-            "empty tavily_api_key in CoolSystemDir\\tavily.toml".to_string(),
-        ));
-    }
-    Ok(api_key)
+fn require_first_tavily_token(config: &TavilySearchConfig) -> CToolResult<TavilyEnabledToken<'_>> {
+    enabled_tavily_tokens(config).into_iter().next().ok_or_else(|| {
+        CToolError::InvalidInput(
+            "missing enabled Tavily token in CoolSystemDir\\tavily.toml".to_string(),
+        )
+    })
 }
 
 fn classify_tavily_request(
@@ -500,16 +546,10 @@ fn classify_tavily_request(
     let text = request_text_for_risk(input);
     let normalized = text.to_ascii_lowercase();
 
-    if input.action.requires_tavily()
-        && config
-            .tavily_api_key
-            .as_deref()
-            .unwrap_or_default()
-            .is_empty()
-    {
+    if input.action.requires_tavily() && enabled_tavily_tokens(config).is_empty() {
         return TavilyRequestPlan {
             risk: CToolCommandRisk::Blocked,
-            reason: "missing Tavily token in system config".to_string(),
+            reason: "missing enabled Tavily token in system config".to_string(),
         };
     }
     if let Some(keyword) = first_keyword_match(&normalized, &config.blocked_keywords) {
