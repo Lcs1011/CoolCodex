@@ -155,7 +155,8 @@ pub fn ctool_input_schema(name: &str) -> Value {
             &["path", "query"],
             vec![
                 ("path", path_schema("Directory or file path inside current CToolScopeBase.")),
-                ("query", string_schema("Literal text query to count.")),
+                ("query", string_schema("Literal text or regex pattern to count.")),
+                ("is_regex", boolean_schema("Whether query is interpreted as a Rust regex pattern.")),
                 ("case_sensitive", boolean_schema("Whether matching is case-sensitive.")),
                 ("max_depth", integer_schema("Maximum directory recursion depth.")),
                 ("include_hidden", boolean_schema("Whether to search hidden files and directories.")),
@@ -166,8 +167,11 @@ pub fn ctool_input_schema(name: &str) -> Value {
             &["path", "query"],
             vec![
                 ("path", path_schema("Directory or file path inside current CToolScopeBase.")),
-                ("query", string_schema("Literal text query used to extract matching lines.")),
+                ("query", string_schema("Literal text or regex pattern used to extract matching lines.")),
+                ("is_regex", boolean_schema("Whether query is interpreted as a Rust regex pattern.")),
                 ("case_sensitive", boolean_schema("Whether matching is case-sensitive.")),
+                ("unique", boolean_schema("Whether duplicate extracted lines are removed.")),
+                ("sort", boolean_schema("Whether extracted lines are sorted.")),
                 ("max_depth", integer_schema("Maximum directory recursion depth.")),
                 ("max_results", integer_schema("Maximum returned lines.")),
                 ("include_hidden", boolean_schema("Whether to search hidden files and directories.")),
@@ -343,44 +347,67 @@ pub fn ctool_output_schema(name: &str) -> Value {
         "ctool_list_directory" => object_schema(
             &[],
             vec![
-                ("path", string_schema("Resolved directory path.")),
-                ("entries", array_schema(object_open_schema("Directory entry."), "Directory entries.")),
+                ("root", string_schema("Resolved directory root path.")),
+                ("total_returned", integer_schema("Number of returned entries.")),
                 ("truncated", boolean_schema("Whether results were truncated.")),
+                ("items", array_schema(object_open_schema("Directory entry with path, kind, and optional byte_len."), "Directory entries.")),
             ],
         ),
 
-        "ctool_rg_search" | "ctool_regex_search" => object_schema(
+        "ctool_rg_search" => object_schema(
             &[],
             vec![
-                ("matches", array_schema(object_open_schema("Search match."), "Search matches.")),
-                ("match_count", integer_schema("Number of matches returned.")),
+                ("root", string_schema("Resolved search root path.")),
+                ("query", string_schema("Literal query used for search.")),
+                ("total_returned", integer_schema("Number of matches returned.")),
                 ("truncated", boolean_schema("Whether results were truncated.")),
+                ("matches", array_schema(object_open_schema("Search match with path, line_number, and line."), "Search matches.")),
+            ],
+        ),
+
+        "ctool_regex_search" => object_schema(
+            &[],
+            vec![
+                ("root", string_schema("Resolved search root path.")),
+                ("pattern", string_schema("Rust regex pattern used for search.")),
+                ("total_returned", integer_schema("Number of matches returned.")),
+                ("truncated", boolean_schema("Whether results were truncated.")),
+                ("matches", array_schema(object_open_schema("Regex match with path, line_number, and line."), "Regex matches.")),
             ],
         ),
 
         "ctool_rg_search_context" => object_schema(
             &[],
             vec![
-                ("matches", array_schema(object_open_schema("Search match with context lines."), "Search matches.")),
-                ("match_count", integer_schema("Number of matches returned.")),
+                ("root", string_schema("Resolved search root path.")),
+                ("query", string_schema("Literal query used for search.")),
+                ("total_returned", integer_schema("Number of matches returned.")),
                 ("truncated", boolean_schema("Whether results were truncated.")),
+                ("matches", array_schema(object_open_schema("Search match with path, line_number, and context lines."), "Search matches.")),
             ],
         ),
 
         "ctool_count_matches" => object_schema(
             &[],
             vec![
-                ("match_count", integer_schema("Total match count.")),
-                ("file_count", integer_schema("Number of files containing matches.")),
+                ("root", string_schema("Resolved search root path.")),
+                ("query", string_schema("Literal query or regex pattern used for counting.")),
+                ("is_regex", boolean_schema("Whether query was interpreted as a Rust regex pattern.")),
+                ("file_count", integer_schema("Number of scanned files.")),
+                ("matching_file_count", integer_schema("Number of files containing matches.")),
+                ("line_match_count", integer_schema("Number of matching lines.")),
             ],
         ),
 
         "ctool_extract_lines_matching" => object_schema(
             &[],
             vec![
-                ("lines", array_schema(object_open_schema("Extracted matching line."), "Extracted lines.")),
-                ("line_count", integer_schema("Number of lines returned.")),
+                ("root", string_schema("Resolved search root path.")),
+                ("query", string_schema("Literal query or regex pattern used for extraction.")),
+                ("is_regex", boolean_schema("Whether query was interpreted as a Rust regex pattern.")),
+                ("total_returned", integer_schema("Number of returned lines.")),
                 ("truncated", boolean_schema("Whether results were truncated.")),
+                ("lines", array_schema(object_open_schema("Extracted line with path, line_number, and line."), "Extracted lines.")),
             ],
         ),
 
@@ -665,5 +692,31 @@ mod tests {
                 spec.name
             );
         }
+    }
+    #[test]
+    fn read_tool_schemas_match_public_result_field_names() {
+        let list_schema = ctool_output_schema("ctool_list_directory");
+        assert!(list_schema["properties"].get("root").is_some());
+        assert!(list_schema["properties"].get("total_returned").is_some());
+        assert!(list_schema["properties"].get("items").is_some());
+        assert!(list_schema["properties"].get("entries").is_none());
+
+        let count_input = ctool_input_schema("ctool_count_matches");
+        assert!(count_input["properties"].get("is_regex").is_some());
+
+        let count_output = ctool_output_schema("ctool_count_matches");
+        assert!(count_output["properties"].get("matching_file_count").is_some());
+        assert!(count_output["properties"].get("line_match_count").is_some());
+        assert!(count_output["properties"].get("match_count").is_none());
+
+        let extract_input = ctool_input_schema("ctool_extract_lines_matching");
+        assert!(extract_input["properties"].get("is_regex").is_some());
+        assert!(extract_input["properties"].get("unique").is_some());
+        assert!(extract_input["properties"].get("sort").is_some());
+
+        let extract_output = ctool_output_schema("ctool_extract_lines_matching");
+        assert!(extract_output["properties"].get("total_returned").is_some());
+        assert!(extract_output["properties"].get("lines").is_some());
+        assert!(extract_output["properties"].get("line_count").is_none());
     }
 }
