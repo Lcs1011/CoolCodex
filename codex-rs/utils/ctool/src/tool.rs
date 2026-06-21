@@ -840,4 +840,85 @@ mod tests {
             "search"
         );
     }
+    #[test]
+    fn registry_specs_serialize_with_complete_machine_readable_schema() {
+        let specs = crate::registry::available_specs();
+        assert!(!specs.is_empty());
+
+        let value = serde_json::to_value(&specs).unwrap();
+        let array = value.as_array().unwrap();
+
+        assert_eq!(array.len(), specs.len());
+
+        for item in array {
+            let name = item["name"].as_str().unwrap_or_default();
+            assert!(!name.is_empty());
+
+            assert_eq!(
+                item["schema_version"].as_str(),
+                Some("2026-06-ctool-v1"),
+                "missing schema_version for {name}"
+            );
+
+            assert_eq!(
+                item["input_schema"]["type"].as_str(),
+                Some("object"),
+                "missing input_schema object type for {name}"
+            );
+
+            assert_eq!(
+                item["output_schema"]["type"].as_str(),
+                Some("object"),
+                "missing output_schema object type for {name}"
+            );
+
+            assert!(
+                item["input_schema"].get("properties").is_some(),
+                "missing input_schema.properties for {name}"
+            );
+
+            assert!(
+                item["output_schema"].get("properties").is_some(),
+                "missing output_schema.properties for {name}"
+            );
+        }
+    }
+
+    #[test]
+    fn registry_schema_exposes_tavily_search_action_enum() {
+        let specs = crate::registry::available_specs();
+        let value = serde_json::to_value(&specs).unwrap();
+        let array = value.as_array().unwrap();
+
+        let tavily = array
+            .iter()
+            .find(|item| item["name"] == "ctool_tavily_search_request")
+            .expect("ctool_tavily_search_request spec missing");
+
+        assert_eq!(
+            tavily["input_schema"]["properties"]["action"]["enum"][0],
+            "search"
+        );
+        assert_eq!(
+            tavily["output_schema"]["properties"]["action"]["enum"][0],
+            "search"
+        );
+    }
+
+    #[test]
+    fn registry_schema_exposes_exact_edit_required_fields() {
+        let specs = crate::registry::available_specs();
+        let value = serde_json::to_value(&specs).unwrap();
+        let array = value.as_array().unwrap();
+
+        let exact = array
+            .iter()
+            .find(|item| item["name"] == "ctool_edit_replace_exact")
+            .expect("ctool_edit_replace_exact spec missing");
+
+        assert_eq!(exact["input_schema"]["required"][0], "path");
+        assert_eq!(exact["input_schema"]["required"][1], "anchor");
+        assert_eq!(exact["input_schema"]["required"][2], "target");
+        assert_eq!(exact["input_schema"]["required"][3], "content");
+    }
 }
