@@ -28,6 +28,32 @@ fn config_with_token() -> TavilySearchConfig {
         ..Default::default()
     }
 }
+fn test_root(name: &str) -> std::path::PathBuf {
+    let root = std::env::temp_dir().join(format!(
+        "ctool_tavily_search_request_tests_{}_{}",
+        name,
+        std::process::id()
+    ));
+    let _ = std::fs::remove_dir_all(&root);
+    std::fs::create_dir_all(&root).unwrap();
+    root
+}
+
+fn test_context(name: &str) -> crate::context::CToolContext {
+    let root = test_root(name);
+    let launcher_dir = root.join("launcher");
+    let character_root = root.join("character");
+    std::fs::create_dir_all(launcher_dir.join(".cool-system")).unwrap();
+    std::fs::create_dir_all(&character_root).unwrap();
+
+    crate::context::CToolContext::from_launcher_dir(
+        &launcher_dir,
+        &character_root,
+        crate::scope::CToolScopeBase::None,
+        None,
+    )
+    .unwrap()
+}
 
 #[test]
 fn missing_system_token_blocks_network_actions() {
@@ -253,6 +279,62 @@ fn appends_deduplicated_nested_image_urls() {
     );
 }
 
+#[test]
+fn search_without_token_tool_output_is_blocked_and_writes_audit_files() {
+    let ctx = test_context("search_without_token_output");
+
+    let output = run_tavily_search_request(
+        &ctx,
+        CToolTavilySearchRequestInput {
+            action: CToolTavilyAction::Search,
+            query: Some("rust cargo workspace".to_string()),
+            url: None,
+            source_file: None,
+            target: None,
+            file_name_hint: Some("rust_cargo_workspace".to_string()),
+            yellow_confirmation: None,
+            red_first_confirmation: None,
+            red_second_confirmation: None,
+        },
+    )
+    .unwrap();
+
+    assert!(!output.will_execute);
+    assert!(!output.executed);
+    assert!(output.blocked);
+    assert!(!output.rejected);
+    assert_eq!(output.current_dir, ctx.scope_context.cool_workspace.display().to_string());
+    assert_eq!(output.action, "search");
+    assert_eq!(output.final_risk, "BLOCKED");
+    assert!(output.output_file.ends_with("00000_search_rust_cargo_workspace.md"));
+    assert!(output.log_file.ends_with("request_log.md"));
+    assert_eq!(output.user_feedback, None);
+    assert!(output.note.contains("Blocked Tavily request"));
+
+    let result_text = std::fs::read_to_string(&output.output_file).unwrap();
+    assert!(result_text.contains("# Tavily Search Request Result"));
+    assert!(result_text.contains("Kind: Blocked"));
+    assert!(result_text.contains("Status: Blocked"));
+    assert!(result_text.contains("## Query"));
+    assert!(result_text.contains("rust cargo workspace"));
+    assert!(result_text.contains("missing enabled Tavily token in system config"));
+    assert!(result_text.contains("No Tavily request was sent."));
+    assert!(!result_text.contains("tvly-"));
+    assert!(!result_text.contains("api_key"));
+
+    let log_text = std::fs::read_to_string(&output.log_file).unwrap();
+    assert!(log_text.contains("# Tavily Search Request Log"));
+    assert!(log_text.contains("Action: search"));
+    assert!(log_text.contains("Risk: BLOCKED"));
+    assert!(log_text.contains("Approved: No"));
+    assert!(log_text.contains("Status: Blocked"));
+    assert!(log_text.contains("Query:"));
+    assert!(log_text.contains("rust cargo workspace"));
+    assert!(log_text.contains("Output:"));
+    assert!(log_text.contains("00000_search_rust_cargo_workspace.md"));
+    assert!(!log_text.contains("tvly-"));
+    assert!(!log_text.contains("api_key"));
+}
 #[test]
 fn slug_falls_back_for_symbol_only_text() {
     assert_eq!(slugify("!!!"), "tavily_request");
