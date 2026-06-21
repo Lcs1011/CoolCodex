@@ -324,6 +324,7 @@ pub fn ctool_output_schema(name: &str) -> Value {
                 ("display_text", string_schema("Human-readable preview text.")),
             ],
         ),
+
         "ctool_tavily_search_request" => object_schema(
             &[],
             vec![
@@ -338,7 +339,181 @@ pub fn ctool_output_schema(name: &str) -> Value {
                 ("summary", string_schema("Short summary from cached Markdown.")),
             ],
         ),
-        _ => object_open_schema("Tool output object. See concrete tool result fields for exact details."),
+
+        "ctool_list_directory" => object_schema(
+            &[],
+            vec![
+                ("path", string_schema("Resolved directory path.")),
+                ("entries", array_schema(object_open_schema("Directory entry."), "Directory entries.")),
+                ("truncated", boolean_schema("Whether results were truncated.")),
+            ],
+        ),
+
+        "ctool_rg_search" | "ctool_regex_search" => object_schema(
+            &[],
+            vec![
+                ("matches", array_schema(object_open_schema("Search match."), "Search matches.")),
+                ("match_count", integer_schema("Number of matches returned.")),
+                ("truncated", boolean_schema("Whether results were truncated.")),
+            ],
+        ),
+
+        "ctool_rg_search_context" => object_schema(
+            &[],
+            vec![
+                ("matches", array_schema(object_open_schema("Search match with context lines."), "Search matches.")),
+                ("match_count", integer_schema("Number of matches returned.")),
+                ("truncated", boolean_schema("Whether results were truncated.")),
+            ],
+        ),
+
+        "ctool_count_matches" => object_schema(
+            &[],
+            vec![
+                ("match_count", integer_schema("Total match count.")),
+                ("file_count", integer_schema("Number of files containing matches.")),
+            ],
+        ),
+
+        "ctool_extract_lines_matching" => object_schema(
+            &[],
+            vec![
+                ("lines", array_schema(object_open_schema("Extracted matching line."), "Extracted lines.")),
+                ("line_count", integer_schema("Number of lines returned.")),
+                ("truncated", boolean_schema("Whether results were truncated.")),
+            ],
+        ),
+
+        "ctool_read_file" => object_schema(
+            &[],
+            vec![
+                ("path", string_schema("Resolved file path.")),
+                ("byte_len", integer_schema("File byte length.")),
+                ("truncated", boolean_schema("Whether content was truncated.")),
+                ("content", string_schema("UTF-8 file content.")),
+            ],
+        ),
+
+        "ctool_read_code_range" => object_schema(
+            &[],
+            vec![
+                ("path", string_schema("Resolved file path.")),
+                ("start_line", integer_schema("1-based inclusive start line.")),
+                ("end_line", integer_schema("1-based inclusive end line.")),
+                ("content", string_schema("UTF-8 code range content.")),
+            ],
+        ),
+
+        "ctool_tail_file" => object_schema(
+            &[],
+            vec![
+                ("path", string_schema("Resolved file path.")),
+                ("line_count", integer_schema("Number of returned lines.")),
+                ("content", string_schema("Trailing UTF-8 file content.")),
+            ],
+        ),
+
+        "ctool_edit_replace" | "ctool_edit_insert" => object_schema(
+            &[],
+            vec![
+                ("path", string_schema("Edited file path.")),
+                ("changed", boolean_schema("Whether file content changed.")),
+                ("old_content", string_schema("Previous file content or affected region when available.")),
+                ("new_content", string_schema("New file content or affected region when available.")),
+            ],
+        ),
+
+        "ctool_preview_diff" => object_schema(
+            &[],
+            vec![
+                ("path", string_schema("Target file path.")),
+                ("diff", string_schema("Unified diff preview.")),
+                ("changed", boolean_schema("Whether operation would change the file.")),
+            ],
+        ),
+
+        "ctool_edit_batch" => object_schema(
+            &[],
+            vec![
+                ("outputs", array_schema(object_open_schema("One edit operation output."), "Batch edit outputs.")),
+                ("changed", boolean_schema("Whether any operation changed content.")),
+            ],
+        ),
+
+        "ctool_edit_replace_exact"
+        | "ctool_edit_insert_before_exact"
+        | "ctool_edit_insert_after_exact"
+        | "ctool_edit_remove_exact" => object_schema(
+            &[],
+            vec![
+                ("path", string_schema("Edited file path.")),
+                ("changed", boolean_schema("Whether file content changed.")),
+                ("anchor_line", integer_schema("1-based line containing the unique anchor, when available.")),
+                ("target_line", integer_schema("1-based line containing the target, when available.")),
+            ],
+        ),
+
+        "ctool_annotate_markdown" => object_schema(
+            &[],
+            vec![
+                ("path", string_schema("Annotated Markdown file path.")),
+                ("changed", boolean_schema("Whether file content changed.")),
+                ("annotation_count", integer_schema("Number of inserted annotations.")),
+            ],
+        ),
+
+        "ctool_create_file" => object_schema(
+            &[],
+            vec![
+                ("path", string_schema("Created file path.")),
+                ("byte_len", integer_schema("Written byte length.")),
+                ("overwritten", boolean_schema("Whether an existing file was overwritten.")),
+            ],
+        ),
+
+        "ctool_delete_file" => object_schema(
+            &[],
+            vec![
+                ("path", string_schema("Deleted file path.")),
+                ("deleted", boolean_schema("Whether file was deleted.")),
+            ],
+        ),
+
+        "ctool_move_file" => object_schema(
+            &[],
+            vec![
+                ("from", string_schema("Resolved source file path.")),
+                ("to", string_schema("Resolved destination file path.")),
+                ("moved", boolean_schema("Whether file was moved.")),
+            ],
+        ),
+
+        "ctool_create_directory" => object_schema(
+            &[],
+            vec![
+                ("path", string_schema("Created directory path.")),
+                ("created", boolean_schema("Whether directory was newly created.")),
+            ],
+        ),
+
+        "ctool_delete_directory" => object_schema(
+            &[],
+            vec![
+                ("path", string_schema("Deleted directory path.")),
+                ("deleted", boolean_schema("Whether directory was deleted.")),
+            ],
+        ),
+
+        "ctool_move_directory" => object_schema(
+            &[],
+            vec![
+                ("from", string_schema("Resolved source directory path.")),
+                ("to", string_schema("Resolved destination directory path.")),
+                ("moved", boolean_schema("Whether directory was moved.")),
+            ],
+        ),
+
+        _ => object_open_schema("Unknown CTool output schema."),
     }
 }
 
@@ -458,5 +633,37 @@ mod tests {
         assert_eq!(schema["required"][1], "anchor");
         assert_eq!(schema["required"][2], "target");
         assert_eq!(schema["required"][3], "content");
+    }
+    #[test]
+    fn all_registered_tools_have_machine_readable_schemas() {
+        for spec in crate::registry::available_specs() {
+            let input_schema = ctool_input_schema(spec.name);
+            let output_schema = ctool_output_schema(spec.name);
+
+            assert_eq!(
+                input_schema.get("type").and_then(Value::as_str),
+                Some("object"),
+                "input schema missing object type for {}",
+                spec.name
+            );
+            assert_eq!(
+                output_schema.get("type").and_then(Value::as_str),
+                Some("object"),
+                "output schema missing object type for {}",
+                spec.name
+            );
+            assert_ne!(
+                input_schema.get("description").and_then(Value::as_str),
+                Some("Unknown CTool input schema."),
+                "missing input schema for {}",
+                spec.name
+            );
+            assert_ne!(
+                output_schema.get("description").and_then(Value::as_str),
+                Some("Unknown CTool output schema."),
+                "missing output schema for {}",
+                spec.name
+            );
+        }
     }
 }
