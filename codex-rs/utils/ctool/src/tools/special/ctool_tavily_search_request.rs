@@ -541,6 +541,12 @@ fn classify_tavily_request(
             reason: format!("unsupported Tavily search provider: {}", config.provider),
         };
     }
+    if input.action != CToolTavilyAction::Search {
+        return TavilyRequestPlan {
+            risk: CToolCommandRisk::Blocked,
+            reason: "ctool_tavily_search_request v1 only supports text search".to_string(),
+        };
+    }
     if action_disabled(input.action, config) {
         return TavilyRequestPlan {
             risk: CToolCommandRisk::Blocked,

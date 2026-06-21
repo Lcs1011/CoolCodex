@@ -155,7 +155,7 @@ fn token_fallback_statuses_are_retryable() {
     assert!(!should_try_next_tavily_token(reqwest::StatusCode::BAD_REQUEST));
 }
 #[test]
-fn image_search_is_red_when_enabled() {
+fn image_search_is_blocked_in_v1_even_when_config_enabled() {
     let config = TavilySearchConfig {
         allow_image_search: true,
         ..config_with_token()
@@ -163,16 +163,22 @@ fn image_search_is_red_when_enabled() {
 
     let plan = classify_tavily_request(&input(CToolTavilyAction::SearchWithImages), &config);
 
-    assert_eq!(plan.risk, CToolCommandRisk::Red);
-    assert_eq!(plan.reason, "image search requires red confirmation");
+    assert_eq!(plan.risk, CToolCommandRisk::Blocked);
+    assert_eq!(
+        plan.reason,
+        "ctool_tavily_search_request v1 only supports text search"
+    );
 }
 
 #[test]
-fn extract_is_yellow_when_otherwise_allowed() {
+fn extract_is_blocked_in_v1() {
     let plan = classify_tavily_request(&input(CToolTavilyAction::Extract), &config_with_token());
 
-    assert_eq!(plan.risk, CToolCommandRisk::Yellow);
-    assert_eq!(plan.reason, "extract fetches external page content");
+    assert_eq!(plan.risk, CToolCommandRisk::Blocked);
+    assert_eq!(
+        plan.reason,
+        "ctool_tavily_search_request v1 only supports text search"
+    );
 }
 
 #[test]
@@ -190,7 +196,7 @@ fn local_file_upload_request_is_blocked() {
 }
 
 #[test]
-fn large_extract_request_is_red() {
+fn large_extract_request_is_blocked_in_v1() {
     let mut request = input(CToolTavilyAction::Extract);
     request.query = None;
     request.url = Some("https://example.test/full-page".to_string());
@@ -198,15 +204,15 @@ fn large_extract_request_is_red() {
 
     let plan = classify_tavily_request(&request, &config_with_token());
 
-    assert_eq!(plan.risk, CToolCommandRisk::Red);
+    assert_eq!(plan.risk, CToolCommandRisk::Blocked);
     assert_eq!(
         plan.reason,
-        "extract appears to request large external page content"
+        "ctool_tavily_search_request v1 only supports text search"
     );
 }
 
 #[test]
-fn blocked_image_formats_are_blocked() {
+fn image_formats_are_blocked_by_v1_before_image_format_policy() {
     let config = TavilySearchConfig {
         allow_image_search: true,
         ..config_with_token()
@@ -219,7 +225,7 @@ fn blocked_image_formats_are_blocked() {
     assert_eq!(plan.risk, CToolCommandRisk::Blocked);
     assert_eq!(
         plan.reason,
-        "image search requested blocked image format: .svg"
+        "ctool_tavily_search_request v1 only supports text search"
     );
 }
 
