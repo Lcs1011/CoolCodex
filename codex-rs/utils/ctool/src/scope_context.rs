@@ -10,6 +10,7 @@ use crate::scope_config::CToolScopeRuleSet;
 use crate::scope_config::empty_scope_config;
 use crate::scope_config::load_optional_cool_character_config;
 use crate::scope_config::load_optional_cool_config;
+use crate::scope_config::locate_cool_character_root;
 use crate::scope_config::locate_cool_command_path;
 use crate::scope_config::locate_cool_config_path;
 use crate::scope_config::locate_cool_dir;
@@ -19,6 +20,8 @@ use crate::scope_config::locate_cool_system_config_path;
 use crate::scope_config::locate_cool_system_dir;
 use crate::scope_config::locate_cool_system_dir_from_launcher;
 use crate::scope_config::locate_cool_system_scope_path;
+use crate::scope_config::locate_cool_workspace_from_env;
+use crate::scope_config::locate_ctool_scope_base;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CToolScopeContext {
@@ -43,9 +46,15 @@ pub fn build_ctool_scope_context(
     fallback_base_scope: CToolScopeBase,
     legacy_system_config_path: Option<PathBuf>,
 ) -> CToolResult<CToolScopeContext> {
+    let current_dir = canonicalize_existing_path(current_dir.as_ref())?;
+    let character_root = match locate_cool_character_root() {
+        Some(path) => canonicalize_existing_path(path)?,
+        None => current_dir.clone(),
+    };
+
     build_ctool_scope_context_with_launcher(
-        current_dir.as_ref(),
-        current_dir.as_ref(),
+        &current_dir,
+        character_root,
         fallback_base_scope,
         legacy_system_config_path,
     )
@@ -64,9 +73,14 @@ pub fn build_ctool_scope_context_with_launcher(
     let character_command_path = locate_cool_command_path(&character_root);
 
     let character_config = load_optional_cool_character_config(&character_config_path)?;
-    let base_scope = character_config.scope_base.unwrap_or(fallback_base_scope);
+    let env_scope_base = locate_ctool_scope_base()?;
+    let base_scope = character_config
+        .scope_base
+        .or(env_scope_base)
+        .unwrap_or(fallback_base_scope);
 
-    let cool_workspace = match character_config.cool_workspace {
+    let env_cool_workspace = locate_cool_workspace_from_env();
+    let cool_workspace = match character_config.cool_workspace.or(env_cool_workspace) {
         Some(path) if path.is_absolute() => canonicalize_existing_path(path)?,
         Some(path) => canonicalize_existing_path(character_root.join(path))?,
         None => character_root.clone(),
@@ -92,7 +106,7 @@ pub fn build_ctool_scope_context_with_launcher(
     };
 
     Ok(CToolScopeContext {
-        current_dir: character_root.clone(),
+        current_dir: cool_workspace.clone(),
         character_root,
         cool_workspace,
         base_scope,

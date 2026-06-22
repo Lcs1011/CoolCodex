@@ -19,6 +19,9 @@ pub const SCOPE_FILE_NAME: &str = "scope.toml";
 pub const COMMAND_FILE_NAME: &str = "command.toml";
 pub const COOL_SYSTEM_DIR_ENV: &str = "COOL_SYSTEM_DIR";
 pub const COOL_SYSTEM_CONFIG_ENV: &str = "COOL_SYSTEM_CONFIG";
+pub const COOL_CHARACTER_ROOT_ENV: &str = "COOL_CHARACTER_ROOT";
+pub const COOL_WORKSPACE_ENV: &str = "COOL_WORKSPACE";
+pub const CTOOL_SCOPE_BASE_ENV: &str = "CTOOL_SCOPE_BASE";
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct CToolCharacterConfig {
@@ -156,6 +159,37 @@ pub fn locate_legacy_cool_system_config_path() -> Option<PathBuf> {
         None
     } else {
         Some(PathBuf::from(value))
+    }
+}
+fn locate_nonempty_env_path(name: &str) -> Option<PathBuf> {
+    let value = env::var(name).ok()?;
+    let value = value.trim();
+
+    if value.is_empty() {
+        None
+    } else {
+        Some(PathBuf::from(value))
+    }
+}
+
+pub fn locate_cool_character_root() -> Option<PathBuf> {
+    locate_nonempty_env_path(COOL_CHARACTER_ROOT_ENV)
+}
+
+pub fn locate_cool_workspace_from_env() -> Option<PathBuf> {
+    locate_nonempty_env_path(COOL_WORKSPACE_ENV)
+}
+
+pub fn locate_ctool_scope_base() -> CToolResult<Option<CToolScopeBase>> {
+    let Ok(value) = env::var(CTOOL_SCOPE_BASE_ENV) else {
+        return Ok(None);
+    };
+    let value = value.trim();
+
+    if value.is_empty() {
+        Ok(None)
+    } else {
+        parse_scope_base(value).map(Some)
     }
 }
 
