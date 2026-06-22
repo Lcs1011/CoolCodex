@@ -66,7 +66,7 @@ fn readonly_file_cannot_be_annotated_even_when_allow_readonly_is_true() {
     std::fs::write(&path, "alpha beta").unwrap();
 
     let mut scope_context = test_scope_context(&root);
-    scope_context.base_scope = CToolScopeBase::None;
+    scope_context.base_scope = CToolScopeBase::CoolWorkspace;
     scope_context.user_config.files.readonly = vec![path.clone()];
     let ctx = CToolContext::new(scope_context);
 
@@ -104,7 +104,7 @@ fn readwrite_file_can_be_annotated() {
     std::fs::write(&path, "alpha beta").unwrap();
 
     let mut scope_context = test_scope_context(&root);
-    scope_context.base_scope = CToolScopeBase::None;
+    scope_context.base_scope = CToolScopeBase::CoolWorkspace;
     scope_context.user_config.files.readwrite = vec![path.clone()];
     let ctx = CToolContext::new(scope_context);
 
