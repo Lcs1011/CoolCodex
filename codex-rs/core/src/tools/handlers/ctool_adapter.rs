@@ -1,5 +1,3 @@
-use std::collections::BTreeMap;
-
 use crate::function_tool::FunctionCallError;
 use crate::tools::context::FunctionToolOutput;
 use crate::tools::context::ToolInvocation;
@@ -7,11 +5,10 @@ use crate::tools::context::ToolPayload;
 use crate::tools::context::boxed_tool_output;
 use crate::tools::registry::CoreToolRuntime;
 use crate::tools::registry::ToolExecutor;
-use codex_tools::AdditionalProperties;
-use codex_tools::JsonSchema;
 use codex_tools::ResponsesApiTool;
 use codex_tools::ToolName;
 use codex_tools::ToolSpec;
+use codex_tools::parse_tool_input_schema_without_compaction;
 use serde_json::Value;
 use serde_json::json;
 
@@ -92,23 +89,19 @@ impl CoreToolRuntime for CToolHandler {}
 
 fn create_ctool_tool_spec(name: &str, base_description: &str) -> ToolSpec {
     let description = ctool_description(name, base_description);
+    let input_schema = ctool::ctool_input_schema(name);
+    let parameters = parse_tool_input_schema_without_compaction(&input_schema)
+        .unwrap_or_else(|error| panic!("invalid CTool input schema for {name}: {error}"));
+    let output_schema = ctool::ctool_output_schema(name);
 
     ToolSpec::Function(ResponsesApiTool {
         name: name.to_string(),
         description,
         strict: false,
         defer_loading: None,
-        parameters: generic_object_schema(),
-        output_schema: None,
+        parameters,
+        output_schema: Some(output_schema),
     })
-}
-
-fn generic_object_schema() -> JsonSchema {
-    JsonSchema::object(
-        BTreeMap::new(),
-        None,
-        Some(AdditionalProperties::from(true)),
-    )
 }
 
 fn ctool_description(name: &str, base_description: &str) -> String {
@@ -417,4 +410,45 @@ Moves or renames one directory. Overwrite is never allowed."#
         Codex native shell/apply_patch/read/write/search tools are disabled.\n\n\
         {usage}"
     )
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn ctool_specs_use_machine_readable_input_and_output_schemas() {
+        let spec = create_ctool_tool_spec("ctool_tavily_search_request", "Controlled search.");
+        let ToolSpec::Function(tool) = spec else {
+            panic!("expected CTool spec to be a function tool");
+        };
+
+        let properties = tool
+            .parameters
+            .properties
+            .as_ref()
+            .expect("CTool input schema should expose properties");
+        assert!(properties.contains_key("action"));
+
+        let required = tool
+            .parameters
+            .required
+            .as_ref()
+            .expect("CTool input schema should expose required fields");
+        assert!(required.contains(&"action".to_string()));
+
+        let output_schema = tool
+            .output_schema
+            .as_ref()
+            .expect("CTool output schema should be attached");
+        assert_eq!(
+            output_schema.get("type").and_then(Value::as_str),
+            Some("object")
+        );
+        assert!(
+            output_schema
+                .get("properties")
+                .and_then(Value::as_object)
+                .is_some_and(|properties| properties.contains_key("final_risk"))
+        );
+    }
 }
