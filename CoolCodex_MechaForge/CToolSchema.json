@@ -1,0 +1,1725 @@
+[
+  {
+    "name": "ctool_command_request",
+    "description": "Preview and optionally execute a controlled command request using GREEN / YELLOW / RED / BLOCKED policy.",
+    "schema_version": "2026-06-ctool-v1",
+    "input_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "ai_risk_upgrade": {
+          "description": "Optional AI-side risk upgrade. Cannot lower system risk.",
+          "enum": [
+            "green",
+            "yellow",
+            "red",
+            "blocked"
+          ],
+          "type": "string"
+        },
+        "commands": {
+          "description": "Ordered command list. Each command is evaluated by command.toml and hard-risk rules.",
+          "items": {
+            "description": "Command line to preview and possibly execute.",
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "reason": {
+          "description": "Optional request reason shown in audit output.",
+          "type": "string"
+        },
+        "red_first_confirmation": {
+          "description": "Required first confirmation only when final risk is RED.",
+          "type": "string"
+        },
+        "red_second_confirmation": {
+          "description": "Required second confirmation only when final risk is RED.",
+          "type": "string"
+        },
+        "yellow_confirmation": {
+          "description": "Required only when final risk is YELLOW and user approves or rejects.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "commands"
+      ],
+      "type": "object"
+    },
+    "output_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "ai_risk_upgrade": {
+          "description": "Optional AI-side risk upgrade.",
+          "enum": [
+            "GREEN",
+            "YELLOW",
+            "RED",
+            "BLOCKED"
+          ],
+          "type": "string"
+        },
+        "all_success": {
+          "description": "Whether all executed commands exited successfully. Null when not executed.",
+          "type": "boolean"
+        },
+        "approval_required": {
+          "description": "Approval mode: auto, once, twice, or blocked.",
+          "type": "string"
+        },
+        "banner": {
+          "description": "Human-readable risk banner.",
+          "type": "string"
+        },
+        "blocked": {
+          "description": "Whether the request was blocked.",
+          "type": "boolean"
+        },
+        "command_count": {
+          "description": "Number of requested commands.",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "commands": {
+          "description": "Per-command risk preview list.",
+          "items": {
+            "additionalProperties": true,
+            "description": "Command preview item with command, risk, and reason.",
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "current_dir": {
+          "description": "Command execution current directory.",
+          "type": "string"
+        },
+        "display_text": {
+          "description": "Human-readable preview text.",
+          "type": "string"
+        },
+        "executed": {
+          "description": "Whether commands executed.",
+          "type": "boolean"
+        },
+        "final_risk": {
+          "description": "Final risk after all rules.",
+          "enum": [
+            "GREEN",
+            "YELLOW",
+            "RED",
+            "BLOCKED"
+          ],
+          "type": "string"
+        },
+        "log_file": {
+          "description": "Optional audit log file path.",
+          "type": "string"
+        },
+        "note": {
+          "description": "Human-readable execution/block/rejection note.",
+          "type": "string"
+        },
+        "rejected": {
+          "description": "Whether the user rejected confirmation.",
+          "type": "boolean"
+        },
+        "request_reason": {
+          "description": "Optional user/AI reason for the request.",
+          "type": "string"
+        },
+        "result_file": {
+          "description": "Optional Markdown result file path.",
+          "type": "string"
+        },
+        "system_risk": {
+          "description": "Risk before AI-side upgrade.",
+          "enum": [
+            "GREEN",
+            "YELLOW",
+            "RED",
+            "BLOCKED"
+          ],
+          "type": "string"
+        },
+        "user_feedback": {
+          "description": "Optional rejection feedback from user confirmation input.",
+          "type": "string"
+        },
+        "will_execute": {
+          "description": "Whether the request will execute in this call.",
+          "type": "boolean"
+        }
+      },
+      "required": [],
+      "type": "object"
+    }
+  },
+  {
+    "name": "ctool_list_directory",
+    "description": "List directory entries inside CToolScopeBase.",
+    "schema_version": "2026-06-ctool-v1",
+    "input_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "include_hidden": {
+          "description": "Whether to include hidden files and directories.",
+          "type": "boolean"
+        },
+        "max_depth": {
+          "description": "Maximum recursion depth. Hard capped by tool.",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "max_entries": {
+          "description": "Maximum returned entries. Hard capped by tool.",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "path": {
+          "description": "Directory path inside current CToolScopeBase.",
+          "format": "path",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path"
+      ],
+      "type": "object"
+    },
+    "output_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "items": {
+          "description": "Directory entries.",
+          "items": {
+            "additionalProperties": true,
+            "description": "Directory entry with path, kind, and optional byte_len.",
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "root": {
+          "description": "Resolved directory root path.",
+          "type": "string"
+        },
+        "total_returned": {
+          "description": "Number of returned entries.",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "truncated": {
+          "description": "Whether results were truncated.",
+          "type": "boolean"
+        }
+      },
+      "required": [],
+      "type": "object"
+    }
+  },
+  {
+    "name": "ctool_rg_search",
+    "description": "Search UTF-8 text files inside CToolScopeBase using a literal query.",
+    "schema_version": "2026-06-ctool-v1",
+    "input_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "case_sensitive": {
+          "description": "Whether matching is case-sensitive.",
+          "type": "boolean"
+        },
+        "include_hidden": {
+          "description": "Whether to search hidden files and directories.",
+          "type": "boolean"
+        },
+        "max_depth": {
+          "description": "Maximum directory recursion depth.",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "max_results": {
+          "description": "Maximum returned matches.",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "path": {
+          "description": "Directory or file path inside current CToolScopeBase.",
+          "format": "path",
+          "type": "string"
+        },
+        "query": {
+          "description": "Literal text query searched across UTF-8 files.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "query"
+      ],
+      "type": "object"
+    },
+    "output_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "matches": {
+          "description": "Search matches.",
+          "items": {
+            "additionalProperties": true,
+            "description": "Search match with path, line_number, and line.",
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "query": {
+          "description": "Literal query used for search.",
+          "type": "string"
+        },
+        "root": {
+          "description": "Resolved search root path.",
+          "type": "string"
+        },
+        "total_returned": {
+          "description": "Number of matches returned.",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "truncated": {
+          "description": "Whether results were truncated.",
+          "type": "boolean"
+        }
+      },
+      "required": [],
+      "type": "object"
+    }
+  },
+  {
+    "name": "ctool_read_code_range",
+    "description": "Read a specific inclusive line range from a UTF-8 text file inside CToolScopeBase.",
+    "schema_version": "2026-06-ctool-v1",
+    "input_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "end_line": {
+          "description": "1-based inclusive end line.",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "path": {
+          "description": "UTF-8 text file path inside current CToolScopeBase.",
+          "format": "path",
+          "type": "string"
+        },
+        "start_line": {
+          "description": "1-based inclusive start line.",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "path",
+        "start_line",
+        "end_line"
+      ],
+      "type": "object"
+    },
+    "output_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "content": {
+          "description": "UTF-8 code range content.",
+          "type": "string"
+        },
+        "end_line": {
+          "description": "1-based inclusive end line.",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "path": {
+          "description": "Resolved file path.",
+          "type": "string"
+        },
+        "start_line": {
+          "description": "1-based inclusive start line.",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [],
+      "type": "object"
+    }
+  },
+  {
+    "name": "ctool_read_file",
+    "description": "Read a small UTF-8 text file inside CToolScopeBase.",
+    "schema_version": "2026-06-ctool-v1",
+    "input_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "max_bytes": {
+          "description": "Maximum bytes to read. Hard capped by tool.",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "path": {
+          "description": "UTF-8 text file path inside current CToolScopeBase.",
+          "format": "path",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path"
+      ],
+      "type": "object"
+    },
+    "output_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "byte_len": {
+          "description": "File byte length.",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "content": {
+          "description": "UTF-8 file content.",
+          "type": "string"
+        },
+        "path": {
+          "description": "Resolved file path.",
+          "type": "string"
+        },
+        "truncated": {
+          "description": "Whether content was truncated.",
+          "type": "boolean"
+        }
+      },
+      "required": [],
+      "type": "object"
+    }
+  },
+  {
+    "name": "ctool_tail_file",
+    "description": "Read the tail of a UTF-8 text file inside CToolScopeBase.",
+    "schema_version": "2026-06-ctool-v1",
+    "input_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "line_count": {
+          "description": "Number of trailing lines to read.",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "path": {
+          "description": "UTF-8 text file path inside current CToolScopeBase.",
+          "format": "path",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path"
+      ],
+      "type": "object"
+    },
+    "output_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "content": {
+          "description": "Trailing UTF-8 file content.",
+          "type": "string"
+        },
+        "line_count": {
+          "description": "Number of returned lines.",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "path": {
+          "description": "Resolved file path.",
+          "type": "string"
+        }
+      },
+      "required": [],
+      "type": "object"
+    }
+  },
+  {
+    "name": "ctool_rg_search_context",
+    "description": "Search literal text and return surrounding UTF-8 line context inside CToolScopeBase.",
+    "schema_version": "2026-06-ctool-v1",
+    "input_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "after": {
+          "description": "Number of context lines after each match.",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "before": {
+          "description": "Number of context lines before each match.",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "case_sensitive": {
+          "description": "Whether matching is case-sensitive.",
+          "type": "boolean"
+        },
+        "include_hidden": {
+          "description": "Whether to search hidden files and directories.",
+          "type": "boolean"
+        },
+        "max_depth": {
+          "description": "Maximum directory recursion depth.",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "max_results": {
+          "description": "Maximum returned matches.",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "path": {
+          "description": "Directory or file path inside current CToolScopeBase.",
+          "format": "path",
+          "type": "string"
+        },
+        "query": {
+          "description": "Literal text query searched across UTF-8 files.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "query"
+      ],
+      "type": "object"
+    },
+    "output_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "matches": {
+          "description": "Search matches.",
+          "items": {
+            "additionalProperties": true,
+            "description": "Search match with path, line_number, and context lines.",
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "query": {
+          "description": "Literal query used for search.",
+          "type": "string"
+        },
+        "root": {
+          "description": "Resolved search root path.",
+          "type": "string"
+        },
+        "total_returned": {
+          "description": "Number of matches returned.",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "truncated": {
+          "description": "Whether results were truncated.",
+          "type": "boolean"
+        }
+      },
+      "required": [],
+      "type": "object"
+    }
+  },
+  {
+    "name": "ctool_regex_search",
+    "description": "Search UTF-8 text files with a Rust regex inside CToolScopeBase.",
+    "schema_version": "2026-06-ctool-v1",
+    "input_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "case_sensitive": {
+          "description": "Whether matching is case-sensitive.",
+          "type": "boolean"
+        },
+        "include_hidden": {
+          "description": "Whether to search hidden files and directories.",
+          "type": "boolean"
+        },
+        "max_depth": {
+          "description": "Maximum directory recursion depth.",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "max_results": {
+          "description": "Maximum returned matches.",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "path": {
+          "description": "Directory or file path inside current CToolScopeBase.",
+          "format": "path",
+          "type": "string"
+        },
+        "pattern": {
+          "description": "Rust regex pattern searched across UTF-8 files.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "pattern"
+      ],
+      "type": "object"
+    },
+    "output_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "matches": {
+          "description": "Regex matches.",
+          "items": {
+            "additionalProperties": true,
+            "description": "Regex match with path, line_number, and line.",
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "pattern": {
+          "description": "Rust regex pattern used for search.",
+          "type": "string"
+        },
+        "root": {
+          "description": "Resolved search root path.",
+          "type": "string"
+        },
+        "total_returned": {
+          "description": "Number of matches returned.",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "truncated": {
+          "description": "Whether results were truncated.",
+          "type": "boolean"
+        }
+      },
+      "required": [],
+      "type": "object"
+    }
+  },
+  {
+    "name": "ctool_count_matches",
+    "description": "Count matching UTF-8 text lines inside CToolScopeBase without returning every line.",
+    "schema_version": "2026-06-ctool-v1",
+    "input_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "case_sensitive": {
+          "description": "Whether matching is case-sensitive.",
+          "type": "boolean"
+        },
+        "include_hidden": {
+          "description": "Whether to search hidden files and directories.",
+          "type": "boolean"
+        },
+        "is_regex": {
+          "description": "Whether query is interpreted as a Rust regex pattern.",
+          "type": "boolean"
+        },
+        "max_depth": {
+          "description": "Maximum directory recursion depth.",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "path": {
+          "description": "Directory or file path inside current CToolScopeBase.",
+          "format": "path",
+          "type": "string"
+        },
+        "query": {
+          "description": "Literal text or regex pattern to count.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "query"
+      ],
+      "type": "object"
+    },
+    "output_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "file_count": {
+          "description": "Number of scanned files.",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "is_regex": {
+          "description": "Whether query was interpreted as a Rust regex pattern.",
+          "type": "boolean"
+        },
+        "line_match_count": {
+          "description": "Number of matching lines.",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "matching_file_count": {
+          "description": "Number of files containing matches.",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "query": {
+          "description": "Literal query or regex pattern used for counting.",
+          "type": "string"
+        },
+        "root": {
+          "description": "Resolved search root path.",
+          "type": "string"
+        }
+      },
+      "required": [],
+      "type": "object"
+    }
+  },
+  {
+    "name": "ctool_extract_lines_matching",
+    "description": "Extract matching UTF-8 text lines inside CToolScopeBase, with optional unique/sort cleanup.",
+    "schema_version": "2026-06-ctool-v1",
+    "input_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "case_sensitive": {
+          "description": "Whether matching is case-sensitive.",
+          "type": "boolean"
+        },
+        "include_hidden": {
+          "description": "Whether to search hidden files and directories.",
+          "type": "boolean"
+        },
+        "is_regex": {
+          "description": "Whether query is interpreted as a Rust regex pattern.",
+          "type": "boolean"
+        },
+        "max_depth": {
+          "description": "Maximum directory recursion depth.",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "max_results": {
+          "description": "Maximum returned lines.",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "path": {
+          "description": "Directory or file path inside current CToolScopeBase.",
+          "format": "path",
+          "type": "string"
+        },
+        "query": {
+          "description": "Literal text or regex pattern used to extract matching lines.",
+          "type": "string"
+        },
+        "sort": {
+          "description": "Whether extracted lines are sorted.",
+          "type": "boolean"
+        },
+        "unique": {
+          "description": "Whether duplicate extracted lines are removed.",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "path",
+        "query"
+      ],
+      "type": "object"
+    },
+    "output_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "is_regex": {
+          "description": "Whether query was interpreted as a Rust regex pattern.",
+          "type": "boolean"
+        },
+        "lines": {
+          "description": "Extracted lines.",
+          "items": {
+            "additionalProperties": true,
+            "description": "Extracted line with path, line_number, and line.",
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "query": {
+          "description": "Literal query or regex pattern used for extraction.",
+          "type": "string"
+        },
+        "root": {
+          "description": "Resolved search root path.",
+          "type": "string"
+        },
+        "total_returned": {
+          "description": "Number of returned lines.",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "truncated": {
+          "description": "Whether results were truncated.",
+          "type": "boolean"
+        }
+      },
+      "required": [],
+      "type": "object"
+    }
+  },
+  {
+    "name": "ctool_edit_replace",
+    "description": "Replace one exact text occurrence in a UTF-8 file inside CToolScopeBase.",
+    "schema_version": "2026-06-ctool-v1",
+    "input_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "new_string": {
+          "description": "Replacement text.",
+          "type": "string"
+        },
+        "old_string": {
+          "description": "Exact old text to replace. Must match exactly once.",
+          "type": "string"
+        },
+        "path": {
+          "description": "Editable UTF-8 text file inside current CToolScopeBase.",
+          "format": "path",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "old_string",
+        "new_string"
+      ],
+      "type": "object"
+    },
+    "output_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "byte_len_after": {
+          "description": "File byte length after edit.",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "byte_len_before": {
+          "description": "File byte length before edit.",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "path": {
+          "description": "Edited file path.",
+          "type": "string"
+        },
+        "replaced": {
+          "description": "Number of replacements. This tool requires exactly one replacement.",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [],
+      "type": "object"
+    }
+  },
+  {
+    "name": "ctool_edit_insert",
+    "description": "Insert text after a specific line in a UTF-8 file inside CToolScopeBase.",
+    "schema_version": "2026-06-ctool-v1",
+    "input_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "content": {
+          "description": "Text to insert. A final newline is added when missing.",
+          "type": "string"
+        },
+        "insert_after_line": {
+          "description": "0 inserts at file beginning; N inserts after line N.",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "path": {
+          "description": "Editable UTF-8 text file inside current CToolScopeBase.",
+          "format": "path",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "insert_after_line",
+        "content"
+      ],
+      "type": "object"
+    },
+    "output_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "byte_len_after": {
+          "description": "File byte length after edit.",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "byte_len_before": {
+          "description": "File byte length before edit.",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "inserted_after_line": {
+          "description": "Line after which content was inserted. 0 means file beginning.",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "path": {
+          "description": "Edited file path.",
+          "type": "string"
+        }
+      },
+      "required": [],
+      "type": "object"
+    }
+  },
+  {
+    "name": "ctool_preview_diff",
+    "description": "Preview replace/insert edits for one UTF-8 file inside CToolScopeBase without writing.",
+    "schema_version": "2026-06-ctool-v1",
+    "input_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "operations": {
+          "description": "Ordered preview operations. Nothing is written.",
+          "items": {
+            "additionalProperties": true,
+            "description": "Preview operation: { operation: replace, old_string, new_string } or { operation: insert, insert_after_line, content }.",
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "path": {
+          "description": "Editable UTF-8 text file inside current CToolScopeBase.",
+          "format": "path",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "operations"
+      ],
+      "type": "object"
+    },
+    "output_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "changed": {
+          "description": "Whether operation would change the file.",
+          "type": "boolean"
+        },
+        "diff": {
+          "description": "Simple unified diff preview.",
+          "type": "string"
+        },
+        "operation_count": {
+          "description": "Number of preview operations.",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "path": {
+          "description": "Target file path.",
+          "type": "string"
+        }
+      },
+      "required": [],
+      "type": "object"
+    }
+  },
+  {
+    "name": "ctool_edit_batch",
+    "description": "Apply multiple exact replace/insert edits inside CToolScopeBase.",
+    "schema_version": "2026-06-ctool-v1",
+    "input_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "operations": {
+          "description": "Ordered edit operations applied as a batch.",
+          "items": {
+            "additionalProperties": true,
+            "description": "One edit operation.",
+            "type": "object"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "operations"
+      ],
+      "type": "object"
+    },
+    "output_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "files_touched": {
+          "description": "Files written by the batch.",
+          "items": {
+            "description": "Edited file path.",
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "operation_count": {
+          "description": "Number of applied edit operations.",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [],
+      "type": "object"
+    }
+  },
+  {
+    "name": "ctool_edit_replace_exact",
+    "description": "Replace Target inside one exact Anchor in a UTF-8 file inside CToolScopeBase.",
+    "schema_version": "2026-06-ctool-v1",
+    "input_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "anchor": {
+          "description": "Exact anchor text. Must match exactly once in the file.",
+          "type": "string"
+        },
+        "content": {
+          "description": "Replace target text inside a unique anchor.",
+          "type": "string"
+        },
+        "path": {
+          "description": "Editable UTF-8 text file inside current CToolScopeBase.",
+          "format": "path",
+          "type": "string"
+        },
+        "target": {
+          "description": "Exact target text inside anchor. Must match exactly once inside anchor.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "anchor",
+        "target",
+        "content"
+      ],
+      "type": "object"
+    },
+    "output_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "byte_len_after": {
+          "description": "File byte length after edit.",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "byte_len_before": {
+          "description": "File byte length before edit.",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "matched_anchor": {
+          "description": "Number of matched anchors. Successful runs return 1.",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "matched_target": {
+          "description": "Number of matched targets inside the anchor. Successful runs return 1.",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "operation": {
+          "description": "Exact edit operation label.",
+          "type": "string"
+        },
+        "path": {
+          "description": "Edited file path.",
+          "type": "string"
+        }
+      },
+      "required": [],
+      "type": "object"
+    }
+  },
+  {
+    "name": "ctool_edit_insert_before_exact",
+    "description": "Insert Content before Target inside one exact Anchor in a UTF-8 file inside CToolScopeBase.",
+    "schema_version": "2026-06-ctool-v1",
+    "input_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "anchor": {
+          "description": "Exact anchor text. Must match exactly once in the file.",
+          "type": "string"
+        },
+        "content": {
+          "description": "Insert content before target text inside a unique anchor.",
+          "type": "string"
+        },
+        "path": {
+          "description": "Editable UTF-8 text file inside current CToolScopeBase.",
+          "format": "path",
+          "type": "string"
+        },
+        "target": {
+          "description": "Exact target text inside anchor. Must match exactly once inside anchor.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "anchor",
+        "target",
+        "content"
+      ],
+      "type": "object"
+    },
+    "output_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "byte_len_after": {
+          "description": "File byte length after edit.",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "byte_len_before": {
+          "description": "File byte length before edit.",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "matched_anchor": {
+          "description": "Number of matched anchors. Successful runs return 1.",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "matched_target": {
+          "description": "Number of matched targets inside the anchor. Successful runs return 1.",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "operation": {
+          "description": "Exact edit operation label.",
+          "type": "string"
+        },
+        "path": {
+          "description": "Edited file path.",
+          "type": "string"
+        }
+      },
+      "required": [],
+      "type": "object"
+    }
+  },
+  {
+    "name": "ctool_edit_insert_after_exact",
+    "description": "Insert Content after Target inside one exact Anchor in a UTF-8 file inside CToolScopeBase.",
+    "schema_version": "2026-06-ctool-v1",
+    "input_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "anchor": {
+          "description": "Exact anchor text. Must match exactly once in the file.",
+          "type": "string"
+        },
+        "content": {
+          "description": "Insert content after target text inside a unique anchor.",
+          "type": "string"
+        },
+        "path": {
+          "description": "Editable UTF-8 text file inside current CToolScopeBase.",
+          "format": "path",
+          "type": "string"
+        },
+        "target": {
+          "description": "Exact target text inside anchor. Must match exactly once inside anchor.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "anchor",
+        "target",
+        "content"
+      ],
+      "type": "object"
+    },
+    "output_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "byte_len_after": {
+          "description": "File byte length after edit.",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "byte_len_before": {
+          "description": "File byte length before edit.",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "matched_anchor": {
+          "description": "Number of matched anchors. Successful runs return 1.",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "matched_target": {
+          "description": "Number of matched targets inside the anchor. Successful runs return 1.",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "operation": {
+          "description": "Exact edit operation label.",
+          "type": "string"
+        },
+        "path": {
+          "description": "Edited file path.",
+          "type": "string"
+        }
+      },
+      "required": [],
+      "type": "object"
+    }
+  },
+  {
+    "name": "ctool_edit_remove_exact",
+    "description": "Remove Target inside one exact Anchor in a UTF-8 file inside CToolScopeBase.",
+    "schema_version": "2026-06-ctool-v1",
+    "input_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "anchor": {
+          "description": "Exact anchor text. Must match exactly once in the file.",
+          "type": "string"
+        },
+        "path": {
+          "description": "Editable UTF-8 text file inside current CToolScopeBase.",
+          "format": "path",
+          "type": "string"
+        },
+        "target": {
+          "description": "Exact target text inside anchor. Must match exactly once inside anchor.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "anchor",
+        "target"
+      ],
+      "type": "object"
+    },
+    "output_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "byte_len_after": {
+          "description": "File byte length after edit.",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "byte_len_before": {
+          "description": "File byte length before edit.",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "matched_anchor": {
+          "description": "Number of matched anchors. Successful runs return 1.",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "matched_target": {
+          "description": "Number of matched targets inside the anchor. Successful runs return 1.",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "operation": {
+          "description": "Exact edit operation label.",
+          "type": "string"
+        },
+        "path": {
+          "description": "Edited file path.",
+          "type": "string"
+        }
+      },
+      "required": [],
+      "type": "object"
+    }
+  },
+  {
+    "name": "ctool_annotate_markdown",
+    "description": "Add a safe <mark> annotation to a Markdown file inside CToolScopeBase.",
+    "schema_version": "2026-06-ctool-v1",
+    "input_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "allow_readonly": {
+          "description": "Reserved compatibility flag. Write scope is still enforced.",
+          "type": "boolean"
+        },
+        "annotation_direction": {
+          "description": "Optional arrow prefix inserted inside the mark.",
+          "enum": [
+            "up",
+            "down"
+          ],
+          "type": "string"
+        },
+        "annotation_kind": {
+          "description": "Annotation color/intensity.",
+          "enum": [
+            "normal",
+            "important"
+          ],
+          "type": "string"
+        },
+        "dry_run": {
+          "description": "Preview annotation without writing the file.",
+          "type": "boolean"
+        },
+        "occurrence": {
+          "description": "1-based occurrence when target_text appears more than once.",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "path": {
+          "description": "Markdown file path inside current CToolScopeBase.",
+          "format": "path",
+          "type": "string"
+        },
+        "target_text": {
+          "description": "Exact Markdown text to wrap with a safe <mark> annotation.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "target_text"
+      ],
+      "type": "object"
+    },
+    "output_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "after_preview": {
+          "description": "Preview after annotation.",
+          "type": "string"
+        },
+        "annotation_direction": {
+          "description": "Optional arrow direction used.",
+          "enum": [
+            "up",
+            "down"
+          ],
+          "type": "string"
+        },
+        "annotation_kind": {
+          "description": "Annotation kind used.",
+          "enum": [
+            "normal",
+            "important"
+          ],
+          "type": "string"
+        },
+        "before_preview": {
+          "description": "Preview before annotation.",
+          "type": "string"
+        },
+        "dry_run": {
+          "description": "Whether the file was left unchanged.",
+          "type": "boolean"
+        },
+        "line_number": {
+          "description": "1-based line number of the annotation target.",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "note": {
+          "description": "Human-readable result note.",
+          "type": "string"
+        },
+        "occurrence": {
+          "description": "1-based selected occurrence.",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "path": {
+          "description": "Annotated Markdown file path.",
+          "type": "string"
+        },
+        "readonly_exception_used": {
+          "description": "Whether readonly exception was used.",
+          "type": "boolean"
+        },
+        "success": {
+          "description": "Whether annotation planning/execution succeeded.",
+          "type": "boolean"
+        }
+      },
+      "required": [],
+      "type": "object"
+    }
+  },
+  {
+    "name": "ctool_create_file",
+    "description": "Create a safe UTF-8 text/source file inside CToolScopeBase.",
+    "schema_version": "2026-06-ctool-v1",
+    "input_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "content": {
+          "description": "UTF-8 file content to write.",
+          "type": "string"
+        },
+        "overwrite": {
+          "description": "Whether existing file may be overwritten, if supported by tool.",
+          "type": "boolean"
+        },
+        "path": {
+          "description": "New file path inside current CToolScopeBase.",
+          "format": "path",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "content"
+      ],
+      "type": "object"
+    },
+    "output_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "byte_len": {
+          "description": "Written byte length.",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "overwritten": {
+          "description": "Whether an existing file was overwritten.",
+          "type": "boolean"
+        },
+        "path": {
+          "description": "Created file path.",
+          "type": "string"
+        }
+      },
+      "required": [],
+      "type": "object"
+    }
+  },
+  {
+    "name": "ctool_tavily_search_request",
+    "description": "Run a controlled Tavily search request and write results under CoolDir cache.",
+    "schema_version": "2026-06-ctool-v1",
+    "input_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "description": "V1 supports only public text search. extract/zoom/research/images are intentionally blocked.",
+          "enum": [
+            "search"
+          ],
+          "type": "string"
+        },
+        "file_name_hint": {
+          "description": "Optional safe filename hint for the cached Markdown result.",
+          "type": "string"
+        },
+        "query": {
+          "description": "Public web search query. Do not include local file contents or secrets.",
+          "type": "string"
+        },
+        "red_first_confirmation": {
+          "description": "Reserved for future red Tavily actions.",
+          "type": "string"
+        },
+        "red_second_confirmation": {
+          "description": "Reserved for future red Tavily actions.",
+          "type": "string"
+        },
+        "yellow_confirmation": {
+          "description": "Reserved for future non-green Tavily actions.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "action",
+        "query"
+      ],
+      "type": "object"
+    },
+    "output_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "description": "V1 action label. Only search is executable.",
+          "enum": [
+            "search"
+          ],
+          "type": "string"
+        },
+        "blocked": {
+          "description": "Whether the request was blocked.",
+          "type": "boolean"
+        },
+        "current_dir": {
+          "description": "Current CoolWorkspace path.",
+          "type": "string"
+        },
+        "executed": {
+          "description": "Whether Tavily was called.",
+          "type": "boolean"
+        },
+        "final_risk": {
+          "description": "Final risk label.",
+          "enum": [
+            "GREEN",
+            "YELLOW",
+            "RED",
+            "BLOCKED"
+          ],
+          "type": "string"
+        },
+        "log_file": {
+          "description": "Audit log path.",
+          "type": "string"
+        },
+        "note": {
+          "description": "Human-readable execution/block/rejection note.",
+          "type": "string"
+        },
+        "output_file": {
+          "description": "Cached Markdown result path.",
+          "type": "string"
+        },
+        "rejected": {
+          "description": "Whether the user rejected confirmation.",
+          "type": "boolean"
+        },
+        "suggested_next_step": {
+          "description": "Suggested next action for the AI/user.",
+          "type": "string"
+        },
+        "summary": {
+          "description": "Short summary from cached Markdown.",
+          "type": "string"
+        },
+        "user_feedback": {
+          "description": "Optional rejection feedback from user confirmation input.",
+          "type": "string"
+        },
+        "will_execute": {
+          "description": "Whether the request will execute in this call.",
+          "type": "boolean"
+        }
+      },
+      "required": [],
+      "type": "object"
+    }
+  },
+  {
+    "name": "ctool_delete_file",
+    "description": "Delete one file inside CToolScopeBase. Directories are never deleted.",
+    "schema_version": "2026-06-ctool-v1",
+    "input_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "expected_content": {
+          "description": "Optional exact file content guard. Delete is refused if content differs.",
+          "type": "string"
+        },
+        "path": {
+          "description": "File path inside current CToolScopeBase to delete.",
+          "format": "path",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path"
+      ],
+      "type": "object"
+    },
+    "output_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "byte_len_before": {
+          "description": "File byte length before deletion.",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "deleted": {
+          "description": "Whether file was deleted.",
+          "type": "boolean"
+        },
+        "path": {
+          "description": "Deleted file path.",
+          "type": "string"
+        }
+      },
+      "required": [],
+      "type": "object"
+    }
+  },
+  {
+    "name": "ctool_move_file",
+    "description": "Move or rename one file inside CToolScopeBase. Directories are never moved.",
+    "schema_version": "2026-06-ctool-v1",
+    "input_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "from": {
+          "description": "Source file path inside current CToolScopeBase.",
+          "format": "path",
+          "type": "string"
+        },
+        "overwrite": {
+          "description": "Whether an existing destination file may be overwritten.",
+          "type": "boolean"
+        },
+        "to": {
+          "description": "Destination file path inside current CToolScopeBase.",
+          "format": "path",
+          "type": "string"
+        }
+      },
+      "required": [
+        "from",
+        "to"
+      ],
+      "type": "object"
+    },
+    "output_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "from": {
+          "description": "Resolved source file path.",
+          "type": "string"
+        },
+        "moved": {
+          "description": "Whether file was moved.",
+          "type": "boolean"
+        },
+        "overwritten": {
+          "description": "Whether an existing destination file was overwritten.",
+          "type": "boolean"
+        },
+        "to": {
+          "description": "Resolved destination file path.",
+          "type": "string"
+        }
+      },
+      "required": [],
+      "type": "object"
+    }
+  },
+  {
+    "name": "ctool_create_directory",
+    "description": "Create one directory inside CToolScopeBase. Parent directory must already exist.",
+    "schema_version": "2026-06-ctool-v1",
+    "input_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "description": "Directory path inside current CToolScopeBase to create.",
+          "format": "path",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path"
+      ],
+      "type": "object"
+    },
+    "output_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "created": {
+          "description": "Whether directory was newly created.",
+          "type": "boolean"
+        },
+        "path": {
+          "description": "Created directory path.",
+          "type": "string"
+        }
+      },
+      "required": [],
+      "type": "object"
+    }
+  },
+  {
+    "name": "ctool_delete_directory",
+    "description": "Delete one empty directory inside CToolScopeBase. Recursive deletion is never allowed.",
+    "schema_version": "2026-06-ctool-v1",
+    "input_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "description": "Empty directory path inside current CToolScopeBase to delete. Recursive deletion is never supported.",
+          "format": "path",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path"
+      ],
+      "type": "object"
+    },
+    "output_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "deleted": {
+          "description": "Whether directory was deleted.",
+          "type": "boolean"
+        },
+        "path": {
+          "description": "Deleted directory path.",
+          "type": "string"
+        }
+      },
+      "required": [],
+      "type": "object"
+    }
+  },
+  {
+    "name": "ctool_move_directory",
+    "description": "Move or rename one directory inside CToolScopeBase. Overwrite is never allowed.",
+    "schema_version": "2026-06-ctool-v1",
+    "input_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "from": {
+          "description": "Source directory path inside current CToolScopeBase.",
+          "format": "path",
+          "type": "string"
+        },
+        "to": {
+          "description": "Destination directory path inside current CToolScopeBase.",
+          "format": "path",
+          "type": "string"
+        }
+      },
+      "required": [
+        "from",
+        "to"
+      ],
+      "type": "object"
+    },
+    "output_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "from": {
+          "description": "Resolved source directory path.",
+          "type": "string"
+        },
+        "moved": {
+          "description": "Whether directory was moved.",
+          "type": "boolean"
+        },
+        "to": {
+          "description": "Resolved destination directory path.",
+          "type": "string"
+        }
+      },
+      "required": [],
+      "type": "object"
+    }
+  }
+]

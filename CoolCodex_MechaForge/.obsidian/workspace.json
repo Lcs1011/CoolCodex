@@ -355,6 +355,7 @@
   },
   "active": "63cdcdb10fc7ba4a",
   "lastOpenFiles": [
+    "CToolSchema.json",
     "split_tool_schema_0039.py",
     "CoolBot/CoolBotUsageManual.md",
     "Schema（模式  规范）.md",
@@ -392,7 +393,6 @@
     "assets/0101 Cool 一些定义和基本设定",
     "assets",
     "回收站",
-    "ObsidianAnnotation/annotation-plugin/versions.json",
-    "ObsidianAnnotation/annotation-plugin/version-bump.mjs"
+    "ObsidianAnnotation/annotation-plugin/versions.json"
   ]
 }
