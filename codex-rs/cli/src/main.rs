@@ -40,6 +40,7 @@ use codex_utils_cli::SharedCliOptions;
 use codex_utils_cli::resume_hint;
 use owo_colors::OwoColorize;
 use std::io::IsTerminal;
+use std::io::Write;
 use std::path::PathBuf;
 use supports_color::Stream;
 
@@ -910,9 +911,7 @@ fn main() -> anyhow::Result<()> {
 fn ensure_cool_launched_by_bat() -> anyhow::Result<()> {
     match std::env::var("COOL_LAUNCHED_BY_BAT") {
         Ok(value) if value.trim() == "1" => Ok(()),
-        _ => anyhow::bail!(
-            "CoolCodex must be started by LauncherBat. Please use RunCodex.bat."
-        ),
+        _ => anyhow::bail!("CoolCodex must be started by LauncherBat. Please use RunCodex.bat."),
     }
 }
 
@@ -932,6 +931,74 @@ fn read_cool_safe_mode_env() -> anyhow::Result<Option<bool>> {
         "on" => Ok(Some(true)),
         "off" => Ok(Some(false)),
         _ => anyhow::bail!("unsupported COOL_SAFE_MODE value: {value}"),
+    }
+}
+fn read_nonempty_env(name: &str) -> Option<String> {
+    let value = std::env::var(name).ok()?;
+    let value = value.trim();
+
+    if value.is_empty() {
+        None
+    } else {
+        Some(value.to_string())
+    }
+}
+
+fn print_scope_toml_for_launch_confirmation(
+    title: &str,
+    path: Option<PathBuf>,
+) -> anyhow::Result<()> {
+    println!();
+    println!("============================================================");
+    println!("{title}");
+    println!("============================================================");
+
+    let Some(path) = path else {
+        println!("Path: <not configured>");
+        println!("Content: <empty>");
+        return Ok(());
+    };
+
+    println!("Path: {}", path.display());
+
+    if !path.exists() {
+        println!("Content: <missing; treated as empty>");
+        return Ok(());
+    }
+
+    let text = std::fs::read_to_string(&path)?;
+    if text.trim().is_empty() {
+        println!("Content: <empty>");
+    } else {
+        println!("{text}");
+    }
+
+    Ok(())
+}
+
+fn confirm_scope_toml_before_normal_flow() -> anyhow::Result<()> {
+    let system_scope_path = read_nonempty_env("COOL_SYSTEM_DIR")
+        .map(PathBuf::from)
+        .map(|path| path.join("scope.toml"));
+
+    let character_scope_path = read_nonempty_env("COOL_CHARACTER_ROOT")
+        .map(PathBuf::from)
+        .map(|path| path.join(".cool").join("scope.toml"));
+
+    print_scope_toml_for_launch_confirmation("CoolSystem Scope.toml", system_scope_path)?;
+    print_scope_toml_for_launch_confirmation("CoolCharacter Scope.toml", character_scope_path)?;
+
+    println!();
+    print!("Continue after Scope.toml review? Type y to continue: ");
+    std::io::stdout().flush()?;
+
+    let mut input = String::new();
+    std::io::stdin().read_line(&mut input)?;
+
+    if input.trim().eq_ignore_ascii_case("y") {
+        Ok(())
+    } else {
+        anyhow::bail!("launch cancelled by Scope.toml confirmation")
     }
 }
 
@@ -963,6 +1030,7 @@ async fn cli_main(arg0_paths: Arg0DispatchPaths) -> anyhow::Result<()> {
 
     let root_safe_mode = interactive.safe_mode.is_on();
     safe_mode::init(root_safe_mode);
+    confirm_scope_toml_before_normal_flow()?;
 
     reject_root_safe_mode_usage(
         root_safe_mode,
