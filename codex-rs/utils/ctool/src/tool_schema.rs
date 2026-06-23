@@ -13,15 +13,17 @@ pub fn ctool_input_schema(name: &str) -> Value {
                 (
                     "commands",
                     array_schema(
-                        string_schema("Command line to preview and possibly execute."),
-                        "Ordered command list.",
+                        string_schema(
+                            "Command line to preview and optionally execute. Each command is evaluated by command.toml and hard-risk rules.",
+                        ),
+                        "Ordered command list. Each command is evaluated independently against sandbox restrictions, command.toml policy, and hard-risk rules.",
                     ),
                 ),
                 (
                     "ai_risk_upgrade",
                     enum_schema(
                         &["green", "yellow", "red", "blocked"],
-                        "Optional AI-side risk upgrade.",
+                        "Optional AI-side risk upgrade. Cannot lower system risk; it can only keep or raise the final risk.",
                     ),
                 ),
                 (
@@ -49,7 +51,12 @@ pub fn ctool_input_schema(name: &str) -> Value {
                     "action",
                     enum_schema(&["search"], "V1 supports only public text search."),
                 ),
-                ("query", string_schema("Public web search query.")),
+                (
+                    "query",
+                    string_schema(
+                        "Public web search query. Do not include local file contents or secrets.",
+                    ),
+                ),
                 (
                     "file_name_hint",
                     string_schema("Optional safe filename hint."),
@@ -908,10 +915,18 @@ pub fn ctool_output_schema(name: &str) -> Value {
             &[],
             vec![
                 ("current_dir", string_schema("Git working directory.")),
-                ("status_short", string_schema("git status --short output.")),
                 (
-                    "diff_stat",
-                    string_schema("Optional git diff --stat output."),
+                    "visible_files",
+                    array_schema(
+                        object_open_schema(
+                            "Scope-visible changed file with status and optional per-file diff stat.",
+                        ),
+                        "Changed files that are readable under current CToolScopeBase.",
+                    ),
+                ),
+                (
+                    "hidden_or_out_of_scope_count",
+                    integer_schema("Number of changed files hidden by scope filtering."),
                 ),
             ],
         ),

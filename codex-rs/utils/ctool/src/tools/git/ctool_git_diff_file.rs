@@ -60,10 +60,9 @@ pub fn git_diff_file(
     }
 
     let current_dir = &ctx.scope_context.cool_workspace;
-    let relative = checked_path
-        .strip_prefix(current_dir)
-        .map(PathBuf::from)
-        .unwrap_or_else(|_| checked_path.clone());
+    let relative = checked_path.strip_prefix(current_dir).map_err(|_| {
+        CToolError::InvalidInput("git diff file must be inside current CoolWorkspace".to_string())
+    })?;
     let path_arg = relative.to_string_lossy().replace('\\', "/");
     let diff = if input.staged {
         run_git(current_dir, &["diff", "--cached", "--", &path_arg])?
