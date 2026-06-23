@@ -6,6 +6,7 @@ use serde::Deserialize;
 use serde::Serialize;
 
 use crate::command_request::CToolCommandConfig;
+use crate::command_request::CToolCommandPolicy;
 use crate::command_request::default_command_config;
 use crate::command_request::merge_command_configs;
 use crate::error::CToolError;
@@ -304,7 +305,7 @@ pub fn empty_command_config() -> CToolCommandConfig {
 
 pub fn load_optional_cool_command_config(path: &Path) -> CToolResult<CToolCommandConfig> {
     if !path.exists() {
-        return Ok(empty_command_config());
+        return default_command_config_with_env_policy();
     }
 
     let text = std::fs::read_to_string(path).map_err(|error| {
@@ -329,7 +330,8 @@ pub fn parse_cool_command_config_toml(text: &str) -> CToolResult<CToolCommandCon
 
     let mut config = file.ctool_command;
     file.ctool_command_privileged.apply_to(&mut config);
-    Ok(config)
+
+    apply_env_command_policy_if_missing(config, text)
 }
 
 pub fn load_merged_cool_command_config(
@@ -339,8 +341,69 @@ pub fn load_merged_cool_command_config(
     let character_config = load_optional_cool_command_config(character_command_path)?;
     let system_config = match system_command_path {
         Some(path) => load_optional_cool_command_config(path)?,
-        None => empty_command_config(),
+        None => default_command_config_with_env_policy()?,
     };
 
     Ok(merge_command_configs(character_config, system_config))
+}
+
+pub fn locate_ctool_command_policy() -> CToolResult<Option<CToolCommandPolicy>> {
+    let Ok(value) = env::var("CTOOL_COMMAND_POLICY") else {
+        return Ok(None);
+    };
+
+    let value = value.trim();
+    if value.is_empty() {
+        Ok(None)
+    } else {
+        parse_command_policy(value).map(Some)
+    }
+}
+
+fn parse_command_policy(value: &str) -> CToolResult<CToolCommandPolicy> {
+    match value.to_ascii_lowercase().as_str() {
+        "green" => Ok(CToolCommandPolicy::Green),
+        "yellow" => Ok(CToolCommandPolicy::Yellow),
+        "red" => Ok(CToolCommandPolicy::Red),
+        "block" | "blocked" => Ok(CToolCommandPolicy::Blocked),
+        "block-all" | "block_all" | "blockall" => Ok(CToolCommandPolicy::BlockAll),
+        _ => Err(CToolError::InvalidInput(format!(
+            "unsupported CToolCommandPolicy: {value}"
+        ))),
+    }
+}
+
+fn command_policy_is_explicit(text: &str) -> bool {
+    let Ok(value) = toml::from_str::<toml::Value>(text) else {
+        return false;
+    };
+
+    value
+        .get("ctool_command")
+        .and_then(|value| value.as_table())
+        .and_then(|table| table.get("policy"))
+        .is_some()
+}
+
+fn apply_env_command_policy_if_missing(
+    mut config: CToolCommandConfig,
+    text: &str,
+) -> CToolResult<CToolCommandConfig> {
+    if !command_policy_is_explicit(text) {
+        if let Some(policy) = locate_ctool_command_policy()? {
+            config.policy = policy;
+        }
+    }
+
+    Ok(config)
+}
+
+fn default_command_config_with_env_policy() -> CToolResult<CToolCommandConfig> {
+    let mut config = default_command_config();
+
+    if let Some(policy) = locate_ctool_command_policy()? {
+        config.policy = policy;
+    }
+
+    Ok(config)
 }
