@@ -80,6 +80,10 @@ fn update_rule_resolves_relative_paths_against_cool_workspace() {
 
     assert_eq!(
         ctx.user_config.folders.readwrite,
-        vec![ctx.cool_workspace.join("src")]
+        vec![
+            std::fs::canonicalize(&ctx.cool_workspace)
+                .expect("canonicalize test workspace")
+                .join("src")
+        ]
     );
 }

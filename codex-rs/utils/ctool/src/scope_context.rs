@@ -101,7 +101,13 @@ pub fn build_ctool_scope_context_with_launcher(
     let system_command_path = locate_cool_system_command_path()
         .or_else(|| cool_system_dir.as_ref().map(|dir| dir.join("command.toml")));
     let system_config = match system_scope_path.as_deref() {
-        Some(path) => normalize_scope_config(load_optional_cool_config(path)?, &character_root),
+        Some(path) => {
+            let system_scope_root = path
+                .parent()
+                .map(normalize_existing_or_lexical)
+                .unwrap_or_else(|| character_root.clone());
+            normalize_scope_config(load_optional_cool_config(path)?, &system_scope_root)
+        }
         None => empty_scope_config(),
     };
 
@@ -146,11 +152,41 @@ fn normalize_scope_paths(paths: Vec<PathBuf>, root: &Path) -> Vec<PathBuf> {
 }
 
 fn resolve_config_path(root: &Path, path: &Path) -> PathBuf {
-    if path.is_absolute() {
-        lexical_normalize_path(path)
+    let resolved = if path.is_absolute() {
+        path.to_path_buf()
     } else {
-        lexical_normalize_path(&root.join(path))
+        root.join(path)
+    };
+
+    normalize_existing_or_lexical(&resolved)
+}
+
+fn normalize_existing_or_lexical(path: &Path) -> PathBuf {
+    if let Ok(path) = std::fs::canonicalize(path) {
+        return lexical_normalize_path(&path);
     }
+
+    let mut missing_components = Vec::new();
+    let mut current = path;
+
+    while let Some(parent) = current.parent() {
+        let Some(file_name) = current.file_name() else {
+            break;
+        };
+        missing_components.push(file_name.to_owned());
+
+        if let Ok(canonical_parent) = std::fs::canonicalize(parent) {
+            let mut normalized = lexical_normalize_path(&canonical_parent);
+            for component in missing_components.iter().rev() {
+                normalized.push(component);
+            }
+            return normalized;
+        }
+
+        current = parent;
+    }
+
+    lexical_normalize_path(path)
 }
 
 pub fn resolve_user_path(ctx: &CToolScopeContext, path: impl AsRef<Path>) -> PathBuf {
@@ -195,15 +231,15 @@ pub fn canonicalize_parent_for_new_path(path: impl AsRef<Path>) -> CToolResult<P
 }
 
 pub fn matches_any_exact_path(path: impl AsRef<Path>, paths: &[PathBuf]) -> bool {
-    let path = lexical_normalize_path(path.as_ref());
+    let path = normalize_existing_or_lexical(path.as_ref());
     paths
         .iter()
-        .any(|rule_path| path == lexical_normalize_path(rule_path))
+        .any(|rule_path| path == normalize_existing_or_lexical(rule_path))
 }
 
 pub fn path_matches_rule(path: impl AsRef<Path>, rule_path: impl AsRef<Path>) -> bool {
-    let path = lexical_normalize_path(path.as_ref());
-    let rule_path = lexical_normalize_path(rule_path.as_ref());
+    let path = normalize_existing_or_lexical(path.as_ref());
+    let rule_path = normalize_existing_or_lexical(rule_path.as_ref());
 
     path == rule_path || path.starts_with(&rule_path)
 }

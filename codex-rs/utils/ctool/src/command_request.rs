@@ -670,7 +670,26 @@ struct CToolCommandRuleMatch<'a> {
 
 impl CToolCommandRuleMatch<'_> {
     fn reason(self) -> String {
-        format!("matched {} rule: {}", self.rule_kind, self.rule)
+        let base = format!("matched {} rule: {}", self.rule_kind, self.rule);
+        match command_rule_explanation(self.rule_kind, self.rule) {
+            Some(explanation) => format!("{base}; {explanation}"),
+            None => base,
+        }
+    }
+}
+
+fn command_rule_explanation(rule_kind: &str, rule: &str) -> Option<&'static str> {
+    match (rule_kind, rule) {
+        ("red contains", ".exe") => Some(
+            "command references a Windows executable; running executable files can execute arbitrary local code, so this requires explicit confirmation unless a more specific privileged rule allows it",
+        ),
+        ("red contains", ".msi") => Some(
+            "command references a Windows installer package; installers can modify the system, so this requires explicit confirmation",
+        ),
+        ("red contains", ".dll") => Some(
+            "command references a Windows dynamic library; loading or manipulating dynamic libraries can affect executable code, so this requires explicit confirmation",
+        ),
+        _ => None,
     }
 }
 

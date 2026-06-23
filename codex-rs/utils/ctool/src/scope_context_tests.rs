@@ -168,3 +168,121 @@ fn privileged_file_readwrite_allows_delete_under_cool_dir() {
 
     assert!(ensure_delete_allowed_by_scope(&ctx, &file).is_ok());
 }
+
+#[test]
+fn system_file_hidden_beats_system_folder_readwrite() {
+    let mut ctx = test_context();
+    let folder = ctx.character_root.join("system_open");
+    let file = folder.join("blocked.txt");
+
+    ctx.system_config.folders.readwrite = vec![folder];
+    ctx.system_config.files.hidden = vec![file.clone()];
+
+    assert!(!can_read_path(&ctx, &file));
+    assert!(!can_write_path(&ctx, &file));
+}
+
+#[test]
+fn system_file_readwrite_beats_system_folder_hidden() {
+    let mut ctx = test_context();
+    let folder = ctx.character_root.join("system_secret");
+    let file = folder.join("open.txt");
+
+    ctx.system_config.folders.hidden = vec![folder];
+    ctx.system_config.files.readwrite = vec![file.clone()];
+
+    assert!(can_read_path(&ctx, &file));
+    assert!(can_write_path(&ctx, &file));
+}
+
+#[test]
+fn character_file_hidden_beats_character_folder_readwrite() {
+    let mut ctx = test_context();
+    let folder = ctx.character_root.join("character_open");
+    let file = folder.join("blocked.txt");
+
+    ctx.user_config.folders.readwrite = vec![folder];
+    ctx.user_config.files.hidden = vec![file.clone()];
+
+    assert!(!can_read_path(&ctx, &file));
+    assert!(!can_write_path(&ctx, &file));
+}
+
+#[test]
+fn character_folder_readwrite_allows_when_no_higher_rule_matches() {
+    let mut ctx = test_context();
+    ctx.base_scope = CToolScopeBase::SelectedOnly;
+    let file = ctx.character_root.join("character_open").join("open.txt");
+
+    ctx.user_config.folders.readwrite = vec![ctx.character_root.join("character_open")];
+
+    assert!(can_read_path(&ctx, &file));
+    assert!(can_write_path(&ctx, &file));
+}
+
+#[test]
+fn base_scope_only_allows_when_no_explicit_rule_matches() {
+    let mut ctx = test_context();
+    let hidden_file = ctx.character_root.join("hidden_by_character.txt");
+    let fallback_file = ctx.character_root.join("visible_by_base.txt");
+
+    ctx.user_config.files.hidden = vec![hidden_file.clone()];
+
+    assert!(!can_read_path(&ctx, &hidden_file));
+    assert!(!can_write_path(&ctx, &hidden_file));
+    assert!(can_read_path(&ctx, &fallback_file));
+    assert!(can_write_path(&ctx, &fallback_file));
+}
+
+#[test]
+fn ordinary_and_canonical_windows_paths_match_same_rule() {
+    let root = std::env::temp_dir().join(format!(
+        "ctool_scope_canonical_match_{}",
+        std::process::id()
+    ));
+    let folder = root.join("visible");
+    let file = folder.join("open.txt");
+
+    std::fs::create_dir_all(&folder).expect("create temp folder");
+    std::fs::write(&file, "open").expect("write temp file");
+
+    let canonical_file = canonicalize_existing_path(&file).expect("canonicalize temp file");
+
+    assert!(path_matches_rule(&canonical_file, &folder));
+    assert!(matches_any_exact_path(&canonical_file, &[file]));
+}
+
+#[test]
+fn system_scope_relative_paths_resolve_against_system_scope_dir() {
+    let root = std::env::temp_dir().join(format!("ctool_scope_system_root_{}", std::process::id()));
+    let launcher_dir = root.join("launcher");
+    let character_root = root.join("character");
+    let system_dir = launcher_dir.join(".cool-system");
+    let system_visible_dir = system_dir.join("system-visible");
+    let character_visible_dir = character_root.join("system-visible");
+    let system_scope_path = system_dir.join("scope.toml");
+
+    std::fs::create_dir_all(&system_visible_dir).expect("create system visible dir");
+    std::fs::create_dir_all(&character_visible_dir).expect("create character visible dir");
+    std::fs::write(
+        &system_scope_path,
+        "[folders]\nreadwrite = ['system-visible']\n",
+    )
+    .expect("write system scope");
+
+    let normalized = normalize_scope_config(
+        load_optional_cool_config(&system_scope_path).expect("load system scope"),
+        system_scope_path.parent().expect("system scope parent"),
+    );
+
+    assert_eq!(
+        normalized.folders.readwrite,
+        vec![canonicalize_existing_path(&system_visible_dir).expect("canonicalize system dir")]
+    );
+    assert_ne!(
+        normalized.folders.readwrite,
+        vec![
+            canonicalize_existing_path(&character_visible_dir).expect("canonicalize character dir")
+        ]
+    );
+}

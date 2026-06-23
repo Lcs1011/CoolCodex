@@ -280,6 +280,31 @@ fn policy_green_cannot_downgrade_download_url() {
     );
 }
 #[test]
+fn executable_contains_rule_explains_why_it_is_red() {
+    let mut config = CToolCommandConfig::default();
+    config.policy = CToolCommandPolicy::Green;
+
+    let classification = classify_command("codex-rs\\target\\debug\\codex.exe --version", &config);
+
+    assert_eq!(classification.risk, CToolCommandRisk::Red);
+    assert!(
+        classification
+            .reason
+            .contains("matched red contains rule: .exe")
+    );
+    assert!(
+        classification
+            .reason
+            .contains("command references a Windows executable")
+    );
+    assert!(
+        classification
+            .reason
+            .contains("can execute arbitrary local code")
+    );
+}
+
+#[test]
 fn yellow_rule_overrides_green_rule() {
     let mut config = rule_matching_test_config();
     config.green_exact_commands.push("cargo check".to_string());
