@@ -11,6 +11,7 @@ use crate::tools::edit::CTOOL_EDIT_BATCH_TOOL_NAME;
 use crate::tools::edit::CTOOL_EDIT_INSERT_AFTER_EXACT_TOOL_NAME;
 use crate::tools::edit::CTOOL_EDIT_INSERT_BEFORE_EXACT_TOOL_NAME;
 use crate::tools::edit::CTOOL_EDIT_INSERT_TOOL_NAME;
+use crate::tools::edit::CTOOL_EDIT_PREVIEW_TOOL_NAME;
 use crate::tools::edit::CTOOL_EDIT_REMOVE_EXACT_TOOL_NAME;
 use crate::tools::edit::CTOOL_EDIT_REPLACE_EXACT_TOOL_NAME;
 use crate::tools::edit::CTOOL_EDIT_REPLACE_TOOL_NAME;
@@ -19,6 +20,7 @@ use crate::tools::edit::CToolEditBatch;
 use crate::tools::edit::CToolEditInsert;
 use crate::tools::edit::CToolEditInsertAfterExact;
 use crate::tools::edit::CToolEditInsertBeforeExact;
+use crate::tools::edit::CToolEditPreview;
 use crate::tools::edit::CToolEditRemoveExact;
 use crate::tools::edit::CToolEditReplace;
 use crate::tools::edit::CToolEditReplaceExact;
@@ -35,11 +37,18 @@ use crate::tools::file_ops::CToolDeleteDirectory;
 use crate::tools::file_ops::CToolDeleteFile;
 use crate::tools::file_ops::CToolMoveDirectory;
 use crate::tools::file_ops::CToolMoveFile;
+use crate::tools::git::CTOOL_GIT_DIFF_FILE_TOOL_NAME;
+use crate::tools::git::CTOOL_GIT_DIFF_SUMMARY_TOOL_NAME;
+use crate::tools::git::CToolGitDiffFile;
+use crate::tools::git::CToolGitDiffSummary;
 use crate::tools::read::CTOOL_COUNT_MATCHES_TOOL_NAME;
 use crate::tools::read::CTOOL_EXTRACT_LINES_MATCHING_TOOL_NAME;
 use crate::tools::read::CTOOL_LIST_DIRECTORY_TOOL_NAME;
+use crate::tools::read::CTOOL_OUTLINE_FILE_TOOL_NAME;
 use crate::tools::read::CTOOL_READ_CODE_RANGE_TOOL_NAME;
 use crate::tools::read::CTOOL_READ_FILE_TOOL_NAME;
+use crate::tools::read::CTOOL_READ_MANY_RANGES_TOOL_NAME;
+use crate::tools::read::CTOOL_READ_SYMBOL_TOOL_NAME;
 use crate::tools::read::CTOOL_REGEX_SEARCH_TOOL_NAME;
 use crate::tools::read::CTOOL_RG_SEARCH_CONTEXT_TOOL_NAME;
 use crate::tools::read::CTOOL_RG_SEARCH_TOOL_NAME;
@@ -47,8 +56,11 @@ use crate::tools::read::CTOOL_TAIL_FILE_TOOL_NAME;
 use crate::tools::read::CToolCountMatches;
 use crate::tools::read::CToolExtractLinesMatching;
 use crate::tools::read::CToolListDirectory;
+use crate::tools::read::CToolOutlineFile;
 use crate::tools::read::CToolReadCodeRange;
 use crate::tools::read::CToolReadFile;
+use crate::tools::read::CToolReadManyRanges;
+use crate::tools::read::CToolReadSymbol;
 use crate::tools::read::CToolRegexSearch;
 use crate::tools::read::CToolRgSearch;
 use crate::tools::read::CToolRgSearchContext;
@@ -63,8 +75,11 @@ pub fn available_specs() -> Vec<CToolSpec> {
 
     let list_directory = CToolListDirectory;
     let rg_search = CToolRgSearch;
+    let outline_file = CToolOutlineFile;
     let read_code_range = CToolReadCodeRange;
     let read_file = CToolReadFile;
+    let read_many_ranges = CToolReadManyRanges;
+    let read_symbol = CToolReadSymbol;
     let tail_file = CToolTailFile;
     let rg_search_context = CToolRgSearchContext;
     let regex_search = CToolRegexSearch;
@@ -73,6 +88,7 @@ pub fn available_specs() -> Vec<CToolSpec> {
 
     let edit_replace = CToolEditReplace;
     let edit_insert = CToolEditInsert;
+    let edit_preview = CToolEditPreview;
     let preview_diff = CToolPreviewDiff;
     let edit_batch = CToolEditBatch;
     let edit_replace_exact = CToolEditReplaceExact;
@@ -86,6 +102,8 @@ pub fn available_specs() -> Vec<CToolSpec> {
     let create_directory = CToolCreateDirectory;
     let delete_directory = CToolDeleteDirectory;
     let move_directory = CToolMoveDirectory;
+    let git_diff_summary = CToolGitDiffSummary;
+    let git_diff_file = CToolGitDiffFile;
     let tavily_search_request = CToolTavilySearchRequest;
 
     let annotate_markdown = CToolAnnotateMarkdown;
@@ -93,8 +111,11 @@ pub fn available_specs() -> Vec<CToolSpec> {
         command_request.spec(),
         list_directory.spec(),
         rg_search.spec(),
+        outline_file.spec(),
         read_code_range.spec(),
         read_file.spec(),
+        read_many_ranges.spec(),
+        read_symbol.spec(),
         tail_file.spec(),
         rg_search_context.spec(),
         regex_search.spec(),
@@ -102,6 +123,7 @@ pub fn available_specs() -> Vec<CToolSpec> {
         extract_lines_matching.spec(),
         edit_replace.spec(),
         edit_insert.spec(),
+        edit_preview.spec(),
         preview_diff.spec(),
         edit_batch.spec(),
         edit_replace_exact.spec(),
@@ -109,6 +131,8 @@ pub fn available_specs() -> Vec<CToolSpec> {
         edit_insert_after_exact.spec(),
         edit_remove_exact.spec(),
         annotate_markdown.spec(),
+        git_diff_summary.spec(),
+        git_diff_file.spec(),
         create_file.spec(),
         tavily_search_request.spec(),
         delete_file.spec(),
@@ -133,12 +157,24 @@ pub fn run_tool(name: &str, ctx: &CToolContext, input: Value) -> CToolResult<Val
             let tool = CToolRgSearch;
             tool.run_json(ctx, input)
         }
+        CTOOL_OUTLINE_FILE_TOOL_NAME => {
+            let tool = CToolOutlineFile;
+            tool.run_json(ctx, input)
+        }
         CTOOL_READ_CODE_RANGE_TOOL_NAME => {
             let tool = CToolReadCodeRange;
             tool.run_json(ctx, input)
         }
         CTOOL_READ_FILE_TOOL_NAME => {
             let tool = CToolReadFile;
+            tool.run_json(ctx, input)
+        }
+        CTOOL_READ_MANY_RANGES_TOOL_NAME => {
+            let tool = CToolReadManyRanges;
+            tool.run_json(ctx, input)
+        }
+        CTOOL_READ_SYMBOL_TOOL_NAME => {
+            let tool = CToolReadSymbol;
             tool.run_json(ctx, input)
         }
         CTOOL_TAIL_FILE_TOOL_NAME => {
@@ -169,6 +205,10 @@ pub fn run_tool(name: &str, ctx: &CToolContext, input: Value) -> CToolResult<Val
             let tool = CToolEditInsert;
             tool.run_json(ctx, input)
         }
+        CTOOL_EDIT_PREVIEW_TOOL_NAME => {
+            let tool = CToolEditPreview;
+            tool.run_json(ctx, input)
+        }
         CTOOL_PREVIEW_DIFF_TOOL_NAME => {
             let tool = CToolPreviewDiff;
             tool.run_json(ctx, input)
@@ -195,6 +235,14 @@ pub fn run_tool(name: &str, ctx: &CToolContext, input: Value) -> CToolResult<Val
         }
         CTOOL_ANNOTATE_MARKDOWN_TOOL_NAME => {
             let tool = CToolAnnotateMarkdown;
+            tool.run_json(ctx, input)
+        }
+        CTOOL_GIT_DIFF_SUMMARY_TOOL_NAME => {
+            let tool = CToolGitDiffSummary;
+            tool.run_json(ctx, input)
+        }
+        CTOOL_GIT_DIFF_FILE_TOOL_NAME => {
+            let tool = CToolGitDiffFile;
             tool.run_json(ctx, input)
         }
         CTOOL_TAVILY_SEARCH_REQUEST_TOOL_NAME => {

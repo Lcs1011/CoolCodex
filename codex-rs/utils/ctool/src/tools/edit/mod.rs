@@ -1,6 +1,7 @@
 pub mod ctool_edit_batch;
 pub mod ctool_edit_exact;
 pub mod ctool_edit_insert;
+pub mod ctool_edit_preview;
 pub mod ctool_edit_replace;
 pub mod ctool_preview_diff;
 
@@ -47,6 +48,11 @@ pub use ctool_edit_exact::apply_insert_after_exact_to_text;
 pub use ctool_edit_exact::apply_insert_before_exact_to_text;
 pub use ctool_edit_exact::apply_remove_exact_to_text;
 pub use ctool_edit_exact::apply_replace_exact_to_text;
+pub use ctool_edit_preview::CTOOL_EDIT_PREVIEW_TOOL_NAME;
+pub use ctool_edit_preview::CToolEditPreview;
+pub use ctool_edit_preview::CToolEditPreviewInput;
+pub use ctool_edit_preview::CToolEditPreviewOperation;
+pub use ctool_edit_preview::CToolEditPreviewOutput;
 pub use ctool_edit_replace::CTOOL_EDIT_REPLACE_TOOL_NAME;
 pub use ctool_edit_replace::CToolEditReplace;
 pub use ctool_edit_replace::CToolEditReplaceInput;

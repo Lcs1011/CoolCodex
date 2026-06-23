@@ -14,14 +14,14 @@ pub fn ctool_input_schema(name: &str) -> Value {
                     "commands",
                     array_schema(
                         string_schema("Command line to preview and possibly execute."),
-                        "Ordered command list. Each command is evaluated by command.toml and hard-risk rules.",
+                        "Ordered command list.",
                     ),
                 ),
                 (
                     "ai_risk_upgrade",
                     enum_schema(
                         &["green", "yellow", "red", "blocked"],
-                        "Optional AI-side risk upgrade. Cannot lower system risk.",
+                        "Optional AI-side risk upgrade.",
                     ),
                 ),
                 (
@@ -30,9 +30,7 @@ pub fn ctool_input_schema(name: &str) -> Value {
                 ),
                 (
                     "yellow_confirmation",
-                    string_schema(
-                        "Required only when final risk is YELLOW and user approves or rejects.",
-                    ),
+                    string_schema("Required only when final risk is YELLOW."),
                 ),
                 (
                     "red_first_confirmation",
@@ -44,26 +42,17 @@ pub fn ctool_input_schema(name: &str) -> Value {
                 ),
             ],
         ),
-
         "ctool_tavily_search_request" => object_schema(
             &["action", "query"],
             vec![
                 (
                     "action",
-                    enum_schema(
-                        &["search"],
-                        "V1 supports only public text search. extract/zoom/research/images are intentionally blocked.",
-                    ),
+                    enum_schema(&["search"], "V1 supports only public text search."),
                 ),
-                (
-                    "query",
-                    string_schema(
-                        "Public web search query. Do not include local file contents or secrets.",
-                    ),
-                ),
+                ("query", string_schema("Public web search query.")),
                 (
                     "file_name_hint",
-                    string_schema("Optional safe filename hint for the cached Markdown result."),
+                    string_schema("Optional safe filename hint."),
                 ),
                 (
                     "yellow_confirmation",
@@ -79,7 +68,6 @@ pub fn ctool_input_schema(name: &str) -> Value {
                 ),
             ],
         ),
-
         "ctool_list_directory" => object_schema(
             &["path"],
             vec![
@@ -87,48 +75,17 @@ pub fn ctool_input_schema(name: &str) -> Value {
                     "path",
                     path_schema("Directory path inside current CToolScopeBase."),
                 ),
-                (
-                    "max_depth",
-                    integer_schema("Maximum recursion depth. Hard capped by tool."),
-                ),
-                (
-                    "max_entries",
-                    integer_schema("Maximum returned entries. Hard capped by tool."),
-                ),
+                ("max_depth", integer_schema("Maximum recursion depth.")),
+                ("max_entries", integer_schema("Maximum returned entries.")),
                 (
                     "include_hidden",
                     boolean_schema("Whether to include hidden files and directories."),
                 ),
             ],
         ),
-
-        "ctool_rg_search" => object_schema(
-            &["path", "query"],
-            vec![
-                (
-                    "path",
-                    path_schema("Directory or file path inside current CToolScopeBase."),
-                ),
-                (
-                    "query",
-                    string_schema("Literal text query searched across UTF-8 files."),
-                ),
-                (
-                    "case_sensitive",
-                    boolean_schema("Whether matching is case-sensitive."),
-                ),
-                (
-                    "max_depth",
-                    integer_schema("Maximum directory recursion depth."),
-                ),
-                ("max_results", integer_schema("Maximum returned matches.")),
-                (
-                    "include_hidden",
-                    boolean_schema("Whether to search hidden files and directories."),
-                ),
-            ],
-        ),
-
+        "ctool_rg_search" => {
+            search_input_schema("query", "Literal text query searched across UTF-8 files.")
+        }
         "ctool_rg_search_context" => object_schema(
             &["path", "query"],
             vec![
@@ -163,34 +120,9 @@ pub fn ctool_input_schema(name: &str) -> Value {
                 ),
             ],
         ),
-
-        "ctool_regex_search" => object_schema(
-            &["path", "pattern"],
-            vec![
-                (
-                    "path",
-                    path_schema("Directory or file path inside current CToolScopeBase."),
-                ),
-                (
-                    "pattern",
-                    string_schema("Rust regex pattern searched across UTF-8 files."),
-                ),
-                (
-                    "case_sensitive",
-                    boolean_schema("Whether matching is case-sensitive."),
-                ),
-                (
-                    "max_depth",
-                    integer_schema("Maximum directory recursion depth."),
-                ),
-                ("max_results", integer_schema("Maximum returned matches.")),
-                (
-                    "include_hidden",
-                    boolean_schema("Whether to search hidden files and directories."),
-                ),
-            ],
-        ),
-
+        "ctool_regex_search" => {
+            search_input_schema("pattern", "Rust regex pattern searched across UTF-8 files.")
+        }
         "ctool_count_matches" => object_schema(
             &["path", "query"],
             vec![
@@ -220,7 +152,6 @@ pub fn ctool_input_schema(name: &str) -> Value {
                 ),
             ],
         ),
-
         "ctool_extract_lines_matching" => object_schema(
             &["path", "query"],
             vec![
@@ -259,50 +190,54 @@ pub fn ctool_input_schema(name: &str) -> Value {
                 ),
             ],
         ),
-
-        "ctool_read_file" => object_schema(
+        "ctool_read_file" | "ctool_outline_file" | "ctool_tail_file" => object_schema(
             &["path"],
             vec![
                 (
                     "path",
-                    path_schema("UTF-8 text file path inside current CToolScopeBase."),
+                    path_schema("UTF-8 text/source file path inside current CToolScopeBase."),
                 ),
                 (
                     "max_bytes",
-                    integer_schema("Maximum bytes to read. Hard capped by tool."),
-                ),
-            ],
-        ),
-
-        "ctool_read_code_range" => object_schema(
-            &["path", "start_line", "end_line"],
-            vec![
-                (
-                    "path",
-                    path_schema("UTF-8 text file path inside current CToolScopeBase."),
-                ),
-                (
-                    "start_line",
-                    integer_schema("1-based inclusive start line."),
-                ),
-                ("end_line", integer_schema("1-based inclusive end line.")),
-            ],
-        ),
-
-        "ctool_tail_file" => object_schema(
-            &["path"],
-            vec![
-                (
-                    "path",
-                    path_schema("UTF-8 text file path inside current CToolScopeBase."),
+                    integer_schema("Maximum bytes to read where supported."),
                 ),
                 (
                     "line_count",
-                    integer_schema("Number of trailing lines to read."),
+                    integer_schema("Number of trailing lines for tail reads."),
                 ),
             ],
         ),
-
+        "ctool_read_code_range" => range_input_schema(),
+        "ctool_read_many_ranges" => object_schema(
+            &["path", "ranges"],
+            vec![
+                (
+                    "path",
+                    path_schema("UTF-8 text file path inside current CToolScopeBase."),
+                ),
+                (
+                    "ranges",
+                    array_schema(
+                        object_open_schema("Range object with start_line and end_line."),
+                        "Inclusive 1-based ranges.",
+                    ),
+                ),
+            ],
+        ),
+        "ctool_read_symbol" => object_schema(
+            &["path", "symbol"],
+            vec![
+                (
+                    "path",
+                    path_schema("UTF-8 source file path inside current CToolScopeBase."),
+                ),
+                ("symbol", string_schema("Symbol name to read.")),
+                (
+                    "kind",
+                    string_schema("Optional kind filter: struct, enum, impl, fn, mod, or test."),
+                ),
+            ],
+        ),
         "ctool_edit_replace" => object_schema(
             &["path", "old_string", "new_string"],
             vec![
@@ -317,7 +252,6 @@ pub fn ctool_input_schema(name: &str) -> Value {
                 ("new_string", string_schema("Replacement text.")),
             ],
         ),
-
         "ctool_edit_insert" => object_schema(
             &["path", "insert_after_line", "content"],
             vec![
@@ -329,43 +263,35 @@ pub fn ctool_input_schema(name: &str) -> Value {
                     "insert_after_line",
                     integer_schema("0 inserts at file beginning; N inserts after line N."),
                 ),
-                (
-                    "content",
-                    string_schema("Text to insert. A final newline is added when missing."),
-                ),
+                ("content", string_schema("Text to insert.")),
             ],
         ),
-
-        "ctool_preview_diff" => object_schema(
+        "ctool_preview_diff" | "ctool_edit_preview" => object_schema(
             &["path", "operations"],
             vec![
                 (
                     "path",
-                    path_schema("Editable UTF-8 text file inside current CToolScopeBase."),
+                    path_schema("Editable UTF-8 file inside current CToolScopeBase."),
                 ),
                 (
                     "operations",
                     array_schema(
-                        object_open_schema(
-                            "Preview operation: { operation: replace, old_string, new_string } or { operation: insert, insert_after_line, content }.",
-                        ),
+                        object_open_schema("Preview operation object."),
                         "Ordered preview operations. Nothing is written.",
                     ),
                 ),
             ],
         ),
-
         "ctool_edit_batch" => object_schema(
             &["operations"],
             vec![(
                 "operations",
                 array_schema(
                     object_open_schema("One edit operation."),
-                    "Ordered edit operations applied as a batch.",
+                    "Ordered edit operations.",
                 ),
             )],
         ),
-
         "ctool_edit_replace_exact" => {
             exact_edit_schema("Replace target text inside a unique anchor.")
         }
@@ -386,15 +312,9 @@ pub fn ctool_input_schema(name: &str) -> Value {
                     "anchor",
                     string_schema("Exact anchor text. Must match exactly once in the file."),
                 ),
-                (
-                    "target",
-                    string_schema(
-                        "Exact target text inside anchor. Must match exactly once inside anchor.",
-                    ),
-                ),
+                ("target", string_schema("Exact target text inside anchor.")),
             ],
         ),
-
         "ctool_create_file" => object_schema(
             &["path", "content"],
             vec![
@@ -405,13 +325,10 @@ pub fn ctool_input_schema(name: &str) -> Value {
                 ("content", string_schema("UTF-8 file content to write.")),
                 (
                     "overwrite",
-                    boolean_schema(
-                        "Whether existing file may be overwritten, if supported by tool.",
-                    ),
+                    boolean_schema("Whether existing file may be overwritten."),
                 ),
             ],
         ),
-
         "ctool_delete_file" => object_schema(
             &["path"],
             vec![
@@ -421,13 +338,10 @@ pub fn ctool_input_schema(name: &str) -> Value {
                 ),
                 (
                     "expected_content",
-                    string_schema(
-                        "Optional exact file content guard. Delete is refused if content differs.",
-                    ),
+                    string_schema("Optional exact file content guard."),
                 ),
             ],
         ),
-
         "ctool_move_file" => object_schema(
             &["from", "to"],
             vec![
@@ -445,25 +359,13 @@ pub fn ctool_input_schema(name: &str) -> Value {
                 ),
             ],
         ),
-
-        "ctool_create_directory" => object_schema(
+        "ctool_create_directory" | "ctool_delete_directory" => object_schema(
             &["path"],
             vec![(
                 "path",
-                path_schema("Directory path inside current CToolScopeBase to create."),
+                path_schema("Directory path inside current CToolScopeBase."),
             )],
         ),
-
-        "ctool_delete_directory" => object_schema(
-            &["path"],
-            vec![(
-                "path",
-                path_schema(
-                    "Empty directory path inside current CToolScopeBase to delete. Recursive deletion is never supported.",
-                ),
-            )],
-        ),
-
         "ctool_move_directory" => object_schema(
             &["from", "to"],
             vec![
@@ -477,7 +379,26 @@ pub fn ctool_input_schema(name: &str) -> Value {
                 ),
             ],
         ),
-
+        "ctool_git_diff_summary" => object_schema(
+            &[],
+            vec![(
+                "include_stat",
+                boolean_schema("Whether to include git diff --stat output."),
+            )],
+        ),
+        "ctool_git_diff_file" => object_schema(
+            &["path"],
+            vec![
+                (
+                    "path",
+                    path_schema("File path inside current CToolScopeBase to diff."),
+                ),
+                (
+                    "staged",
+                    boolean_schema("Whether to show staged diff with git diff --cached."),
+                ),
+            ],
+        ),
         "ctool_annotate_markdown" => object_schema(
             &["path", "target_text"],
             vec![
@@ -487,7 +408,7 @@ pub fn ctool_input_schema(name: &str) -> Value {
                 ),
                 (
                     "target_text",
-                    string_schema("Exact Markdown text to wrap with a safe <mark> annotation."),
+                    string_schema("Exact Markdown text to wrap with a safe annotation."),
                 ),
                 (
                     "annotation_kind",
@@ -495,18 +416,15 @@ pub fn ctool_input_schema(name: &str) -> Value {
                 ),
                 (
                     "annotation_direction",
-                    enum_schema(
-                        &["up", "down"],
-                        "Optional arrow prefix inserted inside the mark.",
-                    ),
+                    enum_schema(&["up", "down"], "Optional arrow direction."),
                 ),
                 (
                     "occurrence",
-                    integer_schema("1-based occurrence when target_text appears more than once."),
+                    integer_schema("1-based occurrence when target appears more than once."),
                 ),
                 (
                     "allow_readonly",
-                    boolean_schema("Reserved compatibility flag. Write scope is still enforced."),
+                    boolean_schema("Reserved compatibility flag."),
                 ),
                 (
                     "dry_run",
@@ -514,7 +432,6 @@ pub fn ctool_input_schema(name: &str) -> Value {
                 ),
             ],
         ),
-
         _ => object_open_schema("Unknown CTool input schema."),
     }
 }
@@ -526,7 +443,7 @@ pub fn ctool_output_schema(name: &str) -> Value {
             vec![
                 (
                     "will_execute",
-                    boolean_schema("Whether the request will execute in this call."),
+                    boolean_schema("Whether the request will execute."),
                 ),
                 ("executed", boolean_schema("Whether commands executed.")),
                 (
@@ -539,9 +456,7 @@ pub fn ctool_output_schema(name: &str) -> Value {
                 ),
                 (
                     "all_success",
-                    boolean_schema(
-                        "Whether all executed commands exited successfully. Null when not executed.",
-                    ),
+                    boolean_schema("Whether all executed commands succeeded."),
                 ),
                 (
                     "result_file",
@@ -572,28 +487,19 @@ pub fn ctool_output_schema(name: &str) -> Value {
                 ),
                 (
                     "final_risk",
-                    enum_schema(
-                        &["GREEN", "YELLOW", "RED", "BLOCKED"],
-                        "Final risk after all rules.",
-                    ),
+                    enum_schema(&["GREEN", "YELLOW", "RED", "BLOCKED"], "Final risk."),
                 ),
-                (
-                    "approval_required",
-                    string_schema("Approval mode: auto, once, twice, or blocked."),
-                ),
-                (
-                    "request_reason",
-                    string_schema("Optional user/AI reason for the request."),
-                ),
+                ("approval_required", string_schema("Approval mode.")),
+                ("request_reason", string_schema("Optional request reason.")),
                 (
                     "user_feedback",
-                    string_schema("Optional rejection feedback from user confirmation input."),
+                    string_schema("Optional rejection feedback."),
                 ),
                 (
                     "commands",
                     array_schema(
-                        object_open_schema("Command preview item with command, risk, and reason."),
-                        "Per-command risk preview list.",
+                        object_open_schema("Command preview item."),
+                        "Per-command preview list.",
                     ),
                 ),
                 (
@@ -601,19 +507,15 @@ pub fn ctool_output_schema(name: &str) -> Value {
                     string_schema("Human-readable preview text."),
                 ),
                 ("banner", string_schema("Human-readable risk banner.")),
-                (
-                    "note",
-                    string_schema("Human-readable execution/block/rejection note."),
-                ),
+                ("note", string_schema("Human-readable note.")),
             ],
         ),
-
         "ctool_tavily_search_request" => object_schema(
             &[],
             vec![
                 (
                     "will_execute",
-                    boolean_schema("Whether the request will execute in this call."),
+                    boolean_schema("Whether the request will execute."),
                 ),
                 ("executed", boolean_schema("Whether Tavily was called.")),
                 (
@@ -625,35 +527,25 @@ pub fn ctool_output_schema(name: &str) -> Value {
                     boolean_schema("Whether the user rejected confirmation."),
                 ),
                 ("current_dir", string_schema("Current CoolWorkspace path.")),
-                (
-                    "action",
-                    enum_schema(&["search"], "V1 action label. Only search is executable."),
-                ),
+                ("action", enum_schema(&["search"], "V1 action label.")),
                 (
                     "final_risk",
                     enum_schema(&["GREEN", "YELLOW", "RED", "BLOCKED"], "Final risk label."),
                 ),
                 ("output_file", string_schema("Cached Markdown result path.")),
                 ("log_file", string_schema("Audit log path.")),
-                (
-                    "summary",
-                    string_schema("Short summary from cached Markdown."),
-                ),
+                ("summary", string_schema("Short summary.")),
                 (
                     "suggested_next_step",
-                    string_schema("Suggested next action for the AI/user."),
+                    string_schema("Suggested next action."),
                 ),
                 (
                     "user_feedback",
-                    string_schema("Optional rejection feedback from user confirmation input."),
+                    string_schema("Optional rejection feedback."),
                 ),
-                (
-                    "note",
-                    string_schema("Human-readable execution/block/rejection note."),
-                ),
+                ("note", string_schema("Human-readable note.")),
             ],
         ),
-
         "ctool_list_directory" => object_schema(
             &[],
             vec![
@@ -668,24 +560,19 @@ pub fn ctool_output_schema(name: &str) -> Value {
                 ),
                 (
                     "items",
-                    array_schema(
-                        object_open_schema(
-                            "Directory entry with path, kind, and optional byte_len.",
-                        ),
-                        "Directory entries.",
-                    ),
+                    array_schema(object_open_schema("Directory item."), "Directory entries."),
                 ),
             ],
         ),
-
-        "ctool_rg_search" => object_schema(
+        "ctool_rg_search" | "ctool_regex_search" => object_schema(
             &[],
             vec![
                 ("root", string_schema("Resolved search root path.")),
-                ("query", string_schema("Literal query used for search.")),
+                ("query", string_schema("Search query.")),
+                ("pattern", string_schema("Search pattern.")),
                 (
                     "total_returned",
-                    integer_schema("Number of matches returned."),
+                    integer_schema("Number of returned matches."),
                 ),
                 (
                     "truncated",
@@ -693,48 +580,18 @@ pub fn ctool_output_schema(name: &str) -> Value {
                 ),
                 (
                     "matches",
-                    array_schema(
-                        object_open_schema("Search match with path, line_number, and line."),
-                        "Search matches.",
-                    ),
+                    array_schema(object_open_schema("Search match."), "Matches."),
                 ),
             ],
         ),
-
-        "ctool_regex_search" => object_schema(
-            &[],
-            vec![
-                ("root", string_schema("Resolved search root path.")),
-                (
-                    "pattern",
-                    string_schema("Rust regex pattern used for search."),
-                ),
-                (
-                    "total_returned",
-                    integer_schema("Number of matches returned."),
-                ),
-                (
-                    "truncated",
-                    boolean_schema("Whether results were truncated."),
-                ),
-                (
-                    "matches",
-                    array_schema(
-                        object_open_schema("Regex match with path, line_number, and line."),
-                        "Regex matches.",
-                    ),
-                ),
-            ],
-        ),
-
         "ctool_rg_search_context" => object_schema(
             &[],
             vec![
                 ("root", string_schema("Resolved search root path.")),
-                ("query", string_schema("Literal query used for search.")),
+                ("query", string_schema("Search query.")),
                 (
                     "total_returned",
-                    integer_schema("Number of matches returned."),
+                    integer_schema("Number of returned matches."),
                 ),
                 (
                     "truncated",
@@ -743,31 +600,21 @@ pub fn ctool_output_schema(name: &str) -> Value {
                 (
                     "matches",
                     array_schema(
-                        object_open_schema(
-                            "Search match with path, line_number, and context lines.",
-                        ),
-                        "Search matches.",
+                        object_open_schema("Context match."),
+                        "Matches with context.",
                     ),
                 ),
             ],
         ),
-
         "ctool_count_matches" => object_schema(
             &[],
             vec![
                 ("root", string_schema("Resolved search root path.")),
-                (
-                    "query",
-                    string_schema("Literal query or regex pattern used for counting."),
-                ),
-                (
-                    "is_regex",
-                    boolean_schema("Whether query was interpreted as a Rust regex pattern."),
-                ),
-                ("file_count", integer_schema("Number of scanned files.")),
+                ("query", string_schema("Query used for counting.")),
+                ("is_regex", boolean_schema("Whether regex was used.")),
                 (
                     "matching_file_count",
-                    integer_schema("Number of files containing matches."),
+                    integer_schema("Number of files with matches."),
                 ),
                 (
                     "line_match_count",
@@ -775,19 +622,12 @@ pub fn ctool_output_schema(name: &str) -> Value {
                 ),
             ],
         ),
-
         "ctool_extract_lines_matching" => object_schema(
             &[],
             vec![
                 ("root", string_schema("Resolved search root path.")),
-                (
-                    "query",
-                    string_schema("Literal query or regex pattern used for extraction."),
-                ),
-                (
-                    "is_regex",
-                    boolean_schema("Whether query was interpreted as a Rust regex pattern."),
-                ),
+                ("query", string_schema("Query used for extraction.")),
+                ("is_regex", boolean_schema("Whether regex was used.")),
                 (
                     "total_returned",
                     integer_schema("Number of returned lines."),
@@ -798,14 +638,10 @@ pub fn ctool_output_schema(name: &str) -> Value {
                 ),
                 (
                     "lines",
-                    array_schema(
-                        object_open_schema("Extracted line with path, line_number, and line."),
-                        "Extracted lines.",
-                    ),
+                    array_schema(object_open_schema("Extracted line."), "Extracted lines."),
                 ),
             ],
         ),
-
         "ctool_read_file" => object_schema(
             &[],
             vec![
@@ -818,7 +654,28 @@ pub fn ctool_output_schema(name: &str) -> Value {
                 ("content", string_schema("UTF-8 file content.")),
             ],
         ),
-
+        "ctool_outline_file" => object_schema(
+            &[],
+            vec![
+                ("path", string_schema("Resolved file path.")),
+                ("total_lines", integer_schema("Total line count.")),
+                (
+                    "symbol_count",
+                    integer_schema("Number of returned symbols."),
+                ),
+                (
+                    "truncated",
+                    boolean_schema("Whether symbols were truncated."),
+                ),
+                (
+                    "symbols",
+                    array_schema(
+                        object_open_schema("Symbol item."),
+                        "Detected source symbols.",
+                    ),
+                ),
+            ],
+        ),
         "ctool_read_code_range" => object_schema(
             &[],
             vec![
@@ -831,7 +688,34 @@ pub fn ctool_output_schema(name: &str) -> Value {
                 ("content", string_schema("UTF-8 code range content.")),
             ],
         ),
-
+        "ctool_read_many_ranges" => object_schema(
+            &[],
+            vec![
+                ("path", string_schema("Resolved file path.")),
+                ("total_lines", integer_schema("Total line count.")),
+                ("range_count", integer_schema("Number of returned ranges.")),
+                (
+                    "ranges",
+                    array_schema(object_open_schema("Range output."), "Returned ranges."),
+                ),
+            ],
+        ),
+        "ctool_read_symbol" => object_schema(
+            &[],
+            vec![
+                ("path", string_schema("Resolved file path.")),
+                ("symbol", string_schema("Matched symbol name.")),
+                ("kind", string_schema("Matched symbol kind.")),
+                (
+                    "start_line",
+                    integer_schema("1-based inclusive start line."),
+                ),
+                ("end_line", integer_schema("1-based inclusive end line.")),
+                ("total_lines", integer_schema("Total file line count.")),
+                ("signature", string_schema("Matched signature.")),
+                ("content", string_schema("Matched symbol source content.")),
+            ],
+        ),
         "ctool_tail_file" => object_schema(
             &[],
             vec![
@@ -840,17 +724,11 @@ pub fn ctool_output_schema(name: &str) -> Value {
                 ("content", string_schema("Trailing UTF-8 file content.")),
             ],
         ),
-
         "ctool_edit_replace" => object_schema(
             &[],
             vec![
                 ("path", string_schema("Edited file path.")),
-                (
-                    "replaced",
-                    integer_schema(
-                        "Number of replacements. This tool requires exactly one replacement.",
-                    ),
-                ),
+                ("replaced", integer_schema("Number of replacements.")),
                 (
                     "byte_len_before",
                     integer_schema("File byte length before edit."),
@@ -861,16 +739,13 @@ pub fn ctool_output_schema(name: &str) -> Value {
                 ),
             ],
         ),
-
         "ctool_edit_insert" => object_schema(
             &[],
             vec![
                 ("path", string_schema("Edited file path.")),
                 (
                     "inserted_after_line",
-                    integer_schema(
-                        "Line after which content was inserted. 0 means file beginning.",
-                    ),
+                    integer_schema("Line after which content was inserted."),
                 ),
                 (
                     "byte_len_before",
@@ -882,8 +757,7 @@ pub fn ctool_output_schema(name: &str) -> Value {
                 ),
             ],
         ),
-
-        "ctool_preview_diff" => object_schema(
+        "ctool_preview_diff" | "ctool_edit_preview" => object_schema(
             &[],
             vec![
                 ("path", string_schema("Target file path.")),
@@ -898,7 +772,6 @@ pub fn ctool_output_schema(name: &str) -> Value {
                 ("diff", string_schema("Simple unified diff preview.")),
             ],
         ),
-
         "ctool_edit_batch" => object_schema(
             &[],
             vec![
@@ -915,7 +788,6 @@ pub fn ctool_output_schema(name: &str) -> Value {
                 ),
             ],
         ),
-
         "ctool_edit_replace_exact"
         | "ctool_edit_insert_before_exact"
         | "ctool_edit_insert_after_exact"
@@ -926,13 +798,11 @@ pub fn ctool_output_schema(name: &str) -> Value {
                 ("operation", string_schema("Exact edit operation label.")),
                 (
                     "matched_anchor",
-                    integer_schema("Number of matched anchors. Successful runs return 1."),
+                    integer_schema("Number of matched anchors."),
                 ),
                 (
                     "matched_target",
-                    integer_schema(
-                        "Number of matched targets inside the anchor. Successful runs return 1.",
-                    ),
+                    integer_schema("Number of matched targets."),
                 ),
                 (
                     "byte_len_before",
@@ -944,17 +814,13 @@ pub fn ctool_output_schema(name: &str) -> Value {
                 ),
             ],
         ),
-
         "ctool_annotate_markdown" => object_schema(
             &[],
             vec![
-                (
-                    "success",
-                    boolean_schema("Whether annotation planning/execution succeeded."),
-                ),
+                ("success", boolean_schema("Whether annotation succeeded.")),
                 (
                     "dry_run",
-                    boolean_schema("Whether the file was left unchanged."),
+                    boolean_schema("Whether file was left unchanged."),
                 ),
                 (
                     "readonly_exception_used",
@@ -969,10 +835,7 @@ pub fn ctool_output_schema(name: &str) -> Value {
                     enum_schema(&["up", "down"], "Optional arrow direction used."),
                 ),
                 ("path", string_schema("Annotated Markdown file path.")),
-                (
-                    "line_number",
-                    integer_schema("1-based line number of the annotation target."),
-                ),
+                ("line_number", integer_schema("1-based line number.")),
                 ("occurrence", integer_schema("1-based selected occurrence.")),
                 (
                     "before_preview",
@@ -982,7 +845,6 @@ pub fn ctool_output_schema(name: &str) -> Value {
                 ("note", string_schema("Human-readable result note.")),
             ],
         ),
-
         "ctool_create_file" => object_schema(
             &[],
             vec![
@@ -994,7 +856,6 @@ pub fn ctool_output_schema(name: &str) -> Value {
                 ),
             ],
         ),
-
         "ctool_delete_file" => object_schema(
             &[],
             vec![
@@ -1006,7 +867,6 @@ pub fn ctool_output_schema(name: &str) -> Value {
                 ("deleted", boolean_schema("Whether file was deleted.")),
             ],
         ),
-
         "ctool_move_file" => object_schema(
             &[],
             vec![
@@ -1014,12 +874,11 @@ pub fn ctool_output_schema(name: &str) -> Value {
                 ("to", string_schema("Resolved destination file path.")),
                 (
                     "overwritten",
-                    boolean_schema("Whether an existing destination file was overwritten."),
+                    boolean_schema("Whether destination was overwritten."),
                 ),
                 ("moved", boolean_schema("Whether file was moved.")),
             ],
         ),
-
         "ctool_create_directory" => object_schema(
             &[],
             vec![
@@ -1030,7 +889,6 @@ pub fn ctool_output_schema(name: &str) -> Value {
                 ),
             ],
         ),
-
         "ctool_delete_directory" => object_schema(
             &[],
             vec![
@@ -1038,7 +896,6 @@ pub fn ctool_output_schema(name: &str) -> Value {
                 ("deleted", boolean_schema("Whether directory was deleted.")),
             ],
         ),
-
         "ctool_move_directory" => object_schema(
             &[],
             vec![
@@ -1047,9 +904,74 @@ pub fn ctool_output_schema(name: &str) -> Value {
                 ("moved", boolean_schema("Whether directory was moved.")),
             ],
         ),
-
+        "ctool_git_diff_summary" => object_schema(
+            &[],
+            vec![
+                ("current_dir", string_schema("Git working directory.")),
+                ("status_short", string_schema("git status --short output.")),
+                (
+                    "diff_stat",
+                    string_schema("Optional git diff --stat output."),
+                ),
+            ],
+        ),
+        "ctool_git_diff_file" => object_schema(
+            &[],
+            vec![
+                ("current_dir", string_schema("Git working directory.")),
+                ("path", string_schema("Resolved file path.")),
+                (
+                    "staged",
+                    boolean_schema("Whether staged diff was requested."),
+                ),
+                ("diff", string_schema("Git diff output for the file.")),
+            ],
+        ),
         _ => object_open_schema("Unknown CTool output schema."),
     }
+}
+
+fn search_input_schema(query_field: &str, query_description: &str) -> Value {
+    object_schema(
+        &["path", query_field],
+        vec![
+            (
+                "path",
+                path_schema("Directory or file path inside current CToolScopeBase."),
+            ),
+            (query_field, string_schema(query_description)),
+            (
+                "case_sensitive",
+                boolean_schema("Whether matching is case-sensitive."),
+            ),
+            (
+                "max_depth",
+                integer_schema("Maximum directory recursion depth."),
+            ),
+            ("max_results", integer_schema("Maximum returned matches.")),
+            (
+                "include_hidden",
+                boolean_schema("Whether to search hidden files and directories."),
+            ),
+        ],
+    )
+}
+
+fn range_input_schema() -> Value {
+    object_schema(
+        &["path", "start_line", "end_line"],
+        vec![
+            (
+                "path",
+                path_schema("UTF-8 text file path inside current CToolScopeBase."),
+            ),
+            (
+                "start_line",
+                integer_schema("1-based inclusive start line."),
+            ),
+            ("end_line", integer_schema("1-based inclusive end line.")),
+        ],
+    )
 }
 
 fn exact_edit_schema(description: &str) -> Value {

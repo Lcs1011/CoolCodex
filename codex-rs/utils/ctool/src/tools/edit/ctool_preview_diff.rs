@@ -109,7 +109,7 @@ pub fn preview_diff(
     })
 }
 
-fn make_simple_diff(before: &str, after: &str) -> String {
+pub(crate) fn make_simple_diff(before: &str, after: &str) -> String {
     if before == after {
         return "No changes.".to_string();
     }
