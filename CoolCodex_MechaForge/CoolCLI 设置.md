@@ -160,7 +160,9 @@ CoolWorkspace文件夹为基础视野
 
 
 ```
-CToolScopeBase:none>
+设置冲突解决原则：
+
+CToolScopeBase:none >
 
 Privileged 内部如下不赘述 整体 > 
 
@@ -173,6 +175,8 @@ CToolScopeBase:非none
 
 
 ### Scope.toml 空表演示
+
+Scope.toml 运行中重新设置无效
 
 ``` toml
 [privileged_files]

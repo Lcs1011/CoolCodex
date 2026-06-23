@@ -289,7 +289,7 @@ pub fn can_write_path(ctx: &CToolScopeContext, path: impl AsRef<Path>) -> bool {
 pub fn can_create_path(ctx: &CToolScopeContext, path: impl AsRef<Path>) -> bool {
     let path = lexical_normalize_path(path.as_ref());
 
-    if is_hard_protected_config_path(ctx, &path) || is_critical_root_path(ctx, &path) {
+    if is_critical_root_path(ctx, &path) {
         return false;
     }
 
@@ -303,7 +303,7 @@ pub fn can_create_path(ctx: &CToolScopeContext, path: impl AsRef<Path>) -> bool 
 
     can_write_path(ctx, parent)
         && !matches!(
-            path_access(ctx, &path),
+            path_access(ctx, &path_with_canonical_parent),
             PathAccess::Hidden | PathAccess::Readonly
         )
 }
@@ -323,14 +323,6 @@ fn path_access(ctx: &CToolScopeContext, path: impl AsRef<Path>) -> PathAccess {
         return PathAccess::Unspecified;
     }
 
-    if is_web_search_cache_path(ctx, &path) {
-        return PathAccess::Readonly;
-    }
-
-    if is_hard_protected_config_path(ctx, &path) {
-        return PathAccess::Hidden;
-    }
-
     if let Some(access) = path_access_from_rule_sets(
         &path,
         &ctx.system_config.privileged_files,
@@ -345,6 +337,14 @@ fn path_access(ctx: &CToolScopeContext, path: impl AsRef<Path>) -> PathAccess {
         &ctx.user_config.privileged_folders,
     ) {
         return access;
+    }
+
+    if is_web_search_cache_path(ctx, &path) {
+        return PathAccess::Readonly;
+    }
+
+    if is_hard_protected_config_path(ctx, &path) {
+        return PathAccess::Hidden;
     }
 
     if let Some(access) =
@@ -472,7 +472,7 @@ pub fn ensure_delete_allowed_by_scope(
 ) -> CToolResult<PathBuf> {
     let path = ensure_write_allowed_by_scope(ctx, path)?;
 
-    if is_hard_protected_config_path(ctx, &path) || is_critical_root_path(ctx, &path) {
+    if is_critical_root_path(ctx, &path) {
         return Err(CToolError::OutOfScope {
             path: path.display().to_string(),
             operation: "delete",
@@ -489,7 +489,7 @@ pub fn ensure_move_allowed_by_scope(
 ) -> CToolResult<(PathBuf, PathBuf)> {
     let from = ensure_write_allowed_by_scope(ctx, from)?;
 
-    if is_hard_protected_config_path(ctx, &from) || is_critical_root_path(ctx, &from) {
+    if is_critical_root_path(ctx, &from) {
         return Err(CToolError::OutOfScope {
             path: from.display().to_string(),
             operation: "move",
@@ -498,7 +498,7 @@ pub fn ensure_move_allowed_by_scope(
 
     let to = ensure_create_allowed_by_scope(ctx, to)?;
 
-    if is_hard_protected_config_path(ctx, &to) || is_critical_root_path(ctx, &to) {
+    if is_critical_root_path(ctx, &to) {
         return Err(CToolError::OutOfScope {
             path: to.display().to_string(),
             operation: "move",

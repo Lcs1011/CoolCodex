@@ -116,3 +116,55 @@ fn base_none_blocks_even_explicit_character_rules() {
     assert!(!can_read_path(&ctx, &other_file));
     assert!(!can_write_path(&ctx, &other_file));
 }
+
+#[test]
+fn base_none_blocks_even_privileged_rules() {
+    let mut ctx = test_context();
+    ctx.base_scope = CToolScopeBase::None;
+    let file = ctx.character_root.join(".cool").join("config.toml");
+
+    ctx.system_config.privileged_files.readwrite = vec![file.clone()];
+
+    assert!(!can_read_path(&ctx, &file));
+    assert!(!can_write_path(&ctx, &file));
+}
+
+#[test]
+fn privileged_file_readwrite_beats_hard_protected_cool_config() {
+    let mut ctx = test_context();
+    let file = ctx.character_root.join(".cool").join("config.toml");
+
+    ctx.user_config.privileged_files.readwrite = vec![file.clone()];
+
+    assert!(is_hard_protected_config_path(&ctx, &file));
+    assert!(can_read_path(&ctx, &file));
+    assert!(can_write_path(&ctx, &file));
+}
+
+#[test]
+fn privileged_folder_readwrite_allows_create_under_cool_dir() {
+    let mut ctx = test_context();
+    let cool_dir = ctx.character_root.join(".cool");
+    let cache_dir = cool_dir.join("cache");
+    let file = cache_dir.join("created.txt");
+
+    std::fs::create_dir_all(&cache_dir).expect("create temp cache dir");
+    ctx.user_config.privileged_folders.readwrite =
+        vec![canonicalize_existing_path(&cool_dir).expect("canonicalize cool dir")];
+
+    assert!(can_create_path(&ctx, &file));
+}
+
+#[test]
+fn privileged_file_readwrite_allows_delete_under_cool_dir() {
+    let mut ctx = test_context();
+    let cool_dir = ctx.character_root.join(".cool");
+    let file = cool_dir.join("delete.txt");
+
+    std::fs::create_dir_all(&cool_dir).expect("create temp cool dir");
+    std::fs::write(&file, "delete me").expect("write temp file");
+    ctx.user_config.privileged_files.readwrite =
+        vec![canonicalize_existing_path(&file).expect("canonicalize temp file")];
+
+    assert!(ensure_delete_allowed_by_scope(&ctx, &file).is_ok());
+}
