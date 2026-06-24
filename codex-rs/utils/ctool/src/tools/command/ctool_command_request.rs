@@ -1,10 +1,13 @@
+use std::path::Path;
 use std::path::PathBuf;
 
 use serde::Deserialize;
 use serde::Serialize;
 use serde_json::Value;
+use toml::Value as TomlValue;
 
 use crate::command_request::CToolCommandApproval;
+use crate::command_request::CToolCommandClassification;
 use crate::command_request::CToolCommandRequestRecordStatus;
 use crate::command_request::CToolCommandRisk;
 use crate::command_request::CToolCommandUserDecision;
@@ -17,7 +20,6 @@ use crate::command_request::record_unexecuted_command_request;
 use crate::command_request::render_command_request_banner;
 use crate::context::CToolContext;
 use crate::error::CToolResult;
-use crate::scope_config::COOL_DIR_NAME;
 use crate::scope_config::load_merged_cool_command_config;
 use crate::tool::CTool;
 use crate::tool::CToolSpec;
@@ -54,7 +56,6 @@ pub struct CToolCommandRequestOutput {
     pub rejected: bool,
     pub all_success: Option<bool>,
     pub result_file: Option<String>,
-    pub log_file: Option<String>,
     pub current_dir: String,
     pub command_count: usize,
     pub system_risk: String,
@@ -110,7 +111,6 @@ pub fn preview_command_request(
     let mut rejected = false;
     let mut all_success = None;
     let mut result_file = None;
-    let mut log_file = None;
     let mut user_feedback = None;
     let mut note = match preview.approval {
         CToolCommandApproval::AutoApprovedGreen => {
@@ -140,7 +140,6 @@ pub fn preview_command_request(
                 executed = true;
                 all_success = Some(report.all_success);
                 result_file = Some(report.result_file);
-                log_file = Some(report.log_file);
                 note = "Green command request auto-executed by user whitelist.".to_string();
             }
             CToolCommandApproval::ConfirmOnce => {
@@ -156,9 +155,16 @@ pub fn preview_command_request(
                             executed = true;
                             all_success = Some(report.all_success);
                             result_file = Some(report.result_file);
-                            log_file = Some(report.log_file);
-                            note = "Yellow command request executed after user confirmation."
-                                .to_string();
+                            if should_remember_confirmation(confirmation) {
+                                remember_approved_commands(
+                                    &ctx.scope_context.character_command_path,
+                                    &preview.commands,
+                                )?;
+                                note = "Yellow command request executed and exact commands were remembered for future auto-approval.".to_string();
+                            } else {
+                                note = "Yellow command request executed after user confirmation."
+                                    .to_string();
+                            }
                         }
                         CToolCommandUserDecision::Rejected { feedback } => {
                             rejected = true;
@@ -195,8 +201,15 @@ pub fn preview_command_request(
                                         executed = true;
                                         all_success = Some(report.all_success);
                                         result_file = Some(report.result_file);
-                                        log_file = Some(report.log_file);
-                                        note = "Red command request executed after two user confirmations.".to_string();
+                                        if should_remember_confirmation(second) {
+                                            remember_approved_commands(
+                                                &ctx.scope_context.character_command_path,
+                                                &preview.commands,
+                                            )?;
+                                            note = "Red command request executed and exact commands were remembered for future auto-approval.".to_string();
+                                        } else {
+                                            note = "Red command request executed after two user confirmations.".to_string();
+                                        }
                                     }
                                     CToolCommandUserDecision::Rejected { feedback } => {
                                         rejected = true;
@@ -231,7 +244,6 @@ pub fn preview_command_request(
         )?;
         all_success = Some(report.all_success);
         result_file = Some(report.result_file);
-        log_file = Some(report.log_file);
     }
     let commands = preview
         .commands
@@ -250,7 +262,6 @@ pub fn preview_command_request(
         rejected,
         all_success,
         result_file.as_deref(),
-        log_file.as_deref(),
         &note,
         user_feedback.as_deref(),
     );
@@ -262,7 +273,6 @@ pub fn preview_command_request(
         rejected,
         all_success,
         result_file,
-        log_file,
         current_dir: preview.current_dir.clone(),
         command_count: commands.len(),
         system_risk: preview.system_risk.label().to_string(),
@@ -278,6 +288,75 @@ pub fn preview_command_request(
     })
 }
 
+fn should_remember_confirmation(input: &str) -> bool {
+    input.trim_start().to_ascii_lowercase().starts_with("yyy")
+}
+
+fn remember_approved_commands(
+    command_path: &Path,
+    commands: &[CToolCommandClassification],
+) -> CToolResult<()> {
+    let mut root = if command_path.exists() {
+        let text = std::fs::read_to_string(command_path)?;
+        text.parse::<TomlValue>()
+            .unwrap_or_else(|_| TomlValue::Table(Default::default()))
+    } else {
+        TomlValue::Table(Default::default())
+    };
+
+    if !root.is_table() {
+        root = TomlValue::Table(Default::default());
+    }
+    if let Some(root_table) = root.as_table_mut() {
+        ensure_remembered_commands(root_table, commands);
+    }
+    write_command_config(command_path, &root)
+}
+
+fn ensure_remembered_commands(
+    root_table: &mut toml::map::Map<String, TomlValue>,
+    commands: &[CToolCommandClassification],
+) {
+    let privileged = root_table
+        .entry("ctool_command_privileged".to_string())
+        .or_insert_with(|| TomlValue::Table(Default::default()));
+    if !privileged.is_table() {
+        *privileged = TomlValue::Table(Default::default());
+    }
+    let Some(privileged_table) = privileged.as_table_mut() else {
+        return;
+    };
+
+    let remembered = privileged_table
+        .entry("green_exact_commands".to_string())
+        .or_insert_with(|| TomlValue::Array(Vec::new()));
+    if !remembered.is_array() {
+        *remembered = TomlValue::Array(Vec::new());
+    }
+    let Some(array) = remembered.as_array_mut() else {
+        return;
+    };
+
+    for command in commands {
+        if !array
+            .iter()
+            .any(|value| value.as_str() == Some(command.command.as_str()))
+        {
+            array.push(TomlValue::String(command.command.clone()));
+        }
+    }
+}
+
+fn write_command_config(command_path: &Path, root: &TomlValue) -> CToolResult<()> {
+    if let Some(parent) = command_path.parent() {
+        std::fs::create_dir_all(parent)?;
+    }
+    let text = toml::to_string_pretty(root)
+        .map_err(|error| crate::error::CToolError::Serialization(error.to_string()))?;
+    std::fs::write(command_path, text)?;
+    Ok(())
+}
+
 fn approval_label(approval: CToolCommandApproval) -> &'static str {
     match approval {
         CToolCommandApproval::AutoApprovedGreen => "none_green_auto_approved",
@@ -288,11 +367,7 @@ fn approval_label(approval: CToolCommandApproval) -> &'static str {
 }
 
 fn command_request_cache_root(ctx: &CToolContext) -> PathBuf {
-    ctx.scope_context
-        .character_root
-        .join(COOL_DIR_NAME)
-        .join("cache")
-        .join("command_request")
+    ctx.scope_context.character_root.clone()
 }
 
 fn render_command_request_display_text(
@@ -302,7 +377,6 @@ fn render_command_request_display_text(
     rejected: bool,
     all_success: Option<bool>,
     result_file: Option<&str>,
-    log_file: Option<&str>,
     note: &str,
     user_feedback: Option<&str>,
 ) -> String {
@@ -321,11 +395,6 @@ fn render_command_request_display_text(
     if let Some(result_file) = result_file {
         text.push_str("result_file: ");
         text.push_str(result_file);
-        text.push('\n');
-    }
-    if let Some(log_file) = log_file {
-        text.push_str("log_file: ");
-        text.push_str(log_file);
         text.push('\n');
     }
     if let Some(user_feedback) = user_feedback {
@@ -448,7 +517,6 @@ policy = "green"
         assert!(!output.rejected);
         assert_eq!(output.all_success, Some(true));
         assert!(output.result_file.is_some());
-        assert!(output.log_file.is_some());
         assert_eq!(
             output.current_dir,
             ctx.scope_context.cool_workspace.display().to_string()
@@ -464,7 +532,7 @@ policy = "green"
         assert_eq!(output.commands[0].risk, "GREEN");
         assert!(output.display_text.contains("executed: true"));
         assert!(output.display_text.contains("result_file:"));
-        assert!(output.display_text.contains("log_file:"));
+        assert!(!output.display_text.contains("log_file:"));
 
         let result_text = std::fs::read_to_string(output.result_file.unwrap()).unwrap();
         assert!(result_text.contains("ctool-tool-output"));
@@ -504,7 +572,6 @@ policy = "green"
         assert!(output.rejected);
         assert_eq!(output.all_success, Some(false));
         assert!(output.result_file.is_some());
-        assert!(output.log_file.is_some());
         assert_eq!(
             output.current_dir,
             ctx.scope_context.cool_workspace.display().to_string()
@@ -567,7 +634,6 @@ policy = "green"
         assert!(!output.rejected);
         assert_eq!(output.all_success, Some(false));
         assert!(output.result_file.is_some());
-        assert!(output.log_file.is_some());
         assert_eq!(
             output.current_dir,
             ctx.scope_context.cool_workspace.display().to_string()
@@ -587,7 +653,7 @@ policy = "green"
         assert!(output.display_text.contains("executed: false"));
         assert!(output.display_text.contains("blocked: true"));
         assert!(output.display_text.contains("result_file:"));
-        assert!(output.display_text.contains("log_file:"));
+        assert!(!output.display_text.contains("log_file:"));
 
         let result_text = std::fs::read_to_string(output.result_file.unwrap()).unwrap();
         assert!(result_text.contains("Approved: No"));

@@ -547,8 +547,16 @@ fn blocked_request_record_writes_result_and_log() {
 
     assert!(log_text.contains("Approved: No"));
     assert!(log_text.contains("Status: Blocked"));
-    assert!(log_text.contains("Output:"));
-    assert!(log_text.contains(&report.result_file));
+    assert!(log_text.contains("OutputFile:"));
+    assert!(
+        log_text.contains(
+            std::path::Path::new(&report.result_file)
+                .file_name()
+                .unwrap()
+                .to_str()
+                .unwrap()
+        )
+    );
 }
 
 #[test]
@@ -636,8 +644,16 @@ fn approved_green_request_executes_and_writes_result_and_log() {
     assert!(log_text.contains("Approved: Yes"));
     assert!(log_text.contains("AllSuccess: true"));
     assert!(log_text.contains("echo ctool-green-execute"));
-    assert!(log_text.contains("Output:"));
-    assert!(log_text.contains(&report.result_file));
+    assert!(log_text.contains("OutputFile:"));
+    assert!(
+        log_text.contains(
+            std::path::Path::new(&report.result_file)
+                .file_name()
+                .unwrap()
+                .to_str()
+                .unwrap()
+        )
+    );
 }
 #[test]
 fn blocked_banner_is_visible() {

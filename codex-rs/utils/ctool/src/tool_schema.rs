@@ -32,15 +32,21 @@ pub fn ctool_input_schema(name: &str) -> Value {
                 ),
                 (
                     "yellow_confirmation",
-                    string_schema("Required only when final risk is YELLOW."),
+                    string_schema(
+                        "Required only when final risk is YELLOW and a prior request is being confirmed. First non-space character y approves, n rejects; yyy approves and remembers exact commands for future auto-approval.",
+                    ),
                 ),
                 (
                     "red_first_confirmation",
-                    string_schema("Required first confirmation only when final risk is RED."),
+                    string_schema(
+                        "Required first confirmation only when final risk is RED. First non-space character y advances to second confirmation, n rejects; text after n is user feedback.",
+                    ),
                 ),
                 (
                     "red_second_confirmation",
-                    string_schema("Required second confirmation only when final risk is RED."),
+                    string_schema(
+                        "Required second confirmation only when final risk is RED. First non-space character y approves, n rejects; yyy approves and remembers exact commands for future auto-approval.",
+                    ),
                 ),
             ],
         ),
@@ -467,9 +473,10 @@ pub fn ctool_output_schema(name: &str) -> Value {
                 ),
                 (
                     "result_file",
-                    string_schema("Optional Markdown result file path."),
+                    string_schema(
+                        "Optional Markdown result file path for AI-readable command output.",
+                    ),
                 ),
-                ("log_file", string_schema("Optional audit log file path.")),
                 (
                     "current_dir",
                     string_schema("Command execution current directory."),

@@ -936,16 +936,18 @@ pub fn execute_approved_command_request(
     }
 
     let current_dir = current_dir.as_ref();
-    let cache_dir = command_request_cache_dir(cache_root.as_ref());
-    std::fs::create_dir_all(&cache_dir)?;
+    let result_dir = command_request_result_dir(cache_root.as_ref());
+    let log_dir = command_request_log_dir(cache_root.as_ref());
+    std::fs::create_dir_all(&result_dir)?;
+    std::fs::create_dir_all(&log_dir)?;
 
-    let index = next_command_request_index(&cache_dir)?;
+    let index = next_command_request_index(&result_dir)?;
     let result_file_name = format!(
         "{index:05}_{}_command_request.md",
         preview.final_risk.label().to_ascii_lowercase()
     );
-    let result_path = cache_dir.join(result_file_name);
-    let log_path = cache_dir.join("request_log.md");
+    let result_path = result_dir.join(result_file_name);
+    let log_path = log_dir.join("request_log.md");
 
     let started_at = Local::now();
     let mut result_text = String::new();
@@ -1040,16 +1042,18 @@ pub fn record_unexecuted_command_request(
     user_feedback: Option<&str>,
 ) -> CToolResult<CToolCommandExecutionReport> {
     let current_dir = current_dir.as_ref();
-    let cache_dir = command_request_cache_dir(cache_root.as_ref());
-    std::fs::create_dir_all(&cache_dir)?;
+    let result_dir = command_request_result_dir(cache_root.as_ref());
+    let log_dir = command_request_log_dir(cache_root.as_ref());
+    std::fs::create_dir_all(&result_dir)?;
+    std::fs::create_dir_all(&log_dir)?;
 
-    let index = next_command_request_index(&cache_dir)?;
+    let index = next_command_request_index(&result_dir)?;
     let result_file_name = format!(
         "{index:05}_{}_command_request.md",
         status.label().to_ascii_lowercase()
     );
-    let result_path = cache_dir.join(result_file_name);
-    let log_path = cache_dir.join("request_log.md");
+    let result_path = result_dir.join(result_file_name);
+    let log_path = log_dir.join("request_log.md");
     let timestamp = Local::now();
 
     let mut result_text = String::new();
@@ -1099,9 +1103,21 @@ pub fn record_unexecuted_command_request(
     })
 }
 
-fn command_request_cache_dir(cache_root: &Path) -> PathBuf {
+fn command_request_result_dir(character_root: &Path) -> PathBuf {
     let date = Local::now().format("%Y-%m-%d").to_string();
-    cache_root.join(date)
+    character_root
+        .join("CoolHunterHall")
+        .join("command_request")
+        .join(date)
+}
+
+fn command_request_log_dir(character_root: &Path) -> PathBuf {
+    let date = Local::now().format("%Y-%m-%d").to_string();
+    character_root
+        .join(".cool")
+        .join("cache")
+        .join("command_request")
+        .join(date)
 }
 
 fn next_command_request_index(cache_dir: &Path) -> CToolResult<u64> {
@@ -1177,8 +1193,15 @@ fn append_command_request_log(
         writeln!(file, "{user_feedback}")?;
     }
     writeln!(file)?;
-    writeln!(file, "Output:")?;
-    writeln!(file, "{}", result_path.display())?;
+    writeln!(file, "OutputFile:")?;
+    writeln!(
+        file,
+        "{}",
+        result_path
+            .file_name()
+            .and_then(|file_name| file_name.to_str())
+            .unwrap_or("unknown")
+    )?;
     writeln!(file)?;
     writeln!(file, "---")?;
     writeln!(file)?;
